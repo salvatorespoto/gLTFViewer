@@ -29,6 +29,15 @@
 #pragma comment(lib, "dxguid.lib")
 
 
+// DirectX 12 debug layer
+
+#define ENABLE_DX12_DEBUG_LAYER
+#ifdef ENABLE_DX12_DEBUG_LAYER
+#include <dxgidebug.h>
+#pragma comment(lib, "dxguid.lib")
+#endif
+
+
 namespace DXUtil 
 {
 
