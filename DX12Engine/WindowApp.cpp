@@ -18,9 +18,17 @@ WindowApp::~WindowApp()
 
 void WindowApp::init()
 {
+    // The calling order of the following functions matters to correctly set up the application
+
     initWindow();
     enableDebugLayer();
     createDefaultDevice();
+    createDXGIFactory();
+    createCommandQueue();
+    setBackBufferFormat();
+    //checkMultisampling();
+    createSwapChain();
+
 }
 
 int WindowApp::run()
@@ -182,6 +190,11 @@ void WindowApp::enableDebugLayer()
 #endif
 }
 
+void WindowApp::createDXGIFactory() 
+{
+    DXUtil::ThrowIfFailed(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&m_dxgiFactory)), "Cannot create DXGI factory");
+}
+
 void WindowApp::createDefaultDevice()
 {
     ComPtr<IDXGIFactory4> dxgiFactory;
@@ -198,6 +211,60 @@ void WindowApp::createDefaultDevice()
         DXUtil::ThrowIfFailed(D3D12CreateDevice(warpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_device)), "Cannot create WARP adapter");
     }
 }
+
+void WindowApp::createCommandQueue()
+{
+    D3D12_COMMAND_QUEUE_DESC cqDesc = { D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE, 1};
+    DXUtil::ThrowIfFailed(m_device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&m_commandQueue)), "Cannot create command queue");
+}
+
+void WindowApp::setBackBufferFormat() 
+{
+    m_backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+}
+
+void WindowApp::checkMultisampling()
+{
+    D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS multisampleQL;
+    multisampleQL.Format = m_backBufferFormat;
+    multisampleQL.SampleCount = 4;
+    multisampleQL.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
+    multisampleQL.NumQualityLevels = 0;
+    
+    DXUtil::ThrowIfFailed(m_device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &multisampleQL, sizeof(multisampleQL)), "Cannot enable multisamppling");
+    m_MSAASampleCount = (multisampleQL.SampleCount == 4) ? 4 : 1;
+    m_MSAAQualityLevel = (multisampleQL.NumQualityLevels > 0) ? multisampleQL.NumQualityLevels - 1 : 0;
+}
+
+void WindowApp::createSwapChain()
+{
+    // Release the previous swap chain, if any
+    m_swapChain.Reset();
+
+    DXGI_SWAP_CHAIN_DESC1 scDesc;
+    
+    scDesc.Width = m_clientWidth;
+    scDesc.Height = m_clientHeight;
+    scDesc.Format = m_backBufferFormat;
+    scDesc.Stereo = FALSE;
+    scDesc.SampleDesc.Count = m_MSAASampleCount;
+    scDesc.SampleDesc.Quality = m_MSAAQualityLevel;
+    scDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+    scDesc.Scaling = DXGI_SCALING_STRETCH;
+    scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    scDesc.BufferCount = 2;
+    scDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    scDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+        
+    DXUtil::ThrowIfFailed(m_dxgiFactory->CreateSwapChainForHwnd(m_commandQueue.Get(), m_hWnd, &scDesc, nullptr, nullptr, m_swapChain.GetAddressOf()), "Cannot create swap chain");
+}
+
+void WindowApp::createFence()
+{
+
+}
+
+//// Cleanup
 
 void WindowApp::onDestroy()
 {

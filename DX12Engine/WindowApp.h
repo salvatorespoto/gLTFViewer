@@ -52,16 +52,32 @@ protected:
 
 	// D3D related functions
 	void enableDebugLayer();
+	void createDXGIFactory();
 	void createDefaultDevice();
+	void createCommandQueue();
+	void setBackBufferFormat();
+	void createSwapChain();
+	void checkMultisampling();
+	void createFence();
 
 
 private:
+
+	//// Window attributes
 
 	HINSTANCE m_hInstance;		/*< Handle to the application instance */
 	HWND m_hWnd;				/*< Handle to the application window */
 	UINT m_clientWidth;			/*< Client window width */
 	UINT m_clientHeight;		/*< Client window height */
 
+
 	//// Direct3D
 	Microsoft::WRL::ComPtr<ID3D12Device> m_device;
+	Microsoft::WRL::ComPtr<IDXGIFactory6> m_dxgiFactory;
+	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
+	DXGI_FORMAT m_backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	UINT m_MSAASampleCount = 1;
+	UINT m_MSAAQualityLevel = 0;
+	Microsoft::WRL::ComPtr<IDXGISwapChain1> m_swapChain;
+
 };
