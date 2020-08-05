@@ -37,7 +37,6 @@
 #pragma comment(lib, "dxguid.lib")
 #endif
 
-
 namespace DXUtil 
 {
 

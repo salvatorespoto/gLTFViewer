@@ -1,4 +1,5 @@
 #include "WindowApp.h"
+#include "DirectXColors.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -11,7 +12,10 @@ LRESULT CALLBACK wndMsgCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 }
 
 WindowApp::WindowApp(HINSTANCE hInstance) : m_hInstance(hInstance), m_hWnd(NULL), m_clientWidth(1280), m_clientHeight(800)
-{}
+{
+    setUpViewport();
+    setUpScissorRect();
+}
 
 WindowApp::~WindowApp()
 {}
@@ -24,11 +28,17 @@ void WindowApp::init()
     enableDebugLayer();
     createDefaultDevice();
     createDXGIFactory();
-    createCommandQueue();
+    createCommandObjects();
+    createFence();
+    createDescriptorHeaps();
+    //createFrameContexts();
     setBackBufferFormat();
     //checkMultisampling();
     createSwapChain();
-
+    createRenderTargetViews();
+    createDepthStencilBuffer();
+    createDepthStencilBufferView();
+    flushCmdQueue();
 }
 
 int WindowApp::run()
@@ -46,6 +56,7 @@ int WindowApp::run()
         else
         {
             update();   // Update the app
+            draw();
         }
     }
 
@@ -212,13 +223,29 @@ void WindowApp::createDefaultDevice()
     }
 }
 
-void WindowApp::createCommandQueue()
+void WindowApp::createCommandObjects()
 {
+    // Create the command queue
     D3D12_COMMAND_QUEUE_DESC cqDesc = { D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE, 1};
     DXUtil::ThrowIfFailed(m_device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&m_commandQueue)), "Cannot create command queue");
+    DXUtil::ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_cmdListAlloc)), "Cannot create command allocator");
+    DXUtil::ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_cmdListAlloc.Get(), nullptr, IID_PPV_ARGS(m_cmdList.GetAddressOf())), "Cannot create the command list");
+    m_cmdList->Close();
 }
 
-void WindowApp::setBackBufferFormat() 
+void WindowApp::createFrameContexts()
+{
+    // CPU will update "m_frameInFlight" frames without wainting for the GPU to complete the previous
+    m_frameContexts.resize(m_frameInFlight);
+
+    // Eeach frame context has its own command allocator
+    for (FrameContext2 &frameContext : m_frameContexts)
+    {
+        DXUtil::ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&frameContext.m_cmdListAlloc)), "Cannot create command allocator");
+    }
+}
+
+void WindowApp::setBackBufferFormat()
 {
     m_backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 }
@@ -252,7 +279,7 @@ void WindowApp::createSwapChain()
     scDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
     scDesc.Scaling = DXGI_SCALING_STRETCH;
     scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    scDesc.BufferCount = 2;
+    scDesc.BufferCount = 2; // Two buffers in the swap chain for double buffering
     scDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     scDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
         
@@ -261,8 +288,158 @@ void WindowApp::createSwapChain()
 
 void WindowApp::createFence()
 {
-
+    DXUtil::ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)), "Cannot create fence");
 }
+
+void WindowApp::createDescriptorHeaps()
+{
+    // Get descriptors sizes
+    m_descriptor_CBV_SRV_size = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    m_descriptor_RTV_size = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    m_descriptor_DSV_size = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+    // Crete descriptor for back buffers
+    D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+    heapDesc.NumDescriptors = 2;
+    heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    DXUtil::ThrowIfFailed(m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_rtvDescriptorHeap)), "Cannot create back buffer descriptor heap");
+
+    heapDesc = {};
+    heapDesc.NumDescriptors = 1;
+    heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+    heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    DXUtil::ThrowIfFailed(m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_dsvDescriptorHeap)), "Cannot create depth stencil buffer descriptor heap");
+
+    heapDesc = {};
+    heapDesc.NumDescriptors = 1;
+    heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE; // Constant buffer resources have to be accessed from shaders
+    DXUtil::ThrowIfFailed(m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_cbv_srv_DescriptorHeap)), "Cannot create CBV SRV UAV descriptor heap");
+}
+
+void WindowApp::createRenderTargetViews()
+{
+    // CD3DX12_CPU_DESCRIPTOR_HANDLE is an helper structure that create a D3DX12_CPU_DESCRIPTOR_HANDLE
+    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle_CPU(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+    // Create a render target view to buffers
+    for (UINT i = 0; i < 2; i++)    // There are two buffers in the swap chain
+    {
+        // Get the buffer
+        m_swapChain->GetBuffer(i, IID_PPV_ARGS(&m_swapChainBuffers[i]));
+
+        // Create a view associated to it
+        m_device->CreateRenderTargetView(m_swapChainBuffers[i].Get(), nullptr, rtvHeapHandle_CPU); 
+    
+        // Point to the next descriptor
+        rtvHeapHandle_CPU.Offset(1, m_descriptor_RTV_size);
+    }
+}
+
+void WindowApp::createDepthStencilBuffer() 
+{
+    D3D12_RESOURCE_DESC depthStencilDesc;
+    depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    depthStencilDesc.Alignment = 0;
+    depthStencilDesc.Width = m_clientWidth;
+    depthStencilDesc.Height = m_clientHeight; 
+    depthStencilDesc.DepthOrArraySize = 1;
+    depthStencilDesc.MipLevels = 1;
+    depthStencilDesc.Format = m_depthStencilBufferFormat;
+    depthStencilDesc.SampleDesc.Count = m_MSAASampleCount;
+    depthStencilDesc.SampleDesc.Quality = m_MSAAQualityLevel;
+    depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+    
+    D3D12_CLEAR_VALUE optClear;
+    optClear.Format = m_depthStencilBufferFormat;
+    optClear.DepthStencil.Depth = 1.0f;
+    optClear.DepthStencil.Stencil = 0;
+    
+    DXUtil::ThrowIfFailed(m_device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), D3D12_HEAP_FLAG_NONE, &depthStencilDesc, D3D12_RESOURCE_STATE_COMMON, &optClear, IID_PPV_ARGS(m_depthStencilBuffer.GetAddressOf())), 
+        "Cannot create depth stencile buffer resource");
+}
+
+void WindowApp::createDepthStencilBufferView() 
+{
+    m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), nullptr, m_dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+}
+
+void WindowApp::setUpViewport()
+{
+    m_viewPort.TopLeftX = 0.0f;
+    m_viewPort.TopLeftY = 0.0f;
+    m_viewPort.Width = static_cast<float>(m_clientWidth);
+    m_viewPort.Height = static_cast<float>(m_clientHeight);
+    m_viewPort.MinDepth = 0.0f;
+    m_viewPort.MaxDepth = 1.0f;
+}
+
+void WindowApp::setUpScissorRect()
+{
+    m_scissorRect = { 0, 0, static_cast<long>(m_clientWidth), static_cast<long>(m_clientHeight) };
+}
+
+void WindowApp::flushCmdQueue()
+{
+    m_currentFenceValue++;
+    m_commandQueue->Signal(m_fence.Get(), m_currentFenceValue);
+
+    // Wait until the fence has been updated
+    if (m_fence->GetCompletedValue() < m_currentFenceValue)
+    {
+        HANDLE eventHandle = CreateEventEx(nullptr, nullptr, false, EVENT_ALL_ACCESS);
+        DXUtil::ThrowIfFailed(m_fence->SetEventOnCompletion(m_currentFenceValue, eventHandle), "Cannot set fence event on completion");
+        WaitForSingleObject(eventHandle, INFINITE);
+        CloseHandle(eventHandle);
+    }
+}
+
+ID3D12Resource* WindowApp::getCurrentBackBuffer() const
+{
+    return m_swapChainBuffers[m_currentBackBuffer].Get();
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE WindowApp::getCurrentBackBufferView() const
+{
+    return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_currentBackBuffer, m_descriptor_RTV_size);
+} 
+
+D3D12_CPU_DESCRIPTOR_HANDLE WindowApp::getDepthStencilView() const
+{
+    return m_dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+}
+
+//// Render the scene
+void WindowApp::draw() 
+{
+    DXUtil::ThrowIfFailed(m_cmdListAlloc->Reset(), "Cannot reset allocator");
+    DXUtil::ThrowIfFailed(m_cmdList->Reset(m_cmdListAlloc.Get(), nullptr), "Cannot reset command list");
+
+    m_cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+    m_cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(getCurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    
+    m_cmdList->RSSetViewports(1, &m_viewPort);
+    m_cmdList->RSSetScissorRects(1, &m_scissorRect);
+    m_cmdList->ClearRenderTargetView(getCurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
+    m_cmdList->ClearDepthStencilView(getDepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+    
+    m_cmdList->OMSetRenderTargets(1, &getCurrentBackBufferView(), FALSE, &getDepthStencilView());
+    
+    m_cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(getCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    
+    DXUtil::ThrowIfFailed(m_cmdList->Close(), "Cannot close command list");
+    
+    ID3D12CommandList* cmdsLists[] = { m_cmdList.Get() };
+    m_commandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+    
+    DXUtil::ThrowIfFailed(m_swapChain->Present(0, 0), "Cannot Present() on swap chain");
+    m_currentBackBuffer = (m_currentBackBuffer  + 1) % 2;
+    
+    flushCmdQueue();
+}
+
 
 //// Cleanup
 
