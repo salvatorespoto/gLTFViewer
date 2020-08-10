@@ -12,18 +12,18 @@ ComPtr<ID3D12Resource> createDefaultHeapBuffer(
 	// Create the default heap buffer
 	ComPtr<ID3D12Resource> defaultHeapBuffer;
 	DXUtil::ThrowIfFailed(device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),	// Default heap type
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),           // A description of the resource, here only specify the bytesize 
+		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),           
 		D3D12_RESOURCE_STATE_COMMON,
 		nullptr,
 		IID_PPV_ARGS(defaultHeapBuffer.GetAddressOf())), "Cannot create default buffer");
 
 	// Create the upload buffer
 	DXUtil::ThrowIfFailed(device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),   // Upload type
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),   // Upload heap type
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),           // A description of the resource, here only specify the bytesize 
+		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),           
 		D3D12_RESOURCE_STATE_GENERIC_READ,                  // State required to start an upload heap
 		nullptr,
 		IID_PPV_ARGS(uploadBuffer.GetAddressOf())), "Cannot create upload buffer");
@@ -52,10 +52,11 @@ ComPtr<ID3D12Resource> createDefaultHeapBuffer(
 	return defaultHeapBuffer;
 }
 
+/*
 template <class T>
-UploadBuffer<T>::UploadBuffer(ID3D12Device* device, UINT count)
+UploadBuffer<T>::UploadBuffer(ID3D12Device* device, UINT count, bool isConstant)
 {
-	createBuffer(device, count);
+	createBuffer(device, count, isConstant);
 }
 
 template <class T>
@@ -66,9 +67,16 @@ UploadBuffer<T>::~UploadBuffer()
 }
 
 template <class T>
-void UploadBuffer<T>::createBuffer(ID3D12Device* device, UINT count)
+void UploadBuffer<T>::createBuffer(ID3D12Device* device, UINT count, bool isConstant)
 {
-	m_elementByteSize = sizeof(T);
+
+	if (isConstant)
+	{
+		// Hardware can only access cosntant data at offset of 256 bytes
+		// so pad the size of the element T to a 255 byte multiple
+		this->m_elementByteSize = (sizeof(T) + 255) & ~255;
+	}
+	else m_elementByteSize = sizeof(T);
 
 	DXUtil::ThrowIfFailed(device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -113,3 +121,4 @@ void ConstantBuffer<T>::createBuffer(ID3D12Device* device, UINT count)
 
 	ThrowIfFailed(this->m_buffer->Map(0, nullptr, reinterpret_cast<void**>(&this->m_data)), "Error creating upload buffer");
 }
+*/

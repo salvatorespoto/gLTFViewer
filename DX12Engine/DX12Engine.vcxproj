@@ -140,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Buffers.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DXUtil.cpp" />
     <ClCompile Include="ImGUI\imgui.cpp" />
     <ClCompile Include="ImGUI\imgui_demo.cpp" />
@@ -148,11 +149,14 @@
     <ClCompile Include="ImGUI\imgui_impl_win32.cpp" />
     <ClCompile Include="ImGUI\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="WindowApp.cpp" />
+    <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Buffers.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DXUtil.h" />
     <ClInclude Include="FrameContext.h" />
@@ -164,8 +168,28 @@
     <ClInclude Include="ImGUI\imstb_rectpack.h" />
     <ClInclude Include="ImGUI\imstb_textedit.h" />
     <ClInclude Include="ImGUI\imstb_truetype.h" />
+    <ClInclude Include="Mesh.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="WindowApp.h" />
+    <ClInclude Include="World.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="DX12Engine.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="shaders.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -71,4 +71,20 @@ namespace DXUtil
 		}
 	}
 
+
+	UINT padByteSizeTo256Mul(UINT byteSize)
+	{
+		return (byteSize + 255) & ~255;
+	}
+
+	DirectX::XMFLOAT4X4 IdentityMtx()
+	{
+		static DirectX::XMFLOAT4X4 I(
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f);
+
+		return I;
+	}
 }

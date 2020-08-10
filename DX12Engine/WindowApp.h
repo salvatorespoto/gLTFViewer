@@ -2,6 +2,9 @@
 
 #include "DXUtil.h"
 #include "FrameContext.h"
+#include "Buffers.h"
+#include "World.h"
+#include "Camera.h"
 
 /** Windows app events callback */
 LRESULT CALLBACK wndMsgCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -59,19 +62,38 @@ protected:
 	void enableDebugLayer();
 	void createDXGIFactory();
 	void createDefaultDevice();
+	
 	void createCommandObjects();
+	
 	void createFence();
+	
 	void createDescriptorHeaps();
-	void createFrameContexts();
+	//void createFrameContexts();
+	
 	void setBackBufferFormat();
 	void createSwapChain();
 	void createRenderTargetViews();
+	
 	void createDepthStencilBuffer();
 	void createDepthStencilBufferView();
+	
+	void createConstantBuffers();
+	void createConstantBuffersView();
+	void updateConstantBuffers();
+
 	void checkMultisampling();
+
 	void setUpViewport();
 	void setUpScissorRect();
+	
+	void createRootSignature();
+	void compileShaders();
+	void createPipelineStateObject();
+
 	void flushCmdQueue();
+	
+	void loadWorld();
+
 
 	ID3D12Resource* getCurrentBackBuffer() const;
 	D3D12_CPU_DESCRIPTOR_HANDLE getCurrentBackBufferView() const;
@@ -92,21 +114,26 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Device> m_device;
 	Microsoft::WRL::ComPtr<IDXGIFactory6> m_dxgiFactory;
 
+	// Command objects
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_cmdListAlloc;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_cmdList;
 
+	// Fence
 	Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;
 	UINT m_currentFenceValue = 0;
 
+	// Swap chain
 	Microsoft::WRL::ComPtr<IDXGISwapChain1> m_swapChain;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_swapChainBuffers[2];
 	DXGI_FORMAT m_backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 	UINT m_currentBackBuffer = 0; // The id of the current back buffer in the swap chain
 
+	// Depth stencil
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
 	DXGI_FORMAT m_depthStencilBufferFormat = DXGI_FORMAT_D32_FLOAT;
 
+	// Descriptors
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_rtvDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_dsvDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_cbv_srv_DescriptorHeap;
@@ -114,7 +141,19 @@ private:
 	UINT m_descriptor_RTV_size = 0;
 	UINT m_descriptor_DSV_size = 0;
 
-	std::vector<FrameContext2> m_frameContexts;
+	// Constant buffers
+	std::unique_ptr<UploadBuffer<PassConstants>> m_passConstantBuffer;
+
+	// Root signature
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;
+
+	// Pipeline state object
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
+
+	Microsoft::WRL::ComPtr<ID3DBlob> m_vertexShader;
+	Microsoft::WRL::ComPtr<ID3DBlob> m_pixelShader;
+
+	//std::vector<FrameContext2> m_frameContexts;
 	UINT m_frameInFlight = 3;
 	
 	UINT m_MSAASampleCount = 1;
@@ -122,4 +161,11 @@ private:
 	
 	D3D12_VIEWPORT m_viewPort;
 	D3D12_RECT m_scissorRect;
+
+	World m_world;
+	std::unique_ptr<Camera> m_camera;
+
+	float m_mouseSensitivity = 0.25f;
+	int m_lastMousePosX;
+	int m_lastMousePosY;
 };

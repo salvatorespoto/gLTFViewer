@@ -15,6 +15,7 @@
 
 #include <d3d12.h>				// Direct3D 12 objects			
 #include <dxgi1_6.h>			// Microsoft DirectX Graphics Infrastructure (DXGI)
+#include <DirectXColors.h>
 #include <d3dcompiler.h>		// Direct3D 12 objects
 #include <DirectXmath.h>		// Math class and functions for Direct3D
 #include <directxcollision.h>   // Collision detection functions
@@ -37,10 +38,16 @@
 #pragma comment(lib, "dxguid.lib")
 #endif
 
-namespace DXUtil 
+// Define virtual key codes
+#define VK_KEY_W 0x57
+#define VK_KEY_A 0x41
+#define VK_KEY_S 0x53
+#define VK_KEY_D 0x44
+
+namespace DXUtil
 {
 
-// Error and exception handling 
+    // Error and exception handling 
 
     /** Log debug message to the Visual Studio output window */
     #define DEBUG_LOG(msg) { std::wstringstream wss; wss << msg << std::endl; OutputDebugString(wss.str().c_str()); }
@@ -48,15 +55,12 @@ namespace DXUtil
     /** Throw exception on failure with a given message */
     inline void ThrowIfFailed(HRESULT hr, std::string errorMsg)
     {
-            if (FAILED(hr))
-            {
-                errorMsg = "Error:" + errorMsg + "[file: " + __FILE__ + " line: " + std::to_string(__LINE__) + " ]";
-                throw std::exception(errorMsg.c_str());
-            }
+        if (FAILED(hr))
+        {
+            errorMsg = "Error:" + errorMsg + "[file: " + __FILE__ + " line: " + std::to_string(__LINE__) + " ]";
+            throw std::exception(errorMsg.c_str());
+        }
     }
-
-
-// Get device capacities 
 
     /** Enumerate all available adapters */
     std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter1>> enumerateAdapters();
@@ -69,4 +73,10 @@ namespace DXUtil
 
     /** Print out adapter info */
     void printAdaptersInfo();
+
+    /** Compute the byte size of a buffer after padding it to a 256 byte multiple */
+    UINT padByteSizeTo256Mul(UINT byteSize);
+
+    /* Store an indentity matmrix in a XMFLOAT4X4 */
+    DirectX::XMFLOAT4X4 IdentityMtx();
 }
