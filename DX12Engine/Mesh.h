@@ -40,7 +40,11 @@ public:
 
 	Mesh();
 
-	Mesh(Microsoft::WRL::ComPtr<ID3D12Device> device, Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> cmdList);
+	Mesh(Microsoft::WRL::ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList* cmdList);
+
+	~Mesh();
+
+	void release();
 
 	/** Draw the 3D mesh */
 	void addDrawCommands(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> cmdList);
@@ -69,7 +73,7 @@ private:
 
 	std::vector<SubMesh> m_subMeshes;
 	
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_cmdList;
+	ID3D12GraphicsCommandList* m_cmdList;
 
 	int m_idx = 0;	/*< Unique mesh index used to arrange constant buffers */
 	bool m_isDirty; /*< This mesh attributes (world matrix) has changed */

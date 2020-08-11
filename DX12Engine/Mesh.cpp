@@ -22,7 +22,7 @@ D3D12_INPUT_ELEMENT_DESC vertexElementsDesc[] =
 
 Mesh::Mesh(){}
 
-Mesh::Mesh(ComPtr<ID3D12Device> device, ComPtr<ID3D12GraphicsCommandList> cmdList)
+Mesh::Mesh(ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList* cmdList)
 {
 	m_cmdList = cmdList;
 	m_vertices =
@@ -37,7 +37,7 @@ Mesh::Mesh(ComPtr<ID3D12Device> device, ComPtr<ID3D12GraphicsCommandList> cmdLis
 		{ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Magenta) }
 	};
 	m_vbByteSize = 8 * sizeof(Vertex);
-	m_vertexBufferGPU = createDefaultHeapBuffer(device.Get(), m_cmdList.Get(), m_vertices.data(), m_vbByteSize, m_vertexBufferUploader);
+	m_vertexBufferGPU = createDefaultHeapBuffer(device.Get(), m_cmdList, m_vertices.data(), m_vbByteSize, m_vertexBufferUploader);
 
 	 
 	m_indices =
@@ -57,8 +57,20 @@ Mesh::Mesh(ComPtr<ID3D12Device> device, ComPtr<ID3D12GraphicsCommandList> cmdLis
 	};
 
 	m_ibByteSize = 36 * sizeof(std::uint16_t);
-	m_indexBufferGPU = createDefaultHeapBuffer(device.Get(), m_cmdList.Get(), m_indices.data(), m_ibByteSize, m_indexBufferUploader);
+	m_indexBufferGPU = createDefaultHeapBuffer(device.Get(), m_cmdList, m_indices.data(), m_ibByteSize, m_indexBufferUploader);
 	
+}
+
+Mesh::~Mesh()
+{
+}
+
+void Mesh::release()
+{
+	if (m_vertexBufferGPU) { m_vertexBufferGPU = nullptr; }
+	if (m_vertexBufferUploader) { m_vertexBufferUploader = nullptr; }
+	if (m_indexBufferGPU) { m_indexBufferGPU = nullptr; }
+	if (m_indexBufferUploader) { m_indexBufferUploader = nullptr; }
 }
 
 void Mesh::addDrawCommands(ComPtr<ID3D12GraphicsCommandList> cmdList)

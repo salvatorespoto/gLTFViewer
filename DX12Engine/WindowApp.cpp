@@ -29,7 +29,21 @@ WindowApp::WindowApp(HINSTANCE hInstance) : m_hInstance(hInstance), m_hWnd(NULL)
 }
 
 WindowApp::~WindowApp()
-{}
+{
+/*
+    if (m_device != nullptr) flushCmdQueue();
+    if (m_device) { m_device->Release(); m_device = nullptr; }
+
+#ifdef ENABLE_DX12_DEBUG_LAYER
+    ComPtr<IDXGIDebug> debugController = NULL;
+    if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debugController))))
+    {
+        debugController->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_SUMMARY);
+        debugController->Release();
+    }
+#endif
+*/
+}
 
 void WindowApp::init()
 {
@@ -523,7 +537,7 @@ void WindowApp::loadWorld()
 {
     ThrowIfFailed(m_cmdListAlloc->Reset(), "Cannot reset allocator");
     ThrowIfFailed(m_cmdList->Reset(m_cmdListAlloc.Get(), nullptr), "Cannot reset command list");
-    Mesh cube(m_device, m_cmdList);
+    Mesh cube(m_device, m_cmdList.Get());
     m_world.addMesh(cube);
     m_cmdList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
     m_cmdList->Close();
@@ -596,8 +610,25 @@ void WindowApp::draw()
 
 void WindowApp::onDestroy()
 {
-    if (m_device) { m_device->Release(); m_device = nullptr; }
+    // Assigning nullptr to ComPtr smar pointer release the interface and set the holded pointer to null
 
+    if (m_device != nullptr) flushCmdQueue();
+    m_passConstantBuffer->release();
+    if (m_cmdList) { m_cmdList = nullptr; }
+    m_world.release();
+    for (int i = 0; i < 2; i++) { m_swapChainBuffers[i] = nullptr; }
+    if (m_depthStencilBuffer) { m_depthStencilBuffer = nullptr; }
+    if (m_swapChain) { m_swapChain = nullptr; }
+    if (m_commandQueue) { m_commandQueue = nullptr; }
+    if (m_cbv_srv_DescriptorHeap) { m_cbv_srv_DescriptorHeap = nullptr; }
+    if (m_rtvDescriptorHeap) { m_rtvDescriptorHeap = nullptr; }
+    if (m_dsvDescriptorHeap) { m_dsvDescriptorHeap = nullptr; }
+    if (m_fence) { m_fence = nullptr; }
+    if (m_device) { m_device = nullptr; }
+    if (m_rootSignature) { m_rootSignature = nullptr; }
+    if (m_pipelineState) { m_pipelineState = nullptr; }
+
+    /*
 #ifdef ENABLE_DX12_DEBUG_LAYER
     ComPtr<IDXGIDebug> debugController = NULL;
     if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&debugController))))
@@ -606,4 +637,5 @@ void WindowApp::onDestroy()
         debugController->Release();
     }
 #endif
+*/
 }

@@ -14,6 +14,9 @@ public:
 
 	/** Constructor */
 	World() {}
+	~World();
+
+	void release();
 	
 	/** Add a 3D mesh to the world */
 	void addMesh(Mesh mesh);

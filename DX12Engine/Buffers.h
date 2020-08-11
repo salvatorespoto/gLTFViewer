@@ -38,6 +38,9 @@ public:
 	 */
 	ID3D12Resource* getResource() const;
 
+	void release();
+
+
 	/**
 	 * Copy data to the buffer
 	 */
@@ -63,8 +66,20 @@ UploadBuffer<T>::UploadBuffer(ID3D12Device* device, UINT count, bool isConstant)
 template <class T>
 UploadBuffer<T>::~UploadBuffer()
 {
-	if (m_buffer != nullptr) m_buffer->Unmap(0, nullptr);
-	m_data = nullptr;
+	if (m_buffer != nullptr)
+	{
+		m_buffer->Unmap(0, nullptr);
+	}
+}
+
+template <class T>
+void UploadBuffer<T>::release()
+{
+	if (m_buffer != nullptr)
+	{
+		m_buffer->Unmap(0, nullptr);
+		m_buffer = nullptr;
+	}
 }
 
 template <class T>
