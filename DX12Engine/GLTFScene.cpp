@@ -2,11 +2,10 @@
 
 using Microsoft::WRL::ComPtr;
 
-void GLTFScene::LoadScene(ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList* cmdList, tinygltf::Model model, unsigned int sceneId)
+void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, tinygltf::Model model, unsigned int sceneId)
 {
+	m_renderer = renderer;
 	m_model = model;
-	m_device = device;
-	m_cmdList = cmdList;
 	if (sceneId >= model.scenes.size()) DXUtil::ThrowException("Scene index out of range");
 
 	for (tinygltf::Node node : model.nodes)
@@ -35,7 +34,6 @@ void GLTFScene::ParseSubTree(tinygltf::Node node)
 
 void GLTFScene::BuildMesh(tinygltf::Mesh gltfMesh)
 {
-	/*
 	for (tinygltf::Primitive primitive : gltfMesh.primitives)
 	{
 		int acessorPositionsId = primitive.attributes["POSITION"];
@@ -51,13 +49,18 @@ void GLTFScene::BuildMesh(tinygltf::Mesh gltfMesh)
 		void* positionsBufferBegin = positionsBuffer.data.data() + positionsBufferView.byteOffset;
 
 		tinygltf::Buffer indexesBuffer = m_model.buffers[indexesBufferView.buffer];
-		void* indexesBufferBegin = positionsBuffer.data.data() + positionsBufferView.byteOffset;
+		void* indexesBufferBegin = positionsBuffer.data.data() + indexesBufferView.byteOffset;
 
-		m_meshes.emplace_back(m_device, m_cmdList, positionsBufferBegin, positionsBufferView.byteLength, indexesBufferBegin, indexesBufferView.byteLength);
+		m_renderer->ResetCommandList();
+		m_meshes.emplace_back(m_renderer, positionsBufferBegin, positionsBufferView.byteLength, indexesBufferBegin, indexesBufferView.byteLength);
+		m_renderer->GetCommandList()->Close();
+		m_renderer->ExecuteCommandList(m_renderer->GetCommandList().Get());
+		m_renderer->FlushCommandQueue();
+
 		//std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>(m_device, m_cmdList, positionsBufferBegin, positionsBufferView.byteLength, indexesBufferBegin, indexesBufferView.byteLength);
 		//m_meshes.push_back(mesh);
-	}*/
-
+	}
+	/*
 	std::vector<DirectX::XMFLOAT3> positions =
 	{
 		{ DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f) },
@@ -87,5 +90,16 @@ void GLTFScene::BuildMesh(tinygltf::Mesh gltfMesh)
 		4, 0, 1
 	};
 	UINT64 ibByteSize = indices.size() * sizeof(std::uint16_t);
-	//m_meshes.emplace_back(m_device, m_cmdList, positions.data(), m_pbByteSize, indices.data(), ibByteSize);
+
+	m_renderer->ResetCommandList();
+	m_meshes.emplace_back(m_renderer, positions.data(), m_pbByteSize, indices.data(), ibByteSize);
+	m_renderer->GetCommandList()->Close();
+	m_renderer->ExecuteCommandList(m_renderer->GetCommandList().Get());
+	m_renderer->FlushCommandQueue();
+		*/
+}
+
+std::vector<Mesh> GLTFScene::getMeshes()
+{
+	return m_meshes;
 }

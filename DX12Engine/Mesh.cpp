@@ -84,7 +84,7 @@ void Mesh::Draw()
 	D3D12_INDEX_BUFFER_VIEW indexBuffers[1] = { ibView };
 	commandList->IASetIndexBuffer(indexBuffers);
 
-	commandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+	commandList->DrawIndexedInstanced(46356, 1, 0, 0, 0);
 }
 
 void Mesh::LoadGLTF(std::string fileName) 

@@ -48,7 +48,7 @@ void Gui::Draw(AppState* appState)
         ImGui::Checkbox("Fullscreen", &appState->m_isAppFullscreen);
         ImGui::End();
 
-        ImGui::ShowDemoWindow();
+        //ImGui::ShowDemoWindow();
     }
 
     ImGui::Render();

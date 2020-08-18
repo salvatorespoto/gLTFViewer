@@ -27,13 +27,13 @@ void World::release()
 
 std::vector<Mesh> World::getMeshes()
 {
-	return m_meshes;
+	return m_scene.getMeshes();
 }
 
 void World::draw()
 {
 
-	for (Mesh mesh : m_meshes)
+	for (Mesh mesh : m_scene.getMeshes())
 	{
 		mesh.Draw();
 	}
@@ -41,7 +41,7 @@ void World::draw()
 
 void World::LoadGLTF(std::string fileName)
 {
-	/*
+	
 	std::string err;
 	std::string warn;
 
@@ -50,40 +50,5 @@ void World::LoadGLTF(std::string fileName)
 	if (!err.empty()) { printf("Err: %s\n", err.c_str()); }
 	if (!ret) { printf("Failed to parse glTF\n"); return; }
 
-	m_scene.LoadScene( , m_cmdList, m_model, 0);
-	*/
-	std::vector<DirectX::XMFLOAT3> positions =
-	{
-		{ DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f) },
-		{ DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f) },
-		{ DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f) },
-		{ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f) },
-		{ DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f) },
-		{ DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f) },
-		{ DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f) },
-		{ DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f) }
-	};
-	UINT64 m_pbByteSize = 8 * sizeof(DirectX::XMFLOAT3);
-
-	std::vector<std::uint16_t> indices =
-	{
-		4, 2, 0,
-		2, 7, 3,
-		6, 5, 7,
-		1, 7, 5,
-		0, 3, 1,
-		4, 1, 5,
-		4, 6, 2,
-		2, 6, 7,
-		6, 4, 5,
-		1, 3, 7,
-		0, 2, 3,
-		4, 0, 1
-	};
-	UINT64 ibByteSize = indices.size() * sizeof(std::uint16_t);
-	m_renderer->ResetCommandList();
-	m_meshes.emplace_back(m_renderer, positions.data(), m_pbByteSize, indices.data(), ibByteSize);
-	m_renderer->GetCommandList()->Close();
-	m_renderer->ExecuteCommandList(m_renderer->GetCommandList().Get());
-	m_renderer->FlushCommandQueue();
+	m_scene.LoadScene( m_renderer, m_model, 0);
 }
