@@ -3,11 +3,22 @@
 #include "DXUtil.h"
 #include "FrameContext.h"
 #include "Buffers.h"
+#include "SwapChain.h"
 #include "World.h"
 #include "Camera.h"
+#include "GUI.h"
+
 
 /** Windows app events callback */
 LRESULT CALLBACK wndMsgCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+struct AppState
+{
+	bool m_isAppPaused = false;
+	bool m_isResizingWindow = false;
+	bool m_isAppFullscreen = false;
+	bool m_isAppMinimized = false;
+};
 
 /** The base class for a Direct3D application */
 class WindowApp
@@ -17,89 +28,46 @@ public:
 
 	/** Constructor, m_hInstance is the handle to the application, passed from winMain */
 	WindowApp(HINSTANCE m_hInstance);
-
-	/** Destructor */
 	~WindowApp();
 
-	/** Called from the window callback */
+	void init();
+	int run();
+	void Update();
+	void draw();
+	void SetFullScreen(bool fullScreen);
+	float getScreenAspectRatio();
+
+	// Called from the window callback
 	virtual LRESULT wndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-	/** Initialize the windows app */
-	void init();
-
-	/** Implements the message loop */
-	int run();
-
-	/** Called each frame to update the app */
-	void update();
-
-	/** Draw the scene */
-	void draw();
-
-
 	// Event handlers
-	virtual void onResize();
+	virtual void OnEnterSizeMove();
+	virtual void OnExitSizeMove();
+	virtual void OnAppMinimized();
+	virtual void OnResize(UINT width, UINT height);
 	virtual void onMouseMove(WPARAM btnState, int x, int y);
 	virtual void onMouseDown(WPARAM btnState, int x, int y);
 	virtual void onMouseUp(WPARAM btnState, int x, int y);
 	virtual void onKeyDown(WPARAM btnState);
 
-	/** Return aspect ratio : screen width / screen height */
-	float getScreenAspectRatio();
-
 protected:
 
-	/** Create the window associated with this app*/
-	void initWindow();
-
-	/** Show the window associated with this app*/
+	void InitWindow();
 	void showWindow();
-
-	/** On destroy */
 	void onDestroy();
 
-	// D3D related functions
-	void enableDebugLayer();
-	void createDXGIFactory();
-	void createDefaultDevice();
 	
-	void createCommandObjects();
-	
-	void createFence();
-	
-	void createDescriptorHeaps();
 	//void createFrameContexts();
-	
-	void setBackBufferFormat();
-	void createSwapChain();
-	void createRenderTargetViews();
-	
-	void createDepthStencilBuffer();
-	void createDepthStencilBufferView();
-	
-	void createConstantBuffers();
-	void createConstantBuffersView();
-	void updateConstantBuffers();
 
-	void checkMultisampling();
+	void LoadWorld();
+	void UpdateCamera();
 
-	void setUpViewport();
-	void setUpScissorRect();
-	
-	void createRootSignature();
-	void compileShaders();
-	void createPipelineStateObject();
-
-	void flushCmdQueue();
-	
-	void loadWorld();
-
-
-	ID3D12Resource* getCurrentBackBuffer() const;
-	D3D12_CPU_DESCRIPTOR_HANDLE getCurrentBackBufferView() const;
-	D3D12_CPU_DESCRIPTOR_HANDLE getDepthStencilView() const;
+	//void resizeSwapChain(int width, int height);
+	//void onFullScreenSwitch();
 	
 private:
+
+	AppState m_state;
 
 	//// Window attributes
 
@@ -108,59 +76,34 @@ private:
 	UINT m_clientWidth;			/*< Client window width */
 	UINT m_clientHeight;		/*< Client window height */
 
-
-	//// Direct3D attributes
+	BOOL m_fullScreen = false;
+	DXGI_MODE_DESC m_fullScreenMode;
 	
-	Microsoft::WRL::ComPtr<ID3D12Device> m_device;
-	Microsoft::WRL::ComPtr<IDXGIFactory6> m_dxgiFactory;
+	BOOL m_isAppPaused = false;
+	BOOL m_isResizingWindow = false;
+	BOOL m_isAppFullscreen = false;
+	BOOL m_isAppMinimized = false;
 
-	// Command objects
-	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
-	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_cmdListAlloc;
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_cmdList;
+	std::shared_ptr<Renderer> m_renderer;
 
-	// Fence
-	Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;
-	UINT m_currentFenceValue = 0;
+	//std::vector<DXGI_MODE_DESC> m_displayModes;
 
-	// Swap chain
-	Microsoft::WRL::ComPtr<IDXGISwapChain1> m_swapChain;
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_swapChainBuffers[2];
-	DXGI_FORMAT m_backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-	UINT m_currentBackBuffer = 0; // The id of the current back buffer in the swap chain
+	Gui GUI;
 
-	// Depth stencil
-	Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
-	DXGI_FORMAT m_depthStencilBufferFormat = DXGI_FORMAT_D32_FLOAT;
+	//Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_cmdListAlloc;
+	//Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_cmdList;
 
-	// Descriptors
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_rtvDescriptorHeap;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_dsvDescriptorHeap;
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_cbv_srv_DescriptorHeap;
-	UINT m_descriptor_CBV_SRV_size = 0;
-	UINT m_descriptor_RTV_size = 0;
-	UINT m_descriptor_DSV_size = 0;
+	
+	//Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_dsvDescriptorHeap;
+	//Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_cbv_srv_DescriptorHeap;
+	//UINT m_descriptor_CBV_SRV_size = 0;
+	//UINT m_descriptor_DSV_size = 0;
 
-	// Constant buffers
-	std::unique_ptr<UploadBuffer<PassConstants>> m_passConstantBuffer;
-
-	// Root signature
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;
-
-	// Pipeline state object
-	Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
-
-	Microsoft::WRL::ComPtr<ID3DBlob> m_vertexShader;
-	Microsoft::WRL::ComPtr<ID3DBlob> m_pixelShader;
+	
+	//std::unique_ptr<UploadBuffer<PassConstants>> m_passConstantBuffer;
 
 	//std::vector<FrameContext2> m_frameContexts;
-	UINT m_frameInFlight = 3;
-	
-	UINT m_MSAASampleCount = 1;
-	UINT m_MSAAQualityLevel = 0;
-	
-	D3D12_VIEWPORT m_viewPort;
-	D3D12_RECT m_scissorRect;
+	//UINT m_frameInFlight = 3;
 
 	World m_world;
 	std::unique_ptr<Camera> m_camera;

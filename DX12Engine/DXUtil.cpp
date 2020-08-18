@@ -1,5 +1,10 @@
 #include "DXUtil.h"
 
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "glTF/tiny_gltf.h"
+
 using Microsoft::WRL::ComPtr;	// Using Com smart pointers
 
 namespace DXUtil

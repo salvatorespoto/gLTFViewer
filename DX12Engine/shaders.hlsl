@@ -10,7 +10,7 @@ cbuffer cb : register(b0)
 struct VertexIn
 {
     float3 position : POSITION; // POSITION match the semantic name "POSITION" in the vertex descriptor
-    float4 color : COLOR;       // COLOR match the semantic name "COLOR" in the vertex descriptor
+    //float4 color : COLOR;       // COLOR match the semantic name "COLOR" in the vertex descriptor
 };
 
 struct VertexOut
@@ -24,7 +24,7 @@ VertexOut VSMain(VertexIn vIn)
 {
     VertexOut vOut;
     vOut.position = mul(float4(vIn.position, 1.0f), viewProjMtx);
-    vOut.color = vIn.color; 
+    vOut.color = float4(0.0f, 0.0f, 0.0f, 1.0f);
     return vOut;
 }
 

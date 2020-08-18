@@ -142,6 +142,8 @@
     <ClCompile Include="Buffers.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DXUtil.cpp" />
+    <ClCompile Include="GLTFScene.cpp" />
+    <ClCompile Include="Gui.cpp" />
     <ClCompile Include="ImGUI\imgui.cpp" />
     <ClCompile Include="ImGUI\imgui_demo.cpp" />
     <ClCompile Include="ImGUI\imgui_draw.cpp" />
@@ -150,6 +152,8 @@
     <ClCompile Include="ImGUI\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="WindowApp.cpp" />
     <ClCompile Include="World.cpp" />
@@ -160,6 +164,8 @@
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DXUtil.h" />
     <ClInclude Include="FrameContext.h" />
+    <ClInclude Include="GLTFScene.h" />
+    <ClInclude Include="Gui.h" />
     <ClInclude Include="ImGUI\imconfig.h" />
     <ClInclude Include="ImGUI\imgui.h" />
     <ClInclude Include="ImGUI\imgui_impl_dx12.h" />
@@ -169,7 +175,9 @@
     <ClInclude Include="ImGUI\imstb_textedit.h" />
     <ClInclude Include="ImGUI\imstb_truetype.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="Renderer.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="SwapChain.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="WindowApp.h" />
     <ClInclude Include="World.h" />

@@ -1,5 +1,7 @@
 #pragma once
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <Windows.h>
 #include <windowsx.h>           // Windows helper functions
 #include <wrl.h>                // ComPtr smart pointers for COM interfaces
@@ -10,9 +12,6 @@
 #include <vector>
 #include <exception>
 
-
-// DirectX includes
-
 #include <d3d12.h>				// Direct3D 12 objects			
 #include <dxgi1_6.h>			// Microsoft DirectX Graphics Infrastructure (DXGI)
 #include <DirectXColors.h>
@@ -20,7 +19,6 @@
 #include <DirectXmath.h>		// Math class and functions for Direct3D
 #include <directxcollision.h>   // Collision detection functions
 #include "d3dx12.h"				// Helper structures and functions for Direct3D 12
-
 
 // Statically link DirectX libraries
 
@@ -37,6 +35,9 @@
 #include <dxgidebug.h>
 #pragma comment(lib, "dxguid.lib")
 #endif
+
+#include "glTF/tiny_gltf.h"
+
 
 // Define virtual key codes
 #define VK_KEY_W 0x57
@@ -60,6 +61,13 @@ namespace DXUtil
             errorMsg = "Error:" + errorMsg + "[file: " + __FILE__ + " line: " + std::to_string(__LINE__) + " ]";
             throw std::exception(errorMsg.c_str());
         }
+    }
+
+    /** Throw exception on failure with a given message */
+    inline void ThrowException(std::string errorMsg)
+    {
+        errorMsg = "Error:" + errorMsg + "[file: " + __FILE__ + " line: " + std::to_string(__LINE__) + " ]";
+        throw std::exception(errorMsg.c_str());
     }
 
     /** Enumerate all available adapters */

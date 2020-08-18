@@ -1,18 +1,14 @@
 #pragma once
 
 #include "DXUtil.h"
+#include "Renderer.h"
 #include "FrameContext.h"
 
-/** A mesh vertex */
-struct Vertex
+struct Position
 {
 	DirectX::XMFLOAT3 position; 
-	//DirectX::XMFLOAT3 normal;
-	DirectX::XMFLOAT4 color;
-	//DirectX::XMFLOAT2 texCoord;
 };
 
-/** Array of input element descriptors */
 D3D12_INPUT_ELEMENT_DESC vertexElementsDesc[];
 
 /** A 3D submesh idexes into the vertex and index arrays of a mesh */
@@ -30,51 +26,53 @@ struct MeshConstants
 };
 */
 
-/**
- * A 3D mesh owns its vertex and buffer arrays and is composed from severeral SubMeshes
- */
 class Mesh
 {
 
 public:
 
 	Mesh();
-
-	Mesh(Microsoft::WRL::ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList* cmdList);
-
+	Mesh(std::shared_ptr<Renderer> renderer, void* positions, unsigned int posByteSize, void* indices, unsigned int indByteSize);
 	~Mesh();
 
 	void release();
+	void Draw();
 
-	/** Draw the 3D mesh */
-	void addDrawCommands(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> cmdList);
+	void LoadGLTF(std::string fileName);
 
-	/** The external function loadMeshFromObj has access to the Mesh class private member */
-	//friend Mesh loadMeshFromObj(std::string objFileName);
 
-	MeshConstants constants;
+	//MeshConstants constants;
 
 	void setDirty(bool isDirty) { m_isDirty = isDirty; }
 	bool isDirty() { return m_isDirty; };
 	int getIndex() { return m_idx; }
 
-	std::vector<Vertex> m_vertices;
-	std::vector<std::uint16_t> m_indices;
+	void* m_positions;
+	void* m_indices;
 
 private:
 
+	int m_idx = 0;	// Unique mesh index used to arrange constant buffers
+	bool m_isDirty; // This mesh attributes (world matrix) has changed
+
 	UINT64 m_vbByteSize;
+	UINT64 m_pbByteSize;
+	UINT64 m_cbByteSize;
+
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBufferUploader = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBufferGPU = nullptr;
-	
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_positionBufferUploader = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_positionBufferGPU = nullptr;
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_colorBufferUploader = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_colorBufferGPU = nullptr;
+
 	UINT64 m_ibByteSize;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_indexBufferUploader = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_indexBufferGPU = nullptr;
 
 	std::vector<SubMesh> m_subMeshes;
 	
-	ID3D12GraphicsCommandList* m_cmdList;
-
-	int m_idx = 0;	/*< Unique mesh index used to arrange constant buffers */
-	bool m_isDirty; /*< This mesh attributes (world matrix) has changed */
+	std::shared_ptr<Renderer> m_renderer;
 };

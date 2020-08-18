@@ -1,9 +1,12 @@
 #include "Mesh.h"
+#include "DXUtil.h"
 #include "Buffers.h"
 
 using Microsoft::WRL::ComPtr;
+using DXUtil::ThrowIfFailed;
 using DirectX::XMFLOAT3;
 using DirectX::XMFLOAT4;
+
 
 D3D12_INPUT_ELEMENT_DESC vertexElementsDesc[] =
 {
@@ -15,55 +18,30 @@ D3D12_INPUT_ELEMENT_DESC vertexElementsDesc[] =
 		0,								// Byte offset from the beginning of the struct, 0 because is the first struct field
 		D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,	// Input slot class
 		0								// Instaced data step rate
-	},
-	{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}//,
+	}//,
+	//{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}//,
 	//{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 };
 
 Mesh::Mesh(){}
 
-Mesh::Mesh(ComPtr<ID3D12Device> device, ID3D12GraphicsCommandList* cmdList)
+Mesh::Mesh(std::shared_ptr<Renderer> renderer, void* positions, unsigned int posByteSize, void* indices, unsigned int indByteSize)
 {
-	m_cmdList = cmdList;
-	m_vertices =
-	{
-		{ XMFLOAT3(+1.0f, +1.0f, -1.0f), XMFLOAT4(DirectX::Colors::White) },
-		{ XMFLOAT3(+1.0f, -1.0f, -1.0f), XMFLOAT4(DirectX::Colors::Black) },
-		{ XMFLOAT3(+1.0f, +1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Red) },
-		{ XMFLOAT3(+1.0f, -1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Green) },
-		{ XMFLOAT3(-1.0f, +1.0f, -1.0f), XMFLOAT4(DirectX::Colors::Blue) },
-		{ XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(DirectX::Colors::Yellow) },
-		{ XMFLOAT3(-1.0f, +1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Cyan) },
-		{ XMFLOAT3(-1.0f, -1.0f, +1.0f), XMFLOAT4(DirectX::Colors::Magenta) }
-	};
-	m_vbByteSize = 8 * sizeof(Vertex);
-	m_vertexBufferGPU = createDefaultHeapBuffer(device.Get(), m_cmdList, m_vertices.data(), m_vbByteSize, m_vertexBufferUploader);
+	m_renderer = renderer;
+	ID3D12GraphicsCommandList* commandList = m_renderer->GetCommandList().Get();
 
-	 
-	m_indices =
-	{
-		4, 2, 0,
-		2, 7, 3,
-		6, 5, 7,
-		1, 7, 5,
-		0, 3, 1,
-		4, 1, 5,
-		4, 6, 2,
-		2, 6, 7,
-		6, 4, 5,
-		1, 3, 7,
-		0, 2, 3,
-		4, 0, 1
-	};
-
-	m_ibByteSize = 36 * sizeof(std::uint16_t);
-	m_indexBufferGPU = createDefaultHeapBuffer(device.Get(), m_cmdList, m_indices.data(), m_ibByteSize, m_indexBufferUploader);
+	m_positions = positions;
+	m_pbByteSize = posByteSize;
+	m_indices = indices;
+	m_ibByteSize = indByteSize;
 	
+	// Upload mesh data to the default heap buffer
+	m_positionBufferGPU = createDefaultHeapBuffer(m_renderer->GetDevice().Get(), commandList, m_positions, m_pbByteSize, m_positionBufferUploader);
+	m_indexBufferGPU = createDefaultHeapBuffer(m_renderer->GetDevice().Get(), commandList, m_indices, m_ibByteSize, m_indexBufferUploader);
 }
 
 Mesh::~Mesh()
-{
-}
+{}
 
 void Mesh::release()
 {
@@ -73,20 +51,30 @@ void Mesh::release()
 	if (m_indexBufferUploader) { m_indexBufferUploader = nullptr; }
 }
 
-void Mesh::addDrawCommands(ComPtr<ID3D12GraphicsCommandList> cmdList)
+void Mesh::Draw()
 {
-
-
 	// Define the vertex buffer view to the GPU vertex buffer resource
-	D3D12_VERTEX_BUFFER_VIEW vbView;
-	vbView.BufferLocation = m_vertexBufferGPU->GetGPUVirtualAddress();
-	vbView.StrideInBytes = sizeof(Vertex);
-	vbView.SizeInBytes = m_vbByteSize;
+	//D3D12_VERTEX_BUFFER_VIEW vbView;
+	//vbView.BufferLocation = m_vBufferGPU->GetGPUVirtualAddress();
+	//vbView.StrideInBytes = sizeof(Vertex);
+	//vbView.SizeInBytes = m_vbByteSize;
+
+	ID3D12GraphicsCommandList* commandList = m_renderer->GetCommandList().Get();
+
+	D3D12_VERTEX_BUFFER_VIEW pbView;
+	pbView.BufferLocation = m_positionBufferGPU->GetGPUVirtualAddress();
+	pbView.StrideInBytes = sizeof(Position);
+	pbView.SizeInBytes = m_pbByteSize;
+	
+	//D3D12_VERTEX_BUFFER_VIEW cbView;
+	//cbView.BufferLocation = m_colorBufferGPU->GetGPUVirtualAddress();
+	//cbView.StrideInBytes = sizeof(Color);
+	//cbView.SizeInBytes = m_cbByteSize;
 
 	// Bind the vertex buffer to the pipeline
-	D3D12_VERTEX_BUFFER_VIEW vertexBuffers[1] = { vbView };
-	cmdList->IASetVertexBuffers(0, 1, vertexBuffers);
-	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffers[1] = { pbView };
+	commandList->IASetVertexBuffers(0, 1, vertexBuffers);
+	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Create the index buffer view
 	D3D12_INDEX_BUFFER_VIEW ibView;
@@ -94,11 +82,23 @@ void Mesh::addDrawCommands(ComPtr<ID3D12GraphicsCommandList> cmdList)
 	ibView.Format = DXGI_FORMAT_R16_UINT;
 	ibView.SizeInBytes = m_ibByteSize;
 	D3D12_INDEX_BUFFER_VIEW indexBuffers[1] = { ibView };
-	cmdList->IASetIndexBuffer(indexBuffers);
+	commandList->IASetIndexBuffer(indexBuffers);
 
-	// Draw all submeshes
-	//for (SubMesh subMesh : m_subMeshes)
-	//{
-		cmdList->DrawIndexedInstanced(36, 1, 0, 0, 0);
-	//}
+	commandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+}
+
+void Mesh::LoadGLTF(std::string fileName) 
+{
+	tinygltf::Model model;
+	tinygltf::TinyGLTF loader;
+	std::string err;
+	std::string warn;
+
+	bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, fileName.c_str());
+	
+	if (!warn.empty()) { printf("Warn: %s\n", warn.c_str()); }
+
+	if (!err.empty()) { printf("Err: %s\n", err.c_str()); }
+
+	if (!ret) { printf("Failed to parse glTF\n"); return; }
 }
