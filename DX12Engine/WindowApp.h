@@ -36,6 +36,7 @@ public:
 	void draw();
 	void SetFullScreen(bool fullScreen);
 	float getScreenAspectRatio();
+	void InitWIC();
 
 	// Called from the window callback
 	virtual LRESULT wndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

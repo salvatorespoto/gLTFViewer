@@ -26,6 +26,7 @@
 #pragma comment(lib, "dxgi.lib")       
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "dxguid.lib")
+//#pragma comment(lib, "runtimeobject .lib")
 
 
 // DirectX 12 debug layer
@@ -59,7 +60,7 @@ namespace DXUtil
         if (FAILED(hr))
         {
             errorMsg = "Error:" + errorMsg + "[file: " + __FILE__ + " line: " + std::to_string(__LINE__) + " ]";
-            throw std::exception(errorMsg.c_str());
+                throw std::exception(errorMsg.c_str());
         }
     }
 

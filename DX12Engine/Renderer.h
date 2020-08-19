@@ -9,11 +9,11 @@ class Renderer
 {
 
 public:
-	Renderer() = default;
-	Renderer (const Renderer&) = delete;
-	Renderer(const Renderer&&) = delete;
-	Renderer operator=(const Renderer&) = delete;
-	Renderer operator=(const Renderer&&) = delete;
+    Renderer() = default;
+    Renderer(const Renderer&) = delete;
+    Renderer(const Renderer&&) = delete;
+    Renderer operator=(const Renderer&) = delete;
+    Renderer operator=(const Renderer&&) = delete;
 
     void Init(HWND hWnd, unsigned int width, unsigned int height);
     void SetSize(unsigned int width, unsigned int height);
@@ -23,6 +23,7 @@ public:
     HWND GetWindowHandle();
     Microsoft::WRL::ComPtr<ID3D12Device> GetDevice();
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> GetCommandList();
+    Microsoft::WRL::ComPtr<ID3D12CommandQueue> GetCommandQueue();
     D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentBackBufferView() const;
     D3D12_CPU_DESCRIPTOR_HANDLE GetDepthStencilView() const;
     void ExecuteCommandList(ID3D12GraphicsCommandList* commandList);
@@ -31,6 +32,8 @@ public:
     void UpdatePassConstants(const PassConstants& passConstants);
     void NewFrame();
     void EndFrame();
+    void AddTexture(ID3D12Resource* texture);
+    void AddSample(D3D12_SAMPLER_DESC sampleDesc);
 
 
 private:
@@ -47,6 +50,7 @@ private:
     void CreatePipelineState();
     void SetPipelineState(ID3D12GraphicsCommandList* commandList);
     void SetRootSignature(ID3D12GraphicsCommandList* commandList);
+    
 
     HWND m_hWnd;
     unsigned int m_width, m_height;
@@ -69,10 +73,13 @@ private:
     Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
     UINT m_DSV_DescriptorSize = 0;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DSV_DescriptorHeap;
-    
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_samplersDescriptorHeap;
+
+
     std::unique_ptr<UploadBuffer<PassConstants>> m_passConstantBuffer;
     UINT m_CBV_SRV_DescriptorSize = 0;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_CBV_SRV_DescriptorHeap;
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_texturesDescriptorHeap;
     
     Microsoft::WRL::ComPtr<ID3DBlob> m_vertexShader;
     Microsoft::WRL::ComPtr<ID3DBlob> m_pixelShader;
@@ -80,5 +87,8 @@ private:
     Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;
 
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
+
+    // All textures
+    std::vector<ID3D12Resource*> m_textures;
 };
 

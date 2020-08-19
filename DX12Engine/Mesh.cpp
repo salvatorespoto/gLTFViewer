@@ -18,14 +18,14 @@ D3D12_INPUT_ELEMENT_DESC vertexElementsDesc[] =
 		0,								// Byte offset from the beginning of the struct, 0 because is the first struct field
 		D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,	// Input slot class
 		0								// Instaced data step rate
-	}//,
+	},
 	//{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}//,
-	//{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+	{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 };
 
 Mesh::Mesh(){}
 
-Mesh::Mesh(std::shared_ptr<Renderer> renderer, void* positions, unsigned int posByteSize, void* indices, unsigned int indByteSize)
+Mesh::Mesh(std::shared_ptr<Renderer> renderer, void* positions, unsigned int posByteSize, void* indices, unsigned int indByteSize, void* textCoord, unsigned int textCoordByteSize)
 {
 	m_renderer = renderer;
 	ID3D12GraphicsCommandList* commandList = m_renderer->GetCommandList().Get();
@@ -34,10 +34,13 @@ Mesh::Mesh(std::shared_ptr<Renderer> renderer, void* positions, unsigned int pos
 	m_pbByteSize = posByteSize;
 	m_indices = indices;
 	m_ibByteSize = indByteSize;
-	
+	m_textCoord = textCoord;
+	m_tbByteSize = textCoordByteSize;
+
 	// Upload mesh data to the default heap buffer
 	m_positionBufferGPU = createDefaultHeapBuffer(m_renderer->GetDevice().Get(), commandList, m_positions, m_pbByteSize, m_positionBufferUploader);
 	m_indexBufferGPU = createDefaultHeapBuffer(m_renderer->GetDevice().Get(), commandList, m_indices, m_ibByteSize, m_indexBufferUploader);
+	m_textCoordBufferGPU = createDefaultHeapBuffer(m_renderer->GetDevice().Get(), commandList, m_textCoord, m_tbByteSize, m_textCoordBufferUploader);
 }
 
 Mesh::~Mesh()
@@ -66,14 +69,14 @@ void Mesh::Draw()
 	pbView.StrideInBytes = sizeof(Position);
 	pbView.SizeInBytes = m_pbByteSize;
 	
-	//D3D12_VERTEX_BUFFER_VIEW cbView;
-	//cbView.BufferLocation = m_colorBufferGPU->GetGPUVirtualAddress();
-	//cbView.StrideInBytes = sizeof(Color);
-	//cbView.SizeInBytes = m_cbByteSize;
+	D3D12_VERTEX_BUFFER_VIEW tbView;
+	tbView.BufferLocation = m_textCoordBufferGPU->GetGPUVirtualAddress();
+	tbView.StrideInBytes = sizeof(TextureCoord);
+	tbView.SizeInBytes = m_tbByteSize;
 
 	// Bind the vertex buffer to the pipeline
-	D3D12_VERTEX_BUFFER_VIEW vertexBuffers[1] = { pbView };
-	commandList->IASetVertexBuffers(0, 1, vertexBuffers);
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffers[2] = { pbView, tbView };
+	commandList->IASetVertexBuffers(0, 2, vertexBuffers);
 	commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// Create the index buffer view

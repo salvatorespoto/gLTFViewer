@@ -31,6 +31,7 @@ WindowApp::WindowApp(HINSTANCE hInstance) : m_hInstance(hInstance), m_hWnd(NULL)
     m_renderer = std::make_shared<Renderer>();
     m_camera = std::make_unique<Camera>(m_clientWidth, m_clientHeight, DirectX::XM_PIDIV4, 1.0f, 1000.0f);
     m_camera->setPosition({ 0.0f, 0.0f, -5.0f });
+    InitWIC();
 }
 
 WindowApp::~WindowApp()
@@ -40,7 +41,7 @@ void WindowApp::init()
 {
     InitWindow(); 
     m_renderer->Init(m_hWnd, m_clientWidth, m_clientHeight);
-    GUI.Init(m_renderer);
+    //GUI.Init(m_renderer);
     LoadWorld();
 
    // m_swapChain->SetFullscreenState(true, nullptr);
@@ -137,6 +138,20 @@ LRESULT WindowApp::wndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
     }
 
     return 0;
+}
+
+void WindowApp::InitWIC() 
+{
+//#if (_WIN32_WINNT >= 0x0A00 /*_WIN32_WINNT_WIN10*/)
+//    Microsoft::WRL::Wrappers::RoInitializeWrapper initialize(RO_INIT_MULTITHREADED);
+//    if (FAILED(initialize))
+//        return;
+//#else
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    if (FAILED(hr))
+        return;
+        // error
+//#endif
 }
 /*
 void WindowApp::SetFullScreen(bool fullScreen)
@@ -338,7 +353,7 @@ void WindowApp::draw()
 {
     m_renderer->NewFrame();
     m_world.draw();
-    GUI.Draw(&m_state);
+    //GUI.Draw(&m_state);
     m_renderer->EndFrame();
 }
 

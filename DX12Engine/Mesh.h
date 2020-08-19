@@ -9,6 +9,11 @@ struct Position
 	DirectX::XMFLOAT3 position; 
 };
 
+struct TextureCoord
+{
+	DirectX::XMFLOAT2 textureCoord;
+};
+
 D3D12_INPUT_ELEMENT_DESC vertexElementsDesc[];
 
 /** A 3D submesh idexes into the vertex and index arrays of a mesh */
@@ -32,7 +37,7 @@ class Mesh
 public:
 
 	Mesh();
-	Mesh(std::shared_ptr<Renderer> renderer, void* positions, unsigned int posByteSize, void* indices, unsigned int indByteSize);
+	Mesh(std::shared_ptr<Renderer> renderer, void* positions, unsigned int posByteSize, void* indices, unsigned int indByteSize, void* textCoord, unsigned int textCoordByteSize);
 	~Mesh();
 
 	void release();
@@ -49,6 +54,7 @@ public:
 
 	void* m_positions;
 	void* m_indices;
+	void* m_textCoord;
 
 private:
 
@@ -58,6 +64,7 @@ private:
 	UINT64 m_vbByteSize;
 	UINT64 m_pbByteSize;
 	UINT64 m_cbByteSize;
+	UINT64 m_tbByteSize;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBufferUploader = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBufferGPU = nullptr;
@@ -67,6 +74,9 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_colorBufferUploader = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_colorBufferGPU = nullptr;
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_textCoordBufferUploader = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_textCoordBufferGPU = nullptr;
 
 	UINT64 m_ibByteSize;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_indexBufferUploader = nullptr;
