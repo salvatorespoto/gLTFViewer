@@ -1,6 +1,6 @@
 #include "WindowApp.h"
 #include "Renderer.h"
-#include "Mesh.h"
+#include "AssetTypes.h"
 #include "World.h"
 #include "Camera.h"
 #include "FrameContext.h"
@@ -329,7 +329,7 @@ void WindowApp::createFrameContexts()
 void WindowApp::LoadWorld()
 {
     m_world.Init(m_renderer);
-    m_world.LoadGLTF("models/DamagedHelmet2.glb");  
+    m_world.LoadGLTF("models/DamagedHelmet.glb");  
 }
 
 void WindowApp::UpdateCamera()

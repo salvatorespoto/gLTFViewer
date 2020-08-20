@@ -1,30 +1,130 @@
 #include "GLTFScene.h"
 #include "Texture.h"
 #include "Material.h"
+#include "AssetsManager.h"
+#include <map>
 
 using Microsoft::WRL::ComPtr;
 
-void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, tinygltf::Model model, unsigned int sceneId)
+void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, std::shared_ptr<AssetsManager> assetsManager, const tinygltf::Model& model, unsigned int sceneId)
 {
 	m_renderer = renderer;
 	m_model = model;
-	if (sceneId >= model.scenes.size()) DXUtil::ThrowException("Scene index out of range");
+	if (sceneId >= m_model.scenes.size()) DXUtil::ThrowException("Scene index out of range");
+
+	GPUHeapUploader gpuHeapUploader(m_renderer->GetDevice().Get(), m_renderer->GetCommandQueue().Get());
 	
-	// Add materials
+	// Load all buffers
+	for(tinygltf::Buffer buffer : m_model.buffers)
+	{
+		assetsManager->AddGPUBuffer(gpuHeapUploader.Upload(buffer.data.data(), buffer.data.size()));
+	}
 
-	// Add textures
+	// Set up meshes
+	int meshId = 0;
+	for (tinygltf::Mesh mesh : m_model.meshes)
+	{
+		Mesh m(assetsManager);
+		m.SetId(meshId);
+		++meshId;
+		// Create a submesh for each primitive
+		for (tinygltf::Primitive primitive : mesh.primitives)
+		{
+			SubMesh sm;
+			// Attribute (es. "POSITION") -> Accessors -> BufferView -> Buffer
+			if(primitive.attributes.find("POSITION") != primitive.attributes.end()) 
+			{
+				tinygltf::BufferView positionsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["POSITION"]].bufferView];
+				sm.verticesBufferView.bufferId = positionsBV.buffer;
+				sm.verticesBufferView.byteOffset = positionsBV.byteOffset;
+				sm.verticesBufferView.byteLength = positionsBV.byteLength;
+				sm.verticesBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;
+			}
+			if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) 
+			{
+				tinygltf::BufferView normalsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["NORMAL"]].bufferView];
+			}
+			if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
+			{
+				tinygltf::BufferView texCoord0BV = m_model.bufferViews[m_model.accessors[primitive.attributes["TEXCOORD_0"]].bufferView];
+				sm.texCoord0BufferView.bufferId = texCoord0BV.buffer;
+				sm.texCoord0BufferView.byteOffset = texCoord0BV.byteOffset;
+				sm.texCoord0BufferView.byteLength = texCoord0BV.byteLength;
+				sm.texCoord0BufferView.count = m_model.accessors[primitive.attributes["TEXCOORD_0"]].count;
+			}
+			if (primitive.attributes.find("TEXCOORD_1") != primitive.attributes.end())
+			{
+				tinygltf::BufferView texCoord1BV = m_model.bufferViews[m_model.accessors[primitive.attributes["TEXCOORD_1"]].bufferView];
+			}
+			if (primitive.indices != -1)
+			{
+				tinygltf::BufferView indicesBV = m_model.bufferViews[m_model.accessors[primitive.indices].bufferView];
+				sm.indicesBufferView.bufferId = indicesBV.buffer;
+				sm.indicesBufferView.byteOffset = indicesBV.byteOffset;
+				sm.indicesBufferView.byteLength = indicesBV.byteLength;
+				sm.indicesBufferView.count = m_model.accessors[primitive.indices].count;
+			}
+			m.AddSubMesh(sm);
+		}
+		m_meshes.push_back(m);
+	}
 
-	// Add samplers
+	// Set up materials
+	int materialId = 0;
+	for (tinygltf::Texture texture : m_model.textures)
+	{
+		
+	}
 
+	// Set up textures
+	int textureId = 0;
+	for (tinygltf::Texture texture : m_model.textures)
+	{
+		tinygltf::Image image = m_model.images[texture.source];
+		tinygltf::BufferView imageBufferView = m_model.bufferViews[image.bufferView];
+		tinygltf::Buffer imageBuffer = m_model.buffers[imageBufferView.buffer];
+		uint8_t* imageBufferBegin = imageBuffer.data.data() + imageBufferView.byteOffset;
+		Microsoft::WRL::ComPtr<ID3D12Resource> pTexture;
+		CreateTextureFromMemory(m_renderer.get(), imageBufferBegin, imageBufferView.byteLength, &pTexture);
+		assetsManager->AddTexture(textureId++, pTexture);
+	}
 
-	tinygltf::Image image = m_model.images[m_model.textures[3].source];
-	tinygltf::BufferView imageBufferView = m_model.bufferViews[image.bufferView];
-	tinygltf::Buffer imageBuffer = m_model.buffers[imageBufferView.buffer];
-	uint8_t* imageBufferBegin = imageBuffer.data.data() + imageBufferView.byteOffset;
-	ID3D12Resource* texture; 
-	CreateTextureFromMemory(m_renderer.get(), imageBufferBegin, imageBufferView.byteLength, &texture);
-	m_renderer->AddTexture(texture);
+	// Set up samplers
+	int samplerId = 0;
+	for (tinygltf::Sampler sampler : m_model.samplers)
+	{
+		D3D12_SAMPLER_DESC samplerDesc = {};
+		samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+		
+		if (sampler.wrapS == REPEAT) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		else if (sampler.wrapS == CLAMP_TO_EDGE) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+		else if (sampler.wrapS == MIRRORED_REPEAT) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
 
+		if (sampler.wrapT == REPEAT) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		else if (sampler.wrapT == CLAMP_TO_EDGE) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+		else if (sampler.wrapT == MIRRORED_REPEAT) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+		
+		if (sampler.wrapR == REPEAT) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		else if (sampler.wrapR == CLAMP_TO_EDGE) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+		else if (sampler.wrapR == MIRRORED_REPEAT) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+	
+		samplerDesc.MinLOD = 0;
+		samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
+		samplerDesc.MipLODBias = 0.0f;
+		samplerDesc.MaxAnisotropy = 1;
+		samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+		assetsManager->AddSampler(samplerId++, samplerDesc);
+	}
+
+	//tinygltf::Image image = m_model.images[m_model.textures[3].source];
+	//tinygltf::BufferView imageBufferView = m_model.bufferViews[image.bufferView];
+	//tinygltf::Buffer imageBuffer = m_model.buffers[imageBufferView.buffer];
+	//uint8_t* imageBufferBegin = imageBuffer.data.data() + imageBufferView.byteOffset;
+	//ID3D12Resource* texture; 
+	//CreateTextureFromMemory(m_renderer.get(), imageBufferBegin, imageBufferView.byteLength, &texture);
+	//m_renderer->AddTexture(texture);
+
+	/*
 	tinygltf::Material gltfMat = m_model.materials[0];
 	Material mat;
 	mat.baseColorFactor = { 
@@ -37,23 +137,12 @@ void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, tinygltf::Model mo
 	mat.metallicFactor = static_cast<float>(gltfMat.pbrMetallicRoughness.metallicFactor);
 	mat.baseColorTextureId = gltfMat.pbrMetallicRoughness.baseColorTexture.index;
 	mat.metallicRoughnessTextureId = gltfMat.pbrMetallicRoughness.metallicRoughnessTexture.index;
-	
-
-
-	// Add sampler
-	D3D12_SAMPLER_DESC samplerDesc = {};
-	samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-	samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-	samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-	samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-	samplerDesc.MinLOD = 0;
-	samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-	samplerDesc.MipLODBias = 0.0f;
-	samplerDesc.MaxAnisotropy = 1;
-	samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
-	
 	m_renderer->AddSample(samplerDesc);
+	
+	*/
 
+	
+	/*
 	// Load meshes
 	for (tinygltf::Node node : model.nodes)
 	{
@@ -64,7 +153,7 @@ void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, tinygltf::Model mo
 		}
 		else if (node.camera != -1) continue;
 	}
-
+	*/
 	
 }
 
@@ -106,8 +195,8 @@ void GLTFScene::BuildMesh(tinygltf::Mesh gltfMesh)
 		void* textCoordBufferBegin = textCoordBuffer.data.data() + textCoordBufferView.byteOffset;
 
 		m_renderer->ResetCommandList();
-		m_meshes.emplace_back(m_renderer, positionsBufferBegin, positionsBufferView.byteLength, 
-			indexesBufferBegin, indexesBufferView.byteLength, textCoordBufferBegin, textCoordBufferView.byteLength);
+		//m_meshes.emplace_back(m_renderer, positionsBufferBegin, positionsBufferView.byteLength, 
+		//	indexesBufferBegin, indexesBufferView.byteLength, textCoordBufferBegin, textCoordBufferView.byteLength);
 		m_renderer->GetCommandList()->Close();
 		m_renderer->ExecuteCommandList(m_renderer->GetCommandList().Get());
 		m_renderer->FlushCommandQueue();
@@ -154,5 +243,6 @@ void GLTFScene::BuildMesh(tinygltf::Mesh gltfMesh)
 
 std::vector<Mesh> GLTFScene::getMeshes()
 {
+	//return m_meshes;
 	return m_meshes;
 }

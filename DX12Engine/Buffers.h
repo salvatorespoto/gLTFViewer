@@ -2,9 +2,8 @@
 
 #include "DXUtil.h"
 
-/** 
- * Upload data to a default heap buffer and return a pointer to it 
- */
+
+/** Upload data to a default heap buffer and return a com pointer to it */
 Microsoft::WRL::ComPtr<ID3D12Resource> createDefaultHeapBuffer(
 	ID3D12Device* device,
 	ID3D12GraphicsCommandList* cmdList,
@@ -12,32 +11,12 @@ Microsoft::WRL::ComPtr<ID3D12Resource> createDefaultHeapBuffer(
 	UINT64 byteSize,
 	Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer);
 
+/** Helper class to upload data to GPU DEFAULT HEAP synchronously */
 class GPUHeapUploader
 {
 public:
-	GPUHeapUploader(Microsoft::WRL::ComPtr<ID3D12Device> device, Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue)
-	{
-		m_device = device;
-		m_commandQueue = commandQueue;
-
-		DXUtil::ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandListAlloc)), "Cannot create command allocator");
-		DXUtil::ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandListAlloc.Get(), nullptr, IID_PPV_ARGS(&m_commandList)), "Cannot the command list");
-		m_commandList->Close();
-		DXUtil::ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)), "Cannot create fence");
-	}
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> Upload(const void* initData, UINT64 byteSize)
-	{	
-		DXUtil::ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
-		DXUtil::ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
-		Microsoft::WRL::ComPtr<ID3D12Resource> bufferGPU = createDefaultHeapBuffer(m_device.Get(), m_commandList.Get(), initData, byteSize, m_bufferUpload);
-		m_commandList->Close();
-
-		ID3D12CommandList* commandLists[] = { m_commandList.Get() };
-		m_commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
-		FlushCommandQueue();
-		return bufferGPU;
-	}
+	GPUHeapUploader(Microsoft::WRL::ComPtr<ID3D12Device> device, Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue);
+	Microsoft::WRL::ComPtr<ID3D12Resource> Upload(const void* initData, UINT64 byteSize);
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandListAlloc;
@@ -48,60 +27,24 @@ private:
 	UINT m_currentFenceValue = 0;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_bufferUpload = nullptr;
 
-	void FlushCommandQueue()
-	{
-		m_currentFenceValue++;
-		m_commandQueue->Signal(m_fence.Get(), m_currentFenceValue);
-
-		if (m_fence->GetCompletedValue() < m_currentFenceValue)
-		{
-			HANDLE eventHandle = CreateEventEx(nullptr, nullptr, false, EVENT_ALL_ACCESS);
-			DXUtil::ThrowIfFailed(m_fence->SetEventOnCompletion(m_currentFenceValue, eventHandle), "Cannot set fence event on completion");
-			WaitForSingleObject(eventHandle, INFINITE);
-			CloseHandle(eventHandle);
-		}
-	}
+	void FlushCommandQueue();
 };
 
-
-/**
- * This is an helper class to work with upload buffers
- */
+/** Helper class to upload data to the GPU UPLOAD HEAP */
 template <class T>
 class UploadBuffer
 {
 public:
-
-	/**
-	 * Constructor
-	 * Build an upload buffer of "count" elements on the device
-	 */
 	UploadBuffer(ID3D12Device* device, UINT count, bool isConstant);
-
 	UploadBuffer(const UploadBuffer&) = delete;
-
 	UploadBuffer& operator=(const UploadBuffer&) = delete;
-
-	/** Destructor */
 	~UploadBuffer();
 
-	/**
-	 * Get a pointer to the buffer D3D12Resource
-	 */
 	ID3D12Resource* getResource() const;
-
 	void release();
-
-
-	/**
-	 * Copy data to the buffer
-	 */
 	void copyData(int index, const T& data);
 
-
 protected:
-
-	/** Create the buffer */
 	virtual void createBuffer(ID3D12Device* device, UINT count, bool isConstant);
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_buffer;	/*< Com pointer to the buffer */
@@ -137,7 +80,6 @@ void UploadBuffer<T>::release()
 template <class T>
 void UploadBuffer<T>::createBuffer(ID3D12Device* device, UINT count, bool isConstant)
 {
-
 	if (isConstant)
 	{
 		// Hardware can only access cosntant data at offset of 256 bytes
@@ -151,9 +93,8 @@ void UploadBuffer<T>::createBuffer(ID3D12Device* device, UINT count, bool isCons
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Buffer(m_elementByteSize * count),
 		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,													// Clear value
+		nullptr,													
 		IID_PPV_ARGS(&m_buffer)), "Error creating upload buffer");
-
 	DXUtil::ThrowIfFailed(m_buffer->Map(0, nullptr, reinterpret_cast<void**>(&m_data)), "Error creating upload buffer");
 }
 
@@ -168,18 +109,3 @@ void UploadBuffer<T>::copyData(int index, const T& data)
 {
 	memcpy(&m_data[index * m_elementByteSize], &data, sizeof(T));
 }
-
-
-/* *
- * This is an helper class to work with constant buffers
- * /
-template <typename T>
-class ConstantBuffer : public UploadBuffer<T>
-{
-public:
-	ConstantBuffer(ID3D12Device* device, UINT count);
-
-protected:
-	virtual void createBuffer(ID3D12Device* device, UINT count);
-};
-*/

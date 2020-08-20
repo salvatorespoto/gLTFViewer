@@ -1,7 +1,7 @@
 #include "Renderer.h"
 #include "Buffers.h"
 #include "FrameContext.h"
-#include "Mesh.h"
+#include "AssetTypes.h"
 
 using Microsoft::WRL::ComPtr;
 using DXUtil::ThrowIfFailed;

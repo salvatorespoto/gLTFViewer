@@ -88,7 +88,6 @@ private:
 
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
 
-    // All textures
     std::vector<ID3D12Resource*> m_textures;
 };
 

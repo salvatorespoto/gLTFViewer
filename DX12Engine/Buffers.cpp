@@ -1,6 +1,7 @@
 #include "Buffers.h"
 
 using Microsoft::WRL::ComPtr;
+using DXUtil::ThrowIfFailed;
 
 ComPtr<ID3D12Resource> createDefaultHeapBuffer(
 	ID3D12Device* device,
@@ -20,7 +21,7 @@ ComPtr<ID3D12Resource> createDefaultHeapBuffer(
 		IID_PPV_ARGS(defaultHeapBuffer.GetAddressOf())), "Cannot create default buffer");
 
 	// Create the upload buffer
-	DXUtil::ThrowIfFailed(device->CreateCommittedResource(
+	ThrowIfFailed(device->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),   // Upload heap type
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Buffer(byteSize),           
@@ -52,73 +53,40 @@ ComPtr<ID3D12Resource> createDefaultHeapBuffer(
 	return defaultHeapBuffer;
 }
 
-/*
-template <class T>
-UploadBuffer<T>::UploadBuffer(ID3D12Device* device, UINT count, bool isConstant)
+GPUHeapUploader::GPUHeapUploader(ComPtr<ID3D12Device> device, ComPtr<ID3D12CommandQueue> commandQueue)
 {
-	createBuffer(device, count, isConstant);
+	m_device = device;
+	m_commandQueue = commandQueue;
+
+	ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandListAlloc)), "Cannot create command allocator");
+	ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandListAlloc.Get(), nullptr, IID_PPV_ARGS(&m_commandList)), "Cannot the command list");
+	m_commandList->Close();
+	ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)), "Cannot create fence");
 }
 
-template <class T>
-UploadBuffer<T>::~UploadBuffer()
+ComPtr<ID3D12Resource> GPUHeapUploader::Upload(const void* initData, UINT64 byteSize)
 {
-	if (m_buffer != nullptr) m_buffer->Unmap(0, nullptr);
-	m_data = nullptr;
+	ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
+	ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
+	ComPtr<ID3D12Resource> bufferGPU = createDefaultHeapBuffer(m_device.Get(), m_commandList.Get(), initData, byteSize, m_bufferUpload);
+	m_commandList->Close();
+
+	ID3D12CommandList* commandLists[] = { m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+	FlushCommandQueue();
+	return bufferGPU;
 }
 
-template <class T>
-void UploadBuffer<T>::createBuffer(ID3D12Device* device, UINT count, bool isConstant)
+void GPUHeapUploader::FlushCommandQueue()
 {
+	m_currentFenceValue++;
+	m_commandQueue->Signal(m_fence.Get(), m_currentFenceValue);
 
-	if (isConstant)
+	if (m_fence->GetCompletedValue() < m_currentFenceValue)
 	{
-		// Hardware can only access cosntant data at offset of 256 bytes
-		// so pad the size of the element T to a 255 byte multiple
-		this->m_elementByteSize = (sizeof(T) + 255) & ~255;
+		HANDLE eventHandle = CreateEventEx(nullptr, nullptr, false, EVENT_ALL_ACCESS);
+		DXUtil::ThrowIfFailed(m_fence->SetEventOnCompletion(m_currentFenceValue, eventHandle), "Cannot set fence event on completion");
+		WaitForSingleObject(eventHandle, INFINITE);
+		CloseHandle(eventHandle);
 	}
-	else m_elementByteSize = sizeof(T);
-
-	DXUtil::ThrowIfFailed(device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(m_elementByteSize * count),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,													// Clear value
-		IID_PPV_ARGS(&m_buffer)), "Error creating upload buffer");
-
-	DXUtil::ThrowIfFailed(m_buffer->Map(0, nullptr, reinterpret_cast<void**>(&m_data)), "Error creating upload buffer");
 }
-
-template <class T>
-ID3D12Resource* UploadBuffer<T>::getResource() const
-{
-	return m_buffer.Get();
-}
-
-template <class T>
-void UploadBuffer<T>::copyData(int index, const T& data)
-{
-	memcpy(&m_data[index * m_elementByteSize], &data, sizeof(T));
-}
-
-template <class T>
-ConstantBuffer<T>::ConstantBuffer(ID3D12Device* device, UINT count) : UploadBuffer<T>(device, count) {}
-
-template <class T>
-void ConstantBuffer<T>::createBuffer(ID3D12Device* device, UINT count)
-{
-	// Hardware can only access cosntant data at offset of 256 bytes
-	// so pad the size of the element T to a 255 byte multiple
-	this->m_elementByteSize = (sizeof(T) + 255) & ~255;
-
-	ThrowIfFailed(device->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(this->m_elementByteSize * count),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,													// Clear value
-		IID_PPV_ARGS(&this->m_buffer)), "Error creating upload buffer");
-
-	ThrowIfFailed(this->m_buffer->Map(0, nullptr, reinterpret_cast<void**>(&this->m_data)), "Error creating upload buffer");
-}
-*/
