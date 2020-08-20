@@ -139,6 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AssetsManager.cpp" />
     <ClCompile Include="Buffers.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DXUtil.cpp" />
@@ -151,6 +152,7 @@
     <ClCompile Include="ImGUI\imgui_impl_win32.cpp" />
     <ClCompile Include="ImGUI\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SwapChain.cpp" />
@@ -160,6 +162,7 @@
     <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AssetsManager.h" />
     <ClInclude Include="Buffers.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="d3dx12.h" />
@@ -175,6 +178,7 @@
     <ClInclude Include="ImGUI\imstb_rectpack.h" />
     <ClInclude Include="ImGUI\imstb_textedit.h" />
     <ClInclude Include="ImGUI\imstb_truetype.h" />
+    <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="resource.h" />

@@ -38,9 +38,10 @@ Mesh::Mesh(std::shared_ptr<Renderer> renderer, void* positions, unsigned int pos
 	m_tbByteSize = textCoordByteSize;
 
 	// Upload mesh data to the default heap buffer
-	m_positionBufferGPU = createDefaultHeapBuffer(m_renderer->GetDevice().Get(), commandList, m_positions, m_pbByteSize, m_positionBufferUploader);
-	m_indexBufferGPU = createDefaultHeapBuffer(m_renderer->GetDevice().Get(), commandList, m_indices, m_ibByteSize, m_indexBufferUploader);
-	m_textCoordBufferGPU = createDefaultHeapBuffer(m_renderer->GetDevice().Get(), commandList, m_textCoord, m_tbByteSize, m_textCoordBufferUploader);
+	GPUHeapUploader gpuHeapUploader(m_renderer->GetDevice().Get(), m_renderer->GetCommandQueue().Get());
+	m_positionBufferGPU = gpuHeapUploader.Upload(m_positions, m_pbByteSize);
+	m_indexBufferGPU = gpuHeapUploader.Upload(m_indices, m_ibByteSize);
+	m_textCoordBufferGPU = gpuHeapUploader.Upload(m_textCoord, m_tbByteSize);
 }
 
 Mesh::~Mesh()

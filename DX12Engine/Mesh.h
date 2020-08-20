@@ -82,7 +82,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_indexBufferUploader = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_indexBufferGPU = nullptr;
 
-	std::vector<SubMesh> m_subMeshes;
 	
 	std::shared_ptr<Renderer> m_renderer;
 };

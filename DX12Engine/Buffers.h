@@ -12,6 +12,58 @@ Microsoft::WRL::ComPtr<ID3D12Resource> createDefaultHeapBuffer(
 	UINT64 byteSize,
 	Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer);
 
+class GPUHeapUploader
+{
+public:
+	GPUHeapUploader(Microsoft::WRL::ComPtr<ID3D12Device> device, Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue)
+	{
+		m_device = device;
+		m_commandQueue = commandQueue;
+
+		DXUtil::ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandListAlloc)), "Cannot create command allocator");
+		DXUtil::ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandListAlloc.Get(), nullptr, IID_PPV_ARGS(&m_commandList)), "Cannot the command list");
+		m_commandList->Close();
+		DXUtil::ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)), "Cannot create fence");
+	}
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> Upload(const void* initData, UINT64 byteSize)
+	{	
+		DXUtil::ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
+		DXUtil::ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
+		Microsoft::WRL::ComPtr<ID3D12Resource> bufferGPU = createDefaultHeapBuffer(m_device.Get(), m_commandList.Get(), initData, byteSize, m_bufferUpload);
+		m_commandList->Close();
+
+		ID3D12CommandList* commandLists[] = { m_commandList.Get() };
+		m_commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
+		FlushCommandQueue();
+		return bufferGPU;
+	}
+
+private:
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandListAlloc;
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
+	Microsoft::WRL::ComPtr<ID3D12Device> m_device;
+	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
+	Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;
+	UINT m_currentFenceValue = 0;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_bufferUpload = nullptr;
+
+	void FlushCommandQueue()
+	{
+		m_currentFenceValue++;
+		m_commandQueue->Signal(m_fence.Get(), m_currentFenceValue);
+
+		if (m_fence->GetCompletedValue() < m_currentFenceValue)
+		{
+			HANDLE eventHandle = CreateEventEx(nullptr, nullptr, false, EVENT_ALL_ACCESS);
+			DXUtil::ThrowIfFailed(m_fence->SetEventOnCompletion(m_currentFenceValue, eventHandle), "Cannot set fence event on completion");
+			WaitForSingleObject(eventHandle, INFINITE);
+			CloseHandle(eventHandle);
+		}
+	}
+};
+
+
 /**
  * This is an helper class to work with upload buffers
  */

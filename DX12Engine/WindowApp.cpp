@@ -329,7 +329,7 @@ void WindowApp::createFrameContexts()
 void WindowApp::LoadWorld()
 {
     m_world.Init(m_renderer);
-    m_world.LoadGLTF("models/DamagedHelmet.glb");  
+    m_world.LoadGLTF("models/DamagedHelmet2.glb");  
 }
 
 void WindowApp::UpdateCamera()

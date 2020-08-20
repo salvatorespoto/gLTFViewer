@@ -1,5 +1,6 @@
 #include "GLTFScene.h"
 #include "Texture.h"
+#include "Material.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -9,14 +10,35 @@ void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, tinygltf::Model mo
 	m_model = model;
 	if (sceneId >= model.scenes.size()) DXUtil::ThrowException("Scene index out of range");
 	
-	// Load textures
-	tinygltf::Image image = m_model.images[m_model.textures[0].source]; ;
+	// Add materials
+
+	// Add textures
+
+	// Add samplers
+
+
+	tinygltf::Image image = m_model.images[m_model.textures[3].source];
 	tinygltf::BufferView imageBufferView = m_model.bufferViews[image.bufferView];
 	tinygltf::Buffer imageBuffer = m_model.buffers[imageBufferView.buffer];
 	uint8_t* imageBufferBegin = imageBuffer.data.data() + imageBufferView.byteOffset;
 	ID3D12Resource* texture; 
 	CreateTextureFromMemory(m_renderer.get(), imageBufferBegin, imageBufferView.byteLength, &texture);
 	m_renderer->AddTexture(texture);
+
+	tinygltf::Material gltfMat = m_model.materials[0];
+	Material mat;
+	mat.baseColorFactor = { 
+		static_cast<float>(gltfMat.pbrMetallicRoughness.baseColorFactor[0]), 
+		static_cast<float>(gltfMat.pbrMetallicRoughness.baseColorFactor[1]), 
+		static_cast<float>(gltfMat.pbrMetallicRoughness.baseColorFactor[2]), 
+		static_cast<float>(gltfMat.pbrMetallicRoughness.baseColorFactor[3])
+	};
+	mat.roughnessFactor = static_cast<float>(gltfMat.pbrMetallicRoughness.roughnessFactor);
+	mat.metallicFactor = static_cast<float>(gltfMat.pbrMetallicRoughness.metallicFactor);
+	mat.baseColorTextureId = gltfMat.pbrMetallicRoughness.baseColorTexture.index;
+	mat.metallicRoughnessTextureId = gltfMat.pbrMetallicRoughness.metallicRoughnessTexture.index;
+	
+
 
 	// Add sampler
 	D3D12_SAMPLER_DESC samplerDesc = {};
