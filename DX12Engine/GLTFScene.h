@@ -3,10 +3,8 @@
 #include "DXUtil.h"
 #include "Renderer.h"
 #include "Buffers.h"
-//#include "Mesh.h"
 #include "AssetTypes.h"
 #include "AssetsManager.h"
-
 
 #define CLAMP_TO_EDGE 33071 
 #define MIRRORED_REPEAT 33648 

@@ -41,7 +41,7 @@ void WindowApp::init()
 {
     InitWindow(); 
     m_renderer->Init(m_hWnd, m_clientWidth, m_clientHeight);
-    //GUI.Init(m_renderer);
+    GUI.Init(m_renderer);
     LoadWorld();
 
    // m_swapChain->SetFullscreenState(true, nullptr);
@@ -353,7 +353,7 @@ void WindowApp::draw()
 {
     m_renderer->NewFrame();
     m_world.draw();
-    //GUI.Draw(&m_state);
+    GUI.Draw(&m_state);
     m_renderer->EndFrame();
 }
 
@@ -361,11 +361,12 @@ void WindowApp::draw()
 
 void WindowApp::onDestroy()
 {
-    // Assigning nullptr to ComPtr smar pointer release the interface and set the holded pointer to null
-    /*
-    if (m_device != nullptr) flushCmdQueue();
+    m_renderer->FlushCommandQueue();    
     GUI.ShutDown();
 
+    // Assigning nullptr to ComPtr smar pointer release the interface and set the holded pointer to null
+    /*
+    
     m_passConstantBuffer->release();
     if (m_cmdList) { m_cmdList = nullptr; }
     m_world.release();
