@@ -19,6 +19,9 @@ struct AppState
 	bool isAppFullscreen = false;
 	bool isAppWindowed = false;
 	bool isAppMinimized = false;
+	int currentDisplayMode = 0;
+	unsigned int currentScreenWidth = 320;
+	unsigned int currentScreenHeight = 260;
 };
 
 /** The 3D viewer application */
@@ -76,6 +79,7 @@ private:
 
 	BOOL m_fullScreen = false;
 	DXGI_MODE_DESC m_fullScreenMode;
+
 	AppState m_appState;
 
 	std::shared_ptr<Renderer> m_renderer;

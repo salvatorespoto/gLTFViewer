@@ -70,7 +70,6 @@ void Camera::rotate(float pitch, float worldUpAngle)
 	XMStoreFloat3(&m_right, DirectX::XMVector3TransformNormal(XMLoadFloat3(&m_right), worldUpRotMtx));
 	XMStoreFloat3(&m_forward, DirectX::XMVector3TransformNormal(XMLoadFloat3(&m_forward), worldUpRotMtx));
 
-
 	m_dirty = true; // Need to update the view matrix
 }
 

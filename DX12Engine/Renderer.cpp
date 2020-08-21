@@ -14,6 +14,7 @@ void Renderer::Init(HWND hWnd, unsigned int width, unsigned int height)
     SetScissorRect({ 0, 0, static_cast<long>(m_width), static_cast<long>(m_height) });
     EnableDebugLayer();
     CreateDefaultDevice();
+    GetDisplayModes();
     CreateCommandQueue();
     CreateFence();
     CreateSwapChain();
@@ -88,11 +89,14 @@ void Renderer::CreateDefaultDevice()
 
 std::vector<DXGI_MODE_DESC> Renderer::GetDisplayModes()
 {
+    if (!m_displayModes.empty()) return m_displayModes;
+
     DXGI_ADAPTER_DESC aDesc;
     ComPtr<IDXGIAdapter1> adapter = DXUtil::enumerateAdapters()[0];
     adapter->GetDesc(&aDesc);
     ComPtr<IDXGIOutput> output = DXUtil::enumerateAdaptersOutputs(adapter.Get())[0];
-    return DXUtil::enumerateAdapterOutputDisplayModes(output.Get(), DXGI_FORMAT_B8G8R8A8_UNORM);
+    m_displayModes = DXUtil::enumerateAdapterOutputDisplayModes(output.Get(), DXGI_FORMAT_B8G8R8A8_UNORM);
+    return m_displayModes;
 }
 
 void Renderer::CreateSwapChain()

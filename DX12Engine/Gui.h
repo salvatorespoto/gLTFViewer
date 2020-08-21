@@ -24,7 +24,7 @@ public:
 
     void Init(std::shared_ptr<Renderer> renderer);
     void Draw(AppState* state);
-    void RecreateDeviceObjects();
+    void ReSize(unsigned int widht, unsigned int height);
     void ShutDown();
 
 private:

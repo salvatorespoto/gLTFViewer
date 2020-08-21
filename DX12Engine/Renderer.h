@@ -64,6 +64,7 @@ private:
     
     DXGI_MODE_DESC m_fullScreenMode;
     BOOL m_isFullScreen = false;
+    std::vector<DXGI_MODE_DESC> m_displayModes;
 
     SwapChain m_swapChain;
     

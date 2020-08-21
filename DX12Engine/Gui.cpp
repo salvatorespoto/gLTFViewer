@@ -11,7 +11,7 @@ void Gui::Init(std::shared_ptr<Renderer> renderer)
     ImGui::CreateContext();
     m_io = ImGui::GetIO();
     (void)m_io;
-
+    
     ImGui::StyleColorsDark();
 
     D3D12_DESCRIPTOR_HEAP_DESC dhDesc = {};
@@ -37,7 +37,7 @@ void Gui::Draw(AppState* appState)
     ImGui_ImplDX12_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
-
+    
     // Draw the GUI here
     {
 
@@ -81,37 +81,36 @@ void Gui::Draw(AppState* appState)
 
         static const char* current_item = NULL;
         ImGui::Begin("Controls");
+      
         ImGui::Checkbox("Fullscreen", &appState->isAppFullscreen);
         
-        /*
         std::vector<DXGI_MODE_DESC> displayModes = m_renderer->GetDisplayModes();
-
-        const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO" };
-        static int item_current_idx = 0;                    // Here our selection data is an index.
-        std::string modeDescription = std::to_string(displayModes[0].Width) + "x" + std::to_string(displayModes[0].Height);
-
-        const char* combo_label = modeDescription.c_str();  // Label to preview before opening the combo (technically could be anything)(
+        static int item_current_idx = 0;
+        std::string combo_label = (std::to_string(appState->currentScreenWidth) + "x" + std::to_string(appState->currentScreenHeight)).c_str();
         ImGui::SameLine();
-        if (ImGui::BeginCombo("", combo_label, 0))
+        if (ImGui::BeginCombo("##combo_display_modes", combo_label.c_str(), 0))
         {
+            std::string previousModeDescription = ""; // Used to show modes with the same resolution only once
             for(DXGI_MODE_DESC mode : displayModes)
             {
-                item_current_idx++;
-                const bool is_selected = (item_current_idx == 1);
                 std::string modeDescription = std::to_string(mode.Width) + "x" + std::to_string(mode.Height);
-                ImGui::Selectable(modeDescription.c_str(), is_selected);
-                    
-
-                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                if (is_selected)
+                if (modeDescription.compare(previousModeDescription) == 0) continue;
+                item_current_idx++;
+                const bool is_selected = (mode.Width == appState->currentScreenWidth && mode.Height == appState->currentScreenHeight);
+                if (ImGui::Selectable(modeDescription.c_str(), is_selected))
+                {
                     ImGui::SetItemDefaultFocus();
+                    appState->currentScreenWidth = mode.Width;
+                    appState->currentScreenHeight = mode.Height;
+                }
+                //if (is_selected) ImGui::SetItemDefaultFocus();
+                previousModeDescription = modeDescription;
             }
             ImGui::EndCombo();
         }
-        */
         ImGui::End();
 
-        //ImGui::ShowDemoWindow();
+        ImGui::ShowDemoWindow();
 
         //std::vector<DXGI_MODE_DESC> displayModes = m_renderer->GetDisplayModes();
 
@@ -125,12 +124,12 @@ void Gui::Draw(AppState* appState)
     ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_renderer->GetCommandList().Get());
 }
 
-void Gui::RecreateDeviceObjects()
+void Gui::ReSize(unsigned int width, unsigned int height)
 {
     if (!m_isInitialized) return;
-
-    ImGui_ImplDX12_InvalidateDeviceObjects();
-    ImGui_ImplDX12_CreateDeviceObjects();
+    //ImGui_ImplDX12_InvalidateDeviceObjects();
+    //ImGui_ImplDX12_CreateDeviceObjects();
+   // m_io.DisplaySize = { float(width), float(height) };
 }
 
 void Gui::ShutDown()

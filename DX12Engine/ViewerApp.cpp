@@ -255,15 +255,20 @@ void ViewerApp::OnAppMinimized()
 
 void ViewerApp::OnResize(UINT width, UINT height)
 {
+    float scaleGUI = static_cast<float>(m_appState.currentScreenWidth) / static_cast<float>(m_clientWidth);
+
     m_clientWidth = width;
     m_clientHeight = height;
     m_appState.isAppMinimized = false;
-
+    m_appState.currentScreenWidth = width;
+    m_appState.currentScreenHeight = height;
     if (m_appState.isAppPaused || m_appState.isResizingWindow) return;
-    //ImGui_ImplDX12_InvalidateDeviceObjects();
     
+    ImGui_ImplDX12_InvalidateDeviceObjects();
     m_renderer->SetSize(width, height);
     m_camera->setLens(DirectX::XM_PIDIV4, static_cast<float>(m_clientWidth) / static_cast<float>(m_clientHeight), 1.0f, 1000.f);
+    
+    
     //ImGui_ImplDX12_CreateDeviceObjects();
     //m_gui.RecreateDeviceObjects();
 
@@ -331,6 +336,14 @@ void ViewerApp::Update()
     {
         m_renderer->SetFullScreen(false);
         m_appState.isAppWindowed = true;
+    }
+
+    // Check if a new display mode has been specified
+    if(m_appState.currentScreenWidth != m_clientWidth && m_appState.currentScreenHeight != m_clientHeight && !m_appState.isResizingWindow)
+    {
+        if(!m_appState.isAppFullscreen)
+            ::SetWindowPos(m_hWnd, 0, 0, 0, m_appState.currentScreenWidth, m_appState.currentScreenHeight, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
+        //else OnResize(m_appState.currentScreenWidth, m_appState.currentScreenHeight);
     }
 
     UpdateCamera();
