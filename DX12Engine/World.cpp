@@ -1,6 +1,6 @@
 #include "World.h"
 #include "Renderer.h"
-#include "AssetTypes.h"
+#include "Mesh.h"
 #include "GLTFScene.h"
 #include "AssetsManager.h"
 

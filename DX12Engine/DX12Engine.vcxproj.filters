@@ -72,10 +72,10 @@
     <ClCompile Include="AssetsManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AssetTypes.cpp">
+    <ClCompile Include="ViewerApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ViewerApp.cpp">
+    <ClCompile Include="Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -149,10 +149,10 @@
     <ClInclude Include="AssetsManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AssetTypes.h">
+    <ClInclude Include="ViewerApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ViewerApp.h">
+    <ClInclude Include="Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

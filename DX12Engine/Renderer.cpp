@@ -1,7 +1,7 @@
 #include "Renderer.h"
 #include "Buffers.h"
 #include "FrameContext.h"
-#include "AssetTypes.h"
+#include "Mesh.h"
 
 using Microsoft::WRL::ComPtr;
 using DXUtil::ThrowIfFailed;
@@ -20,7 +20,8 @@ void Renderer::Init(HWND hWnd, unsigned int width, unsigned int height)
     CreateSwapChain();
     CreateDepthStencilBuffer();
     CreateConstantBuffer();
-    CompileShaders();
+    std::string errorMsg;
+    CompileShaders(L"shaders.hlsl", errorMsg);
     CreateRootSignature();
     CreatePipelineState();
 }
@@ -268,7 +269,7 @@ void Renderer::AddSample(D3D12_SAMPLER_DESC samplerDesc)
 }
 
 
-void Renderer::CompileShaders()
+bool Renderer::CompileShaders(std::wstring fileName, std::string& errorMsg)
 {
 
 #if defined(_DEBUG)
@@ -276,12 +277,29 @@ void Renderer::CompileShaders()
 #else
     UINT compileFlags = 0;
 #endif
+    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
+    HRESULT hr = D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, "VSMain", "vs_5_1", compileFlags, 0, &m_vertexShader, &errorBlob);
+    if (FAILED(hr))
+    {
+        if (errorBlob)
+        {
+            errorMsg.assign((char*)errorBlob->GetBufferPointer());
+            errorBlob->Release();
+        }
+        return false;
+    }
 
-    ThrowIfFailed(D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "VSMain", "vs_5_1", compileFlags, 0, &m_vertexShader, nullptr),
-        "Cannot compile vertex shader");
-
-    ThrowIfFailed(D3DCompileFromFile(L"shaders.hlsl", nullptr, nullptr, "PSMain", "ps_5_1", compileFlags, 0, &m_pixelShader, nullptr),
-        "Cannot compile pixel shader");
+    hr = D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, "PSMain", "ps_5_1", compileFlags, 0, &m_pixelShader, &errorBlob);
+    if (FAILED(hr))
+    {
+        if (errorBlob)
+        {
+            errorMsg.assign((char*)errorBlob->GetBufferPointer());
+            errorBlob->Release();
+        }
+        return false;
+    }
+    return true;
 }
 
 void Renderer::CreateRootSignature()
@@ -398,6 +416,7 @@ void Renderer::NewFrame()
 {
     ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
     ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
+    CreatePipelineState();
     SetPipelineState(m_commandList.Get());
     SetRootSignature(m_commandList.Get());
     m_commandList->RSSetViewports(1, &m_viewPort);

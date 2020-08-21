@@ -11,7 +11,6 @@
 
 class AssetsManager
 {
-
 public:
 
 	AssetsManager(Microsoft::WRL::ComPtr<ID3D12Device> device) 
@@ -81,81 +80,3 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_samplersDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_texturesDescriptorHeap;
 };
-
-struct BufferView 
-{
-	unsigned int bufferId = -1;
-	unsigned int byteOffset = 0;
-	unsigned int byteLength = 0;
-	unsigned int count = 0;
-};
-
-struct SubMesh
-{
-	BufferView verticesBufferView;
-	BufferView indicesBufferView;
-	BufferView normalsBufferView;
-	BufferView texCoord0BufferView;
-	BufferView texCoord1BufferView;
-	unsigned int materialId;
-	unsigned int renderMode;
-};
-
-
-class Mesh
-{
-public:
-
-	Mesh(std::shared_ptr<AssetsManager> assetsManager)
-	{
-		m_assetsManager = assetsManager;
-	}
-
-	void SetId(unsigned int id)
-	{
-		m_id = id;
-	}
-
-	void AddSubMesh(const SubMesh& subMesh)
-	{
-		m_subMeshes.push_back(subMesh);
-	}
-
-	void Draw(ID3D12GraphicsCommandList* commandList)
-	{
-
-		for(SubMesh subMesh : m_subMeshes) 
-		{
-			D3D12_VERTEX_BUFFER_VIEW vbView;
-			vbView.BufferLocation = m_assetsManager->m_buffersGPU[subMesh.verticesBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.verticesBufferView.byteOffset;
-			vbView.StrideInBytes = sizeof(DirectX::XMFLOAT3);
-			vbView.SizeInBytes = subMesh.verticesBufferView.byteLength;
-
-			D3D12_VERTEX_BUFFER_VIEW tbView;
-			tbView.BufferLocation = m_assetsManager->m_buffersGPU[subMesh.texCoord0BufferView.bufferId]->GetGPUVirtualAddress() + subMesh.texCoord0BufferView.byteOffset;
-			tbView.StrideInBytes = sizeof(DirectX::XMFLOAT2);
-			tbView.SizeInBytes = subMesh.texCoord0BufferView.byteLength;;
-
-			D3D12_VERTEX_BUFFER_VIEW vertexBuffers[2] = { vbView, tbView };
-			commandList->IASetVertexBuffers(0, 2, vertexBuffers);
-			commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-			D3D12_INDEX_BUFFER_VIEW ibView;
-			ibView.BufferLocation = m_assetsManager->m_buffersGPU[subMesh.indicesBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.indicesBufferView.byteOffset;
-			ibView.Format = DXGI_FORMAT_R16_UINT;
-			ibView.SizeInBytes = subMesh.indicesBufferView.byteLength;
-
-			D3D12_INDEX_BUFFER_VIEW indexBuffers[1] = { ibView };
-			commandList->IASetIndexBuffer(indexBuffers);
-
-			commandList->DrawIndexedInstanced(subMesh.indicesBufferView.count, 1, 0, 0, 0);
-		}
-	}
-
-public:
-	unsigned int m_id;
-	std::vector<SubMesh> m_subMeshes;
-	std::shared_ptr<AssetsManager> m_assetsManager;
-};
-
-

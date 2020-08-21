@@ -35,6 +35,8 @@ public:
     void AddTexture(ID3D12Resource* texture);
     void AddSample(D3D12_SAMPLER_DESC sampleDesc);
     std::vector<DXGI_MODE_DESC> GetDisplayModes();
+    bool CompileShaders(std::wstring fileName, std::string& errorMsg);
+    void CreatePipelineState();
 
 
 private:
@@ -45,9 +47,7 @@ private:
     void CreateFence();
     void CreateDepthStencilBuffer();
     void CreateConstantBuffer();
-    void CompileShaders();
     void CreateRootSignature();
-    void CreatePipelineState();
     void SetPipelineState(ID3D12GraphicsCommandList* commandList);
     void SetRootSignature(ID3D12GraphicsCommandList* commandList);
     

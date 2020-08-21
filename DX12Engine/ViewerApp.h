@@ -19,6 +19,7 @@ struct AppState
 	bool isAppFullscreen = false;
 	bool isAppWindowed = false;
 	bool isAppMinimized = false;
+	bool doRecompileShader = false;
 	int currentDisplayMode = 0;
 	unsigned int currentScreenWidth = 320;
 	unsigned int currentScreenHeight = 260;

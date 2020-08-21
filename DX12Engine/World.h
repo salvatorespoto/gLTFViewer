@@ -1,7 +1,7 @@
 #pragma once
 
 #include "DXUtil.h"
-#include "AssetTypes.h"
+#include "Mesh.h"
 #include "GLTFScene.h"
 #include "AssetsManager.h"
 

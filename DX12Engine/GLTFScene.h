@@ -3,7 +3,7 @@
 #include "DXUtil.h"
 #include "Renderer.h"
 #include "Buffers.h"
-#include "AssetTypes.h"
+#include "Mesh.h"
 #include "AssetsManager.h"
 
 #define CLAMP_TO_EDGE 33071 

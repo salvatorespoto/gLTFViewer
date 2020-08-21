@@ -1,6 +1,6 @@
 #include "ViewerApp.h"
 #include "Renderer.h"
-#include "AssetTypes.h"
+#include "Mesh.h"
 #include "World.h"
 #include "Camera.h"
 #include "FrameContext.h"
@@ -23,7 +23,7 @@ LRESULT CALLBACK wndMsgCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
-ViewerApp::ViewerApp(HINSTANCE hInstance) : m_hInstance(hInstance), m_hWnd(NULL), m_clientWidth(1280), m_clientHeight(800)
+ViewerApp::ViewerApp(HINSTANCE hInstance) : m_hInstance(hInstance), m_hWnd(NULL), m_clientWidth(1280), m_clientHeight(1024)
 {
     m_renderer = std::make_shared<Renderer>();
     m_camera = std::make_unique<Camera>(m_clientWidth, m_clientHeight, DirectX::XM_PIDIV4, 1.0f, 1000.0f);
@@ -223,7 +223,7 @@ void ViewerApp::InitWindow()
 
 void ViewerApp::showWindow()
 {
-    ShowWindow(m_hWnd, SW_SHOW);
+    ShowWindow(m_hWnd, SW_MAXIMIZE);
     SetForegroundWindow(m_hWnd);
     SetFocus(m_hWnd);
 }

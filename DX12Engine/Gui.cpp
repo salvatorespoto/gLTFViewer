@@ -1,6 +1,10 @@
 #include "Gui.h"
 #include "ViewerApp.h"
 
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+
 using DXUtil::ThrowIfFailed;
 
 void Gui::Init(std::shared_ptr<Renderer> renderer)
@@ -12,7 +16,7 @@ void Gui::Init(std::shared_ptr<Renderer> renderer)
     m_io = ImGui::GetIO();
     (void)m_io;
     
-    ImGui::StyleColorsDark();
+    ImGui::StyleColorsLight();
 
     D3D12_DESCRIPTOR_HEAP_DESC dhDesc = {};
     dhDesc.NumDescriptors = 1;
@@ -27,6 +31,8 @@ void Gui::Init(std::shared_ptr<Renderer> renderer)
     ThrowIfFailed(m_renderer->GetDevice()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandListAlloc.Get(), nullptr, IID_PPV_ARGS(&m_commandList)), "Cannot create the command list");
     m_commandList->Close();
 
+    LoadShaderSource();
+
     m_isInitialized = true;
 }
 
@@ -40,7 +46,6 @@ void Gui::Draw(AppState* appState)
     
     // Draw the GUI here
     {
-
         if (ImGui::BeginMainMenuBar())
         {
             if (ImGui::BeginMenu("File"))
@@ -110,11 +115,35 @@ void Gui::Draw(AppState* appState)
         }
         ImGui::End();
 
-        ImGui::ShowDemoWindow();
+        //ImGui::ShowDemoWindow();
 
         //std::vector<DXGI_MODE_DESC> displayModes = m_renderer->GetDisplayModes();
 
+        ImGui::Begin("Shader source");
         
+        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.5f, 1.0f));
+        if (ImGui::Button("Compile"))
+        {
+            SaveShaderSource();
+            m_compilationSuccess = m_renderer->CompileShaders(L"shaders.hlsl.tmp", m_errorMsg);
+        }
+        ImGui::PopStyleColor(1);
+
+        if(!m_compilationSuccess)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(1.0f, 0.5f, 1.0f));
+            ImGui::TextWrapped(m_errorMsg.c_str());
+            ImGui::PopStyleColor(1);
+            ImGui::Spacing();
+        }
+
+        ImGui::SetNextItemWidth(ImGui::GetWindowWidth());
+        ImGui::SetNextItemWidth(ImGui::GetWindowHeight());
+
+        ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
+
+        ImGui::InputTextMultiline("##source", m_shaderText, 10000, ImVec2(-FLT_MIN, -FLT_MIN), flags);
+        ImGui::End();
     }
 
     ImGui::Render();
@@ -139,4 +168,25 @@ void Gui::ShutDown()
     ImGui_ImplDX12_Shutdown();
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
+}
+
+void Gui::LoadShaderSource() 
+{
+    std::ifstream inFile;
+    inFile.open("shaders.hlsl");
+    std::string text((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
+    memcpy(m_shaderText, text.c_str(), text.length());
+    
+    return ;
+}
+
+void Gui::SaveShaderSource() 
+{
+    std::ofstream out("shaders.hlsl.tmp");
+    if (!out)
+    {
+        return;
+    }
+    out.write((char*)m_shaderText, strlen(m_shaderText));
+    out.close();
 }

@@ -28,10 +28,18 @@ public:
     void ShutDown();
 
 private:
+    void LoadShaderSource();
+    void SaveShaderSource();
+
+
     bool m_isInitialized = false;
     std::shared_ptr<Renderer> m_renderer;
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandListAlloc;
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_srvDescriptorHeap;
     ImGuiIO m_io;
+    char m_shaderText[10000];
+    bool m_compilationSuccess = true;
+    std::string m_errorMsg;
+
 };
