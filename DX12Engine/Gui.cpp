@@ -1,5 +1,5 @@
 #include "Gui.h"
-#include "WindowApp.h"
+#include "ViewerApp.h"
 
 using DXUtil::ThrowIfFailed;
 
@@ -40,15 +40,82 @@ void Gui::Draw(AppState* appState)
 
     // Draw the GUI here
     {
+
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+            {
+
+                if (ImGui::MenuItem("Exit"))
+                    // Exit...
+                    ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Edit"))
+            {
+                //...
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Window"))
+            {
+                //...
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::MenuItem("VIP")) // !!!
+                // Very important command...
+
+                if (ImGui::BeginMenu("Help"))
+                {
+                    //...
+                    ImGui::EndMenu();
+                }
+
+            ImGui::EndMainMenuBar();
+        }
+
         ImGui::Begin("Statistics");
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();
 
+        static const char* current_item = NULL;
         ImGui::Begin("Controls");
-        ImGui::Checkbox("Fullscreen", &appState->m_isAppFullscreen);
+        ImGui::Checkbox("Fullscreen", &appState->isAppFullscreen);
+        
+        /*
+        std::vector<DXGI_MODE_DESC> displayModes = m_renderer->GetDisplayModes();
+
+        const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO" };
+        static int item_current_idx = 0;                    // Here our selection data is an index.
+        std::string modeDescription = std::to_string(displayModes[0].Width) + "x" + std::to_string(displayModes[0].Height);
+
+        const char* combo_label = modeDescription.c_str();  // Label to preview before opening the combo (technically could be anything)(
+        ImGui::SameLine();
+        if (ImGui::BeginCombo("", combo_label, 0))
+        {
+            for(DXGI_MODE_DESC mode : displayModes)
+            {
+                item_current_idx++;
+                const bool is_selected = (item_current_idx == 1);
+                std::string modeDescription = std::to_string(mode.Width) + "x" + std::to_string(mode.Height);
+                ImGui::Selectable(modeDescription.c_str(), is_selected);
+                    
+
+                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+        */
         ImGui::End();
 
         //ImGui::ShowDemoWindow();
+
+        //std::vector<DXGI_MODE_DESC> displayModes = m_renderer->GetDisplayModes();
+
+        
     }
 
     ImGui::Render();

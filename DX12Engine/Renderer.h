@@ -34,12 +34,12 @@ public:
     void EndFrame();
     void AddTexture(ID3D12Resource* texture);
     void AddSample(D3D12_SAMPLER_DESC sampleDesc);
+    std::vector<DXGI_MODE_DESC> GetDisplayModes();
 
 
 private:
     void EnableDebugLayer();
     void CreateDefaultDevice();
-    void GetDisplayModes();
     void CreateSwapChain();
     void CreateCommandQueue();
     void CreateFence();

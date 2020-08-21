@@ -26,6 +26,7 @@ struct VertexOut
 VertexOut VSMain(VertexIn vIn)
 {
     VertexOut vOut;
+    vIn.position = float4(vIn.position.x, vIn.position.y, vIn.position.z, 1.0f);
     vOut.position = mul(float4(vIn.position, 1.0f), viewProjMtx);
     vOut.textCoord = vIn.textCoord;
     return vOut;

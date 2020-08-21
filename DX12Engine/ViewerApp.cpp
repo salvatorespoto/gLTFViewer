@@ -1,4 +1,4 @@
-#include "WindowApp.h"
+#include "ViewerApp.h"
 #include "Renderer.h"
 #include "AssetTypes.h"
 #include "World.h"
@@ -18,36 +18,33 @@ using DXUtil::ThrowIfFailed;
 LRESULT CALLBACK wndMsgCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     if (ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam)) return true;
-
-    WindowApp* wndApp = reinterpret_cast<WindowApp*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+    ViewerApp* wndApp = reinterpret_cast<ViewerApp*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
     if (wndApp) wndApp->wndMsgProc(hWnd, uMsg, wParam, lParam);
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
-WindowApp::WindowApp(HINSTANCE hInstance) : m_hInstance(hInstance), m_hWnd(NULL), m_clientWidth(1280), m_clientHeight(800)
+ViewerApp::ViewerApp(HINSTANCE hInstance) : m_hInstance(hInstance), m_hWnd(NULL), m_clientWidth(1280), m_clientHeight(800)
 {
-    //setUpViewport();
-    //setUpScissorRect();
     m_renderer = std::make_shared<Renderer>();
     m_camera = std::make_unique<Camera>(m_clientWidth, m_clientHeight, DirectX::XM_PIDIV4, 1.0f, 1000.0f);
     m_camera->setPosition({ 0.0f, 0.0f, -5.0f });
     InitWIC();
 }
 
-WindowApp::~WindowApp()
+ViewerApp::~ViewerApp()
 {}
 
-void WindowApp::init()
+void ViewerApp::init()
 {
     InitWindow(); 
     m_renderer->Init(m_hWnd, m_clientWidth, m_clientHeight);
-    GUI.Init(m_renderer);
+    m_gui.Init(m_renderer);
     LoadWorld();
 
    // m_swapChain->SetFullscreenState(true, nullptr);
 }
 
-int WindowApp::run()
+int ViewerApp::run()
 {
     showWindow();
 
@@ -61,7 +58,7 @@ int WindowApp::run()
         }
         else
         {
-            if (m_isAppPaused || m_isAppMinimized) continue;
+            if (m_appState.isAppPaused || m_appState.isAppMinimized) continue;
             Update();
             draw();
         }
@@ -73,7 +70,7 @@ int WindowApp::run()
     return (int)msg.wParam;
 }
 
-LRESULT WindowApp::wndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT ViewerApp::wndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
     {
@@ -140,7 +137,7 @@ LRESULT WindowApp::wndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
     return 0;
 }
 
-void WindowApp::InitWIC() 
+void ViewerApp::InitWIC() 
 {
 //#if (_WIN32_WINNT >= 0x0A00 /*_WIN32_WINNT_WIN10*/)
 //    Microsoft::WRL::Wrappers::RoInitializeWrapper initialize(RO_INIT_MULTITHREADED);
@@ -153,13 +150,12 @@ void WindowApp::InitWIC()
         // error
 //#endif
 }
-/*
-void WindowApp::SetFullScreen(bool fullScreen)
+
+void ViewerApp::SetFullScreen(bool fullScreen)
 {
-    m_swapChain.SetFullScreen(fullScreen);
+    m_renderer->SetFullScreen(fullScreen);
 
-
-    / *
+    /*
     if (m_device != NULL)
     {
     
@@ -175,10 +171,10 @@ void WindowApp::SetFullScreen(bool fullScreen)
         createDepthStencilBuffer();
         createDepthStencilBufferView();
         ImGui_ImplDX12_CreateDeviceObjects();
-    }* /
-}*/
+    }*/
+}
 
-void WindowApp::InitWindow()
+void ViewerApp::InitWindow()
 {
     WNDCLASSEX wndClass = {};
     wndClass.cbSize = sizeof(WNDCLASSEX);                   // Size of the struct
@@ -221,69 +217,63 @@ void WindowApp::InitWindow()
 
     // Save the pointer to this class so it's could be used from wndMsgCallback
     SetWindowLongPtr(m_hWnd, GWLP_USERDATA, (LONG_PTR)this);
+
+    m_appState.isAppWindowed = true;
 }
 
-void WindowApp::showWindow()
+void ViewerApp::showWindow()
 {
     ShowWindow(m_hWnd, SW_SHOW);
     SetForegroundWindow(m_hWnd);
     SetFocus(m_hWnd);
 }
 
-float WindowApp::getScreenAspectRatio()
+float ViewerApp::getScreenAspectRatio()
 {
     return static_cast<float>(m_clientWidth) / static_cast<float>(m_clientHeight);
 }
 
 
 //// Event handlers
-void WindowApp::OnEnterSizeMove() 
+void ViewerApp::OnEnterSizeMove() 
 {
-    m_isAppPaused = true;
-    m_isResizingWindow = true;
+    m_appState.isAppPaused = true;
+    m_appState.isResizingWindow = true;
 }
 
-void WindowApp::OnExitSizeMove()
+void ViewerApp::OnExitSizeMove()
 {
-    m_isAppPaused = false;
-    m_isResizingWindow = false;
+    m_appState.isAppPaused = false;
+    m_appState.isResizingWindow = false;
     OnResize(m_clientWidth, m_clientHeight);
 }
 
-void WindowApp::OnAppMinimized() 
+void ViewerApp::OnAppMinimized() 
 {
-    m_isAppMinimized = true;
+    m_appState.isAppMinimized = true;
 }
 
-void WindowApp::OnResize(UINT width, UINT height)
+void ViewerApp::OnResize(UINT width, UINT height)
 {
     m_clientWidth = width;
     m_clientHeight = height;
-    m_isAppMinimized = false;
+    m_appState.isAppMinimized = false;
 
-    if (m_isAppPaused || m_isResizingWindow) return;
-    m_renderer->SetSize(width, height);
-   
+    if (m_appState.isAppPaused || m_appState.isResizingWindow) return;
+    //ImGui_ImplDX12_InvalidateDeviceObjects();
     
-    //if (m_device != NULL)
-    //{
-    //    flushCmdQueue();
-        m_camera->setLens(DirectX::XM_PIDIV4, static_cast<float>(m_clientWidth) / static_cast<float>(m_clientHeight), 1.0f, 1000.f);
-       // setUpViewport();
-       // setUpScissorRect();
-        //m_swapChain.Resize(m_clientWidth, m_clientHeight);
-        //createDepthStencilBuffer();
-        //createDepthStencilBufferView();
-        GUI.RecreateDeviceObjects();
+    m_renderer->SetSize(width, height);
+    m_camera->setLens(DirectX::XM_PIDIV4, static_cast<float>(m_clientWidth) / static_cast<float>(m_clientHeight), 1.0f, 1000.f);
+    //ImGui_ImplDX12_CreateDeviceObjects();
+    //m_gui.RecreateDeviceObjects();
 
-    //}
 };
 
-void WindowApp::onMouseMove(WPARAM btnState, int x, int y) 
+void ViewerApp::onMouseMove(WPARAM btnState, int x, int y) 
 {
-    // Rotate camera on mouse left button
     if (btnState == MK_RBUTTON) 
     {
+        // Rotate camera
         float rotWorldUp= m_mouseSensitivity * XMConvertToRadians(static_cast<float>(x - m_lastMousePosX));
         float  pitch = m_mouseSensitivity* XMConvertToRadians(static_cast<float>(y - m_lastMousePosY));
         m_camera->rotate(pitch, rotWorldUp);
@@ -294,13 +284,13 @@ void WindowApp::onMouseMove(WPARAM btnState, int x, int y)
     m_lastMousePosY = y;
 }; 
 
-void WindowApp::onMouseDown(WPARAM btnState, int x, int y) 
+void ViewerApp::onMouseDown(WPARAM btnState, int x, int y) 
 {};
 
-void WindowApp::onMouseUp(WPARAM btnState, int x, int y) 
+void ViewerApp::onMouseUp(WPARAM btnState, int x, int y) 
 {};
 
-void WindowApp::onKeyDown(WPARAM wParam)
+void ViewerApp::onKeyDown(WPARAM wParam)
 {
     if (wParam == VK_ESCAPE) DestroyWindow(m_hWnd);
     
@@ -311,28 +301,13 @@ void WindowApp::onKeyDown(WPARAM wParam)
     if (wParam == VK_KEY_D) m_camera->strafe(0.2f);
 }
 
-
-/*
-void WindowApp::createFrameContexts()
-{
-    // CPU will update "m_frameInFlight" frames without wainting for the GPU to complete the previous
-    m_frameContexts.resize(m_frameInFlight);
-
-    // Eeach frame context has its own command allocator
-    for (FrameContext2 &frameContext : m_frameContexts)
-    {
-        ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&frameContext.m_cmdListAlloc)), "Cannot create command allocator");
-    }
-}
-*/
-
-void WindowApp::LoadWorld()
+void ViewerApp::LoadWorld()
 {
     m_world.Init(m_renderer);
     m_world.LoadGLTF("models/DamagedHelmet.glb");  
 }
 
-void WindowApp::UpdateCamera()
+void ViewerApp::UpdateCamera()
 {
     m_camera->update();
     PassConstants passConstants;
@@ -342,27 +317,37 @@ void WindowApp::UpdateCamera()
     m_renderer->UpdatePassConstants(passConstants);
 }
 
-void WindowApp::Update()
+void ViewerApp::Update()
 {
-    //m_swapChain.SetFullScreen(m_state.m_isAppFullscreen);
+    // Transition from fullscreen to widow 
+    if (m_appState.isAppFullscreen && m_appState.isAppWindowed)
+    {
+        m_renderer->SetFullScreen(true);
+        m_appState.isAppWindowed = false;
+    }
+    
+    // Transition from fullscreen to widow 
+    if (!m_appState.isAppFullscreen && !m_appState.isAppWindowed)
+    {
+        m_renderer->SetFullScreen(false);
+        m_appState.isAppWindowed = true;
+    }
+
     UpdateCamera();
 }
 
-//// Render the scene
-void WindowApp::draw()
+void ViewerApp::draw()
 {
     m_renderer->NewFrame();
     m_world.draw();
-    GUI.Draw(&m_state);
+    m_gui.Draw(&m_appState);
     m_renderer->EndFrame();
 }
 
-//// Cleanup
-
-void WindowApp::onDestroy()
+void ViewerApp::onDestroy()
 {
     m_renderer->FlushCommandQueue();    
-    GUI.ShutDown();
+    m_gui.ShutDown();
 
     // Assigning nullptr to ComPtr smar pointer release the interface and set the holded pointer to null
     /*

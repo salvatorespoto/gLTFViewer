@@ -27,6 +27,8 @@ void Renderer::Init(HWND hWnd, unsigned int width, unsigned int height)
 void Renderer::SetSize(unsigned int width, unsigned int height)
 {
     FlushCommandQueue();
+    m_width = width;
+    m_height = height;
     SetViewport({ 0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f });
     SetScissorRect({ 0, 0, static_cast<long>(m_width), static_cast<long>(m_height) });
     m_swapChain.Resize(m_width, m_height);
@@ -84,14 +86,13 @@ void Renderer::CreateDefaultDevice()
     }
 }
 
-void Renderer::GetDisplayModes()
+std::vector<DXGI_MODE_DESC> Renderer::GetDisplayModes()
 {
     DXGI_ADAPTER_DESC aDesc;
     ComPtr<IDXGIAdapter1> adapter = DXUtil::enumerateAdapters()[0];
     adapter->GetDesc(&aDesc);
     ComPtr<IDXGIOutput> output = DXUtil::enumerateAdaptersOutputs(adapter.Get())[0];
-    std::vector<DXGI_MODE_DESC> m_displayModes = DXUtil::enumerateAdapterOutputDisplayModes(output.Get(), DXGI_FORMAT_B8G8R8A8_UNORM);
-    m_fullScreenMode = m_displayModes[m_displayModes.size() - 1];
+    return DXUtil::enumerateAdapterOutputDisplayModes(output.Get(), DXGI_FORMAT_B8G8R8A8_UNORM);
 }
 
 void Renderer::CreateSwapChain()

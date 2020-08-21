@@ -62,15 +62,14 @@ void Camera::strafe(float distance)
 
 void Camera::rotate(float pitch, float worldUpAngle)
 {
-	// Generate rotation matrix
-	XMMATRIX worldUpRotMtx = DirectX::XMMatrixRotationY(worldUpAngle);
 	XMMATRIX pitchRotMtx = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&m_right), pitch);
-	XMMATRIX rotMtx = XMMatrixMultiply(worldUpRotMtx, pitchRotMtx);
+	XMStoreFloat3(&m_up, DirectX::XMVector3TransformNormal(XMLoadFloat3(&m_up), pitchRotMtx));
+	XMStoreFloat3(&m_forward, DirectX::XMVector3TransformNormal(XMLoadFloat3(&m_forward), pitchRotMtx));
 
-	// Update the camera basis vectors
-	XMStoreFloat3(&m_forward, DirectX::XMVector3TransformNormal(XMLoadFloat3(&m_forward), rotMtx));
-	XMStoreFloat3(&m_right, DirectX::XMVector3TransformNormal(XMLoadFloat3(&m_right), rotMtx));
-	XMStoreFloat3(&m_up, DirectX::XMVector3TransformNormal(XMLoadFloat3(&m_up), rotMtx));
+	XMMATRIX worldUpRotMtx = DirectX::XMMatrixRotationY(worldUpAngle);
+	XMStoreFloat3(&m_right, DirectX::XMVector3TransformNormal(XMLoadFloat3(&m_right), worldUpRotMtx));
+	XMStoreFloat3(&m_forward, DirectX::XMVector3TransformNormal(XMLoadFloat3(&m_forward), worldUpRotMtx));
+
 
 	m_dirty = true; // Need to update the view matrix
 }
