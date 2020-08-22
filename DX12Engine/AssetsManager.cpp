@@ -1,28 +1,14 @@
 #include "AssetsManager.h"
 
-AssetsManager::AssetsManager(Microsoft::WRL::ComPtr<ID3D12Device> device)
+AssetsManager::AssetsManager(Microsoft::WRL::ComPtr<ID3D12Device> device, 
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> texturesDescriptorHeap,
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> samplersDescriptorHeap
+
+)
 {
 	m_device = device;
-
-	m_SRV_DescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	m_sampler_DescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-
-	// Create descriptor heap for shader resources
-	D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc = {};
-	descriptorHeapDesc = {};
-	descriptorHeapDesc.NumDescriptors = DESCRIPTORS_HEAP_SIZE;
-	descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	DXUtil::ThrowIfFailed(m_device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&m_texturesDescriptorHeap)),
-		"Cannot create shader resources decriptor heap");
-
-	// Create descriptor heap for samplers
-	descriptorHeapDesc = {};
-	descriptorHeapDesc.NumDescriptors = 1;
-	descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-	descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	DXUtil::ThrowIfFailed(m_device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(&m_samplersDescriptorHeap)),
-		"Cannot create sampler descriptor heap");
+	m_texturesDescriptorHeap = texturesDescriptorHeap;
+	m_samplersDescriptorHeap = samplersDescriptorHeap;
 }
 
 void AssetsManager::AddGPUBuffer(Microsoft::WRL::ComPtr<ID3D12Resource> buffer)
@@ -30,13 +16,20 @@ void AssetsManager::AddGPUBuffer(Microsoft::WRL::ComPtr<ID3D12Resource> buffer)
 	m_buffersGPU.push_back(buffer);
 }
 
+void AssetsManager::AddMaterial(unsigned int materialId, RoughMetallicMaterial material)
+{
+	m_materials[materialId] = material;
+}
+
 void AssetsManager::AddTexture(unsigned int textureId, Microsoft::WRL::ComPtr<ID3D12Resource> texture)
 {
 	m_textures[textureId] = texture;
 
 	// Create the view for the texture
+	m_SRV_DescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_texturesDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	hDescriptor.Offset(textureId, m_SRV_DescriptorSize);
+	hDescriptor.Offset(textureId+2, m_SRV_DescriptorSize);
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;

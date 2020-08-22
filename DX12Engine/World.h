@@ -5,6 +5,8 @@
 #include "GLTFScene.h"
 #include "AssetsManager.h"
 
+class AssetsManager;
+
 class World
 {
 
@@ -13,7 +15,7 @@ public:
 	World() = default;
 	~World();
 
-	void Init(std::shared_ptr<Renderer> renderer);
+	void Init(std::shared_ptr<Renderer> renderer, std::shared_ptr<AssetsManager> assetsManager);
 	void LoadGLTF(std::string fileName);
 
 	void release();

@@ -115,7 +115,13 @@ void Gui::Draw(AppState* appState)
         }
         ImGui::End();
 
-        //ImGui::ShowDemoWindow();
+        ImGui::ShowDemoWindow();
+
+        ImGui::Begin("Mesh");
+        ImGui::SliderAngle("Rotation X", &appState->meshRotationX);
+        ImGui::SliderAngle("Rotation Y", &appState->meshRotationY);
+        ImGui::SliderAngle("Rotation Z", &appState->meshRotationZ);
+        ImGui::End();
 
         //std::vector<DXGI_MODE_DESC> displayModes = m_renderer->GetDisplayModes();
 

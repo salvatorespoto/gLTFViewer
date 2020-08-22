@@ -1,9 +1,13 @@
 #pragma once
 
 #include "DXUtil.h"
+//#include "AssetsManager.h"
 #include "Buffers.h"
 #include "FrameContext.h"
 #include "SwapChain.h"
+#include "Material.h"
+
+class AssetsManager;
 
 class Renderer
 {
@@ -15,7 +19,7 @@ public:
     Renderer operator=(const Renderer&) = delete;
     Renderer operator=(const Renderer&&) = delete;
 
-    void Init(HWND hWnd, unsigned int width, unsigned int height);
+    void Init(HWND hWnd, unsigned int width, unsigned int height, std::shared_ptr<AssetsManager> assetsManager);
     void SetSize(unsigned int width, unsigned int height);
     void SetViewport(D3D12_VIEWPORT viewPort);
     void SetScissorRect(D3D12_RECT scissorRect);
@@ -30,6 +34,9 @@ public:
     void ResetCommandList();
     void FlushCommandQueue();
     void UpdatePassConstants(const PassConstants& passConstants);
+    void UpdateMeshConstants(DirectX::XMFLOAT4X4& meshModelMtx);
+    void UpdateMaterialConstants(RoughMetallicMaterial material);
+        
     void NewFrame();
     void EndFrame();
     void AddTexture(ID3D12Resource* texture);
@@ -37,6 +44,9 @@ public:
     std::vector<DXGI_MODE_DESC> GetDisplayModes();
     bool CompileShaders(std::wstring fileName, std::string& errorMsg);
     void CreatePipelineState();
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_samplersDescriptorHeap;
+    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_CBV_SRV_DescriptorHeap;
+    std::shared_ptr<AssetsManager> m_assetsManager;
 
 
 private:
@@ -74,14 +84,11 @@ private:
     Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
     UINT m_DSV_DescriptorSize = 0;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DSV_DescriptorHeap;
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_samplersDescriptorHeap;
-
 
     std::unique_ptr<UploadBuffer<PassConstants>> m_passConstantBuffer;
+    std::unique_ptr<UploadBuffer<DirectX::XMFLOAT4X4>> m_meshConstantBuffer;
+    std::unique_ptr<UploadBuffer<RoughMetallicMaterial>> m_materialConstantBuffer;
     UINT m_CBV_SRV_DescriptorSize = 0;
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_CBV_SRV_DescriptorHeap;
-    Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_texturesDescriptorHeap;
-    
     Microsoft::WRL::ComPtr<ID3DBlob> m_vertexShader;
     Microsoft::WRL::ComPtr<ID3DBlob> m_pixelShader;
 
@@ -90,5 +97,6 @@ private:
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
 
     std::vector<ID3D12Resource*> m_textures;
+
 };
 

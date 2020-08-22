@@ -32,11 +32,13 @@ public:
 	Mesh& operator=(const Mesh& mesh) = default;
 	
 	void SetId(unsigned int id);
+	void SetModelMtx(const DirectX::XMFLOAT4X4& modelMtx);
 	void AddSubMesh(const SubMesh& subMesh);
 	void Draw(ID3D12GraphicsCommandList* commandList);
 
 public:
 	unsigned int m_id;
 	std::vector<SubMesh> m_subMeshes;
+	DirectX::XMFLOAT4X4 m_modelMtx = DXUtil::IdentityMtx();
 	std::shared_ptr<AssetsManager> m_assetsManager;
 };

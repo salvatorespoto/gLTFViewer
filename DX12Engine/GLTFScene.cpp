@@ -25,8 +25,8 @@ void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, std::shared_ptr<As
 	for (tinygltf::Mesh mesh : m_model.meshes)
 	{
 		Mesh m(assetsManager);
-		m.SetId(meshId);
-		++meshId;
+		m.SetId(meshId++);
+
 		// Create a submesh for each primitive
 		for (tinygltf::Primitive primitive : mesh.primitives)
 		{
@@ -43,6 +43,10 @@ void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, std::shared_ptr<As
 			if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) 
 			{
 				tinygltf::BufferView normalsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["NORMAL"]].bufferView];
+				sm.normalsBufferView.bufferId = normalsBV.buffer;
+				sm.normalsBufferView.byteOffset = normalsBV.byteOffset;
+				sm.normalsBufferView.byteLength = normalsBV.byteLength;
+				sm.normalsBufferView.count = m_model.accessors[primitive.attributes["NORMAL"]].count;
 			}
 			if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
 			{
@@ -55,6 +59,10 @@ void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, std::shared_ptr<As
 			if (primitive.attributes.find("TEXCOORD_1") != primitive.attributes.end())
 			{
 				tinygltf::BufferView texCoord1BV = m_model.bufferViews[m_model.accessors[primitive.attributes["TEXCOORD_1"]].bufferView];
+				sm.texCoord1BufferView.bufferId = texCoord1BV.buffer;
+				sm.texCoord1BufferView.byteOffset = texCoord1BV.byteOffset;
+				sm.texCoord1BufferView.byteLength = texCoord1BV.byteLength;
+				sm.texCoord1BufferView.count = m_model.accessors[primitive.attributes["TEXCOORD_1"]].count;
 			}
 			if (primitive.indices != -1)
 			{
@@ -64,6 +72,7 @@ void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, std::shared_ptr<As
 				sm.indicesBufferView.byteLength = indicesBV.byteLength;
 				sm.indicesBufferView.count = m_model.accessors[primitive.indices].count;
 			}
+			sm.materialId = primitive.material;
 			m.AddSubMesh(sm);
 		}
 		m_meshes.push_back(m);
@@ -71,9 +80,29 @@ void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, std::shared_ptr<As
 
 	// Set up materials
 	int materialId = 0;
-	for (tinygltf::Texture texture : m_model.textures)
+	for (tinygltf::Material material : m_model.materials)
 	{
-		
+		RoughMetallicMaterial rmMaterial;
+		rmMaterial.baseColorFactor =
+		{
+			static_cast<float>(material.pbrMetallicRoughness.baseColorFactor[0]),
+			static_cast<float>(material.pbrMetallicRoughness.baseColorFactor[1]),
+			static_cast<float>(material.pbrMetallicRoughness.baseColorFactor[2]),
+			static_cast<float>(material.pbrMetallicRoughness.baseColorFactor[3])
+		};
+		rmMaterial.roughnessFactor = static_cast<float>(material.pbrMetallicRoughness.roughnessFactor);
+		rmMaterial.metallicFactor = static_cast<float>(material.pbrMetallicRoughness.metallicFactor);
+		rmMaterial.baseColorTA.textureId = material.pbrMetallicRoughness.baseColorTexture.index;
+		rmMaterial.baseColorTA.texCoordId = material.pbrMetallicRoughness.baseColorTexture.texCoord;
+		rmMaterial.roughMetallicTA.textureId = material.pbrMetallicRoughness.metallicRoughnessTexture.index;
+		rmMaterial.roughMetallicTA.texCoordId = material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord;
+		rmMaterial.normalTA.textureId = material.normalTexture.index;
+		rmMaterial.normalTA.texCoordId = material.normalTexture.texCoord;
+		rmMaterial.occlusionTA.textureId = material.occlusionTexture.index;
+		rmMaterial.occlusionTA.texCoordId = material.occlusionTexture.texCoord;
+		rmMaterial.emissiveTA.textureId = material.emissiveTexture.index;
+		rmMaterial.emissiveTA.texCoordId = material.emissiveTexture.texCoord;
+		assetsManager->AddMaterial(materialId++, rmMaterial);
 	}
 
 	// Set up textures
@@ -114,135 +143,10 @@ void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, std::shared_ptr<As
 		samplerDesc.MaxAnisotropy = 1;
 		samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
 		assetsManager->AddSampler(samplerId++, samplerDesc);
-	}
-
-	//tinygltf::Image image = m_model.images[m_model.textures[3].source];
-	//tinygltf::BufferView imageBufferView = m_model.bufferViews[image.bufferView];
-	//tinygltf::Buffer imageBuffer = m_model.buffers[imageBufferView.buffer];
-	//uint8_t* imageBufferBegin = imageBuffer.data.data() + imageBufferView.byteOffset;
-	//ID3D12Resource* texture; 
-	//CreateTextureFromMemory(m_renderer.get(), imageBufferBegin, imageBufferView.byteLength, &texture);
-	//m_renderer->AddTexture(texture);
-
-	/*
-	tinygltf::Material gltfMat = m_model.materials[0];
-	Material mat;
-	mat.baseColorFactor = { 
-		static_cast<float>(gltfMat.pbrMetallicRoughness.baseColorFactor[0]), 
-		static_cast<float>(gltfMat.pbrMetallicRoughness.baseColorFactor[1]), 
-		static_cast<float>(gltfMat.pbrMetallicRoughness.baseColorFactor[2]), 
-		static_cast<float>(gltfMat.pbrMetallicRoughness.baseColorFactor[3])
-	};
-	mat.roughnessFactor = static_cast<float>(gltfMat.pbrMetallicRoughness.roughnessFactor);
-	mat.metallicFactor = static_cast<float>(gltfMat.pbrMetallicRoughness.metallicFactor);
-	mat.baseColorTextureId = gltfMat.pbrMetallicRoughness.baseColorTexture.index;
-	mat.metallicRoughnessTextureId = gltfMat.pbrMetallicRoughness.metallicRoughnessTexture.index;
-	m_renderer->AddSample(samplerDesc);
-	
-	*/
-
-	
-	/*
-	// Load meshes
-	for (tinygltf::Node node : model.nodes)
-	{
-		if (node.mesh != -1)
-		{
-			BuildMesh(m_model.meshes[node.mesh]);
-			ParseSubTree(node);
-		}
-		else if (node.camera != -1) continue;
-	}
-	*/
-	
-}
-
-void GLTFScene::ParseSubTree(tinygltf::Node node)
-{
-	for (int childId : node.children)
-	{
-		tinygltf::Node node = m_model.nodes[childId];
-		if (node.mesh != -1)
-		{
-			BuildMesh(m_model.meshes[node.mesh]);
-		}
-		else if (node.camera != -1) continue;
-	}
-}
-
-void GLTFScene::BuildMesh(tinygltf::Mesh gltfMesh)
-{
-	for (tinygltf::Primitive primitive : gltfMesh.primitives)
-	{
-		int acessorPositionsId = primitive.attributes["POSITION"];
-		int accessorNormalsId = primitive.attributes["NORMAL"];
-		int accessorIndexesId = primitive.indices;
-
-		// Get primitive buffers BufferView (primitive->attributes["buffer type"]->accessor->bufferView
-		tinygltf::BufferView positionsBufferView = m_model.bufferViews[m_model.accessors[primitive.attributes["POSITION"]].bufferView];
-		tinygltf::BufferView normalsBufferView = m_model.bufferViews[m_model.accessors[primitive.attributes["NORMAL"]].bufferView];
-		tinygltf::BufferView textCoordBufferView = m_model.bufferViews[m_model.accessors[primitive.attributes["TEXCOORD_0"]].bufferView];
-		tinygltf::BufferView indexesBufferView = m_model.bufferViews[m_model.accessors[primitive.indices].bufferView];
-		
-
-		tinygltf::Buffer positionsBuffer = m_model.buffers[positionsBufferView.buffer];
-		void* positionsBufferBegin = positionsBuffer.data.data() + positionsBufferView.byteOffset;
-
-		tinygltf::Buffer indexesBuffer = m_model.buffers[indexesBufferView.buffer];
-		void* indexesBufferBegin = indexesBuffer.data.data() + indexesBufferView.byteOffset;
-
-		tinygltf::Buffer textCoordBuffer = m_model.buffers[textCoordBufferView.buffer];
-		void* textCoordBufferBegin = textCoordBuffer.data.data() + textCoordBufferView.byteOffset;
-
-		m_renderer->ResetCommandList();
-		//m_meshes.emplace_back(m_renderer, positionsBufferBegin, positionsBufferView.byteLength, 
-		//	indexesBufferBegin, indexesBufferView.byteLength, textCoordBufferBegin, textCoordBufferView.byteLength);
-		m_renderer->GetCommandList()->Close();
-		m_renderer->ExecuteCommandList(m_renderer->GetCommandList().Get());
-		m_renderer->FlushCommandQueue();
-
-	}
-	/*
-	std::vector<DirectX::XMFLOAT3> positions =
-	{
-		{ DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f) },
-		{ DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f) },
-		{ DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f) },
-		{ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f) },
-		{ DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f) },
-		{ DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f) },
-		{ DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f) },
-		{ DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f) }
-	};
-	UINT64 m_pbByteSize = 8 * sizeof(DirectX::XMFLOAT3);
-
-	std::vector<std::uint16_t> indices =
-	{
-		4, 2, 0,
-		2, 7, 3,
-		6, 5, 7,
-		1, 7, 5,
-		0, 3, 1,
-		4, 1, 5,
-		4, 6, 2,
-		2, 6, 7,
-		6, 4, 5,
-		1, 3, 7,
-		0, 2, 3,
-		4, 0, 1
-	};
-	UINT64 ibByteSize = indices.size() * sizeof(std::uint16_t);
-
-	m_renderer->ResetCommandList();
-	m_meshes.emplace_back(m_renderer, positions.data(), m_pbByteSize, indices.data(), ibByteSize);
-	m_renderer->GetCommandList()->Close();
-	m_renderer->ExecuteCommandList(m_renderer->GetCommandList().Get());
-	m_renderer->FlushCommandQueue();
-		*/
+	}	
 }
 
 std::vector<Mesh> GLTFScene::getMeshes()
 {
-	//return m_meshes;
 	return m_meshes;
 }

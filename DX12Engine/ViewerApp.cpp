@@ -1,4 +1,5 @@
 #include "ViewerApp.h"
+#include "AssetsManager.h"
 #include "Renderer.h"
 #include "Mesh.h"
 #include "World.h"
@@ -37,7 +38,10 @@ ViewerApp::~ViewerApp()
 void ViewerApp::init()
 {
     InitWindow(); 
-    m_renderer->Init(m_hWnd, m_clientWidth, m_clientHeight);
+    
+    m_renderer->Init(m_hWnd, m_clientWidth, m_clientHeight, m_assetsManager);
+    m_assetsManager = std::make_shared<AssetsManager>(m_renderer->GetDevice(), m_renderer->m_CBV_SRV_DescriptorHeap, m_renderer->m_samplersDescriptorHeap);
+    m_renderer->m_assetsManager = m_assetsManager;
     m_gui.Init(m_renderer);
     LoadWorld();
 
@@ -308,7 +312,7 @@ void ViewerApp::onKeyDown(WPARAM wParam)
 
 void ViewerApp::LoadWorld()
 {
-    m_world.Init(m_renderer);
+    m_world.Init(m_renderer, m_assetsManager);
     m_world.LoadGLTF("models/DamagedHelmet.glb");  
 }
 
@@ -347,6 +351,13 @@ void ViewerApp::Update()
     }
 
     UpdateCamera();
+
+    // Update mesh rotation
+    DirectX::XMFLOAT4X4 modelRotationMtx; 
+    DirectX::XMStoreFloat4x4(&modelRotationMtx, DirectX::XMMatrixRotationX((m_appState.meshRotationX)) * DirectX::XMMatrixRotationY((m_appState.meshRotationY)) * DirectX::XMMatrixRotationZ((m_appState.meshRotationZ)));
+    m_world.getMeshes()[0].SetModelMtx(modelRotationMtx);
+    m_renderer->UpdateMeshConstants(modelRotationMtx);
+
 }
 
 void ViewerApp::draw()

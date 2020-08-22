@@ -11,6 +11,8 @@
 /** Windows app events callback */
 LRESULT CALLBACK wndMsgCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+class AssetsManager;
+
 /* Store some info about the app current state */
 struct AppState
 {
@@ -21,8 +23,9 @@ struct AppState
 	bool isAppMinimized = false;
 	bool doRecompileShader = false;
 	int currentDisplayMode = 0;
-	unsigned int currentScreenWidth = 320;
-	unsigned int currentScreenHeight = 260;
+	unsigned int currentScreenWidth = 1280;
+	unsigned int currentScreenHeight = 1024;
+	float meshRotationX = 0.0f, meshRotationY = 0.0f, meshRotationZ = 0.0f;
 };
 
 /** The 3D viewer application */
@@ -57,6 +60,7 @@ public:
 	virtual void onMouseDown(WPARAM btnState, int x, int y);
 	virtual void onMouseUp(WPARAM btnState, int x, int y);
 	virtual void onKeyDown(WPARAM btnState);
+	std::shared_ptr<AssetsManager> m_assetsManager;
 
 protected:
 	void InitWindow();
@@ -68,7 +72,6 @@ protected:
 
 	//void resizeSwapChain(int width, int height);
 	//void onFullScreenSwitch();
-	
 private:
 	HINSTANCE m_hInstance;		/*< Handle to the window application */
 	HWND m_hWnd;				
@@ -89,5 +92,6 @@ private:
 	Gui m_gui;
 	std::unique_ptr<Camera> m_camera;
 	World m_world;
+	
 	
 };

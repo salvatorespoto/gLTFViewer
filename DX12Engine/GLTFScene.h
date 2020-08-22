@@ -16,8 +16,6 @@ class GLTFScene
 public:
 	GLTFScene() = default;
 	void LoadScene(std::shared_ptr<Renderer> renderer, std::shared_ptr<AssetsManager> assetsManager, const tinygltf::Model& model, unsigned int sceneId);
-	void ParseSubTree(tinygltf::Node node);
-	void BuildMesh(tinygltf::Mesh gltfMesh);
 	std::vector<Mesh> getMeshes();
 
 protected:

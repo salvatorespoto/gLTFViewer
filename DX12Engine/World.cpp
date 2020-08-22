@@ -6,10 +6,10 @@
 
 using Microsoft::WRL::ComPtr;
 
-void World::Init(std::shared_ptr<Renderer> renderer)
+void World::Init(std::shared_ptr<Renderer> renderer, std::shared_ptr<AssetsManager> assetsManager)
 {
 	m_renderer = renderer;
-	m_assetsManager = std::make_shared<AssetsManager>(renderer->GetDevice());
+	m_assetsManager = assetsManager; 
 }
 
 /*
@@ -38,19 +38,19 @@ void World::draw()
 	ID3D12GraphicsCommandList* commandList = m_renderer->GetCommandList().Get();
 
 	// Set descriptor heaps
-	ID3D12DescriptorHeap* descriptorHeaps[] = { /*m_CBV_SRV_DescriptorHeap.Get(),*/ m_assetsManager->m_texturesDescriptorHeap.Get(), m_assetsManager->m_samplersDescriptorHeap.Get() };
-	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	//ID3D12DescriptorHeap* descriptorHeaps[] = { /*m_CBV_SRV_DescriptorHeap.Get(),*/ m_assetsManager->m_texturesDescriptorHeap.Get(), m_assetsManager->m_samplersDescriptorHeap.Get() };
+	//commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	//CD3DX12_GPU_DESCRIPTOR_HANDLE cbv(m_CBV_SRV_DescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 	//cbv.Offset(0, m_CBV_SRV_DescriptorSize);
 	//commandList->SetGraphicsRootDescriptorTable(1, cbv);
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE srv(m_assetsManager->m_texturesDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	srv.Offset(0, m_assetsManager->m_SRV_DescriptorSize);
-	commandList->SetGraphicsRootDescriptorTable(1, srv);
+	//CD3DX12_GPU_DESCRIPTOR_HANDLE srv(m_assetsManager->m_texturesDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	//srv.Offset(0, m_assetsManager->m_SRV_DescriptorSize);
+	//commandList->SetGraphicsRootDescriptorTable(1, srv);
 
 	// Samplers
-	commandList->SetGraphicsRootDescriptorTable(2, m_assetsManager->m_samplersDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	//commandList->SetGraphicsRootDescriptorTable(2, m_assetsManager->m_samplersDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
 
 

@@ -12,8 +12,8 @@ D3D12_INPUT_ELEMENT_DESC vertexElementsDesc[] =
 		D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,	// Input slot class
 		0								// Instaced data step rate
 	},
-	//{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}//,
-	{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+	{"NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+	{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 };
 
 Mesh::Mesh(std::shared_ptr<AssetsManager> assetsManager)
@@ -25,6 +25,12 @@ void Mesh::SetId(unsigned int id)
 {
 	m_id = id;
 }
+
+void Mesh::SetModelMtx(const DirectX::XMFLOAT4X4& modelMtx)
+{
+	m_modelMtx = modelMtx;
+}
+
 
 void Mesh::AddSubMesh(const SubMesh& subMesh)
 {
@@ -40,13 +46,18 @@ void Mesh::Draw(ID3D12GraphicsCommandList* commandList)
 		vbView.StrideInBytes = sizeof(DirectX::XMFLOAT3);
 		vbView.SizeInBytes = subMesh.verticesBufferView.byteLength;
 
+		D3D12_VERTEX_BUFFER_VIEW nbView;
+		nbView.BufferLocation = m_assetsManager->m_buffersGPU[subMesh.normalsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.normalsBufferView.byteOffset;
+		nbView.StrideInBytes = sizeof(DirectX::XMFLOAT3);
+		nbView.SizeInBytes = subMesh.verticesBufferView.byteLength;
+
 		D3D12_VERTEX_BUFFER_VIEW tbView;
 		tbView.BufferLocation = m_assetsManager->m_buffersGPU[subMesh.texCoord0BufferView.bufferId]->GetGPUVirtualAddress() + subMesh.texCoord0BufferView.byteOffset;
 		tbView.StrideInBytes = sizeof(DirectX::XMFLOAT2);
 		tbView.SizeInBytes = subMesh.texCoord0BufferView.byteLength;;
 
-		D3D12_VERTEX_BUFFER_VIEW vertexBuffers[2] = { vbView, tbView };
-		commandList->IASetVertexBuffers(0, 2, vertexBuffers);
+		D3D12_VERTEX_BUFFER_VIEW vertexBuffers[3] = { vbView, nbView, tbView };
+		commandList->IASetVertexBuffers(0, 3, vertexBuffers);
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		D3D12_INDEX_BUFFER_VIEW ibView;
