@@ -3,19 +3,32 @@
 #include "Material.h"
 #include "AssetsManager.h"
 #include <map>
+#include <cmath>
 
 using Microsoft::WRL::ComPtr;
+using DirectX::XMVector3Normalize; 
+using DirectX::XMVectorSubtract;
+using DirectX::XMVectorScale;
+using DirectX::XMVectorMultiply;
+using DirectX::XMVector3Dot;
+using DirectX::XMVectorGetX;
+using DirectX::XMVector3Cross;
 
 void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, std::shared_ptr<AssetsManager> assetsManager, const tinygltf::Model& model, unsigned int sceneId)
 {
+	m_assetsManager = assetsManager;
 	m_renderer = renderer;
 	m_model = model;
+
+	DirectX::XMFLOAT3* vertices;
+	uint16_t* indexes;
+
 	if (sceneId >= m_model.scenes.size()) DXUtil::ThrowException("Scene index out of range");
 
 	GPUHeapUploader gpuHeapUploader(m_renderer->GetDevice().Get(), m_renderer->GetCommandQueue().Get());
 	
 	// Load all buffers
-	for(tinygltf::Buffer buffer : m_model.buffers)
+	for (tinygltf::Buffer buffer : m_model.buffers)
 	{
 		assetsManager->AddGPUBuffer(gpuHeapUploader.Upload(buffer.data.data(), buffer.data.size()));
 	}
@@ -48,6 +61,24 @@ void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, std::shared_ptr<As
 				sm.normalsBufferView.byteLength = normalsBV.byteLength;
 				sm.normalsBufferView.count = m_model.accessors[primitive.attributes["NORMAL"]].count;
 			}
+			if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
+			{
+				tinygltf::BufferView tangentsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["TANGENT"]].bufferView];
+				sm.tangentsBufferView.bufferId = tangentsBV.buffer;
+				sm.tangentsBufferView.byteOffset = tangentsBV.byteOffset;
+				sm.tangentsBufferView.byteLength = tangentsBV.byteLength;
+				sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["TANGENT"]].count;
+			}
+			else 
+			{
+				tinygltf::BufferView positionsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["POSITION"]].bufferView];
+				sm.tangentsBufferView.bufferId = 1;
+				sm.tangentsBufferView.byteOffset = 0;
+				sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;
+				sm.tangentsBufferView.byteLength = sm.tangentsBufferView.count * sizeof(DirectX::XMFLOAT4);
+				ComputeTangentSpace(primitive);
+			}
+
 			if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
 			{
 				tinygltf::BufferView texCoord0BV = m_model.bufferViews[m_model.accessors[primitive.attributes["TEXCOORD_0"]].bufferView];
@@ -73,10 +104,15 @@ void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, std::shared_ptr<As
 				sm.indicesBufferView.count = m_model.accessors[primitive.indices].count;
 			}
 			sm.materialId = primitive.material;
+			
+
 			m.AddSubMesh(sm);
 		}
 		m_meshes.push_back(m);
 	}
+
+	// Add buffer for tangents
+
 
 	// Set up materials
 	int materialId = 0;
@@ -120,31 +156,135 @@ void GLTFScene::LoadScene(std::shared_ptr<Renderer> renderer, std::shared_ptr<As
 
 	// Set up samplers
 	int samplerId = 0;
-	for (tinygltf::Sampler sampler : m_model.samplers)
+	if(m_model.samplers.empty()) 
 	{
+		// Default sampler
 		D3D12_SAMPLER_DESC samplerDesc = {};
 		samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-		
-		if (sampler.wrapS == REPEAT) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-		else if (sampler.wrapS == CLAMP_TO_EDGE) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-		else if (sampler.wrapS == MIRRORED_REPEAT) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-
-		if (sampler.wrapT == REPEAT) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-		else if (sampler.wrapT == CLAMP_TO_EDGE) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-		else if (sampler.wrapT == MIRRORED_REPEAT) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-		
-		if (sampler.wrapR == REPEAT) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-		else if (sampler.wrapR == CLAMP_TO_EDGE) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-		else if (sampler.wrapR == MIRRORED_REPEAT) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-	
+		samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 		samplerDesc.MinLOD = 0;
 		samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
 		samplerDesc.MipLODBias = 0.0f;
 		samplerDesc.MaxAnisotropy = 1;
 		samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
 		assetsManager->AddSampler(samplerId++, samplerDesc);
-	}	
+	}
+	else 
+	{
+		for (tinygltf::Sampler sampler : m_model.samplers)
+		{
+			D3D12_SAMPLER_DESC samplerDesc = {};
+			samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+		
+			if (sampler.wrapS == REPEAT) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+			else if (sampler.wrapS == CLAMP_TO_EDGE) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+			else if (sampler.wrapS == MIRRORED_REPEAT) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+
+			if (sampler.wrapT == REPEAT) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+			else if (sampler.wrapT == CLAMP_TO_EDGE) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+			else if (sampler.wrapT == MIRRORED_REPEAT) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+		
+			if (sampler.wrapR == REPEAT) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+			else if (sampler.wrapR == CLAMP_TO_EDGE) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+			else if (sampler.wrapR == MIRRORED_REPEAT) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+	
+			samplerDesc.MinLOD = 0;
+			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
+			samplerDesc.MipLODBias = 0.0f;
+			samplerDesc.MaxAnisotropy = 1;
+			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+			assetsManager->AddSampler(samplerId++, samplerDesc);
+		}
+	}
 }
+
+void GLTFScene::ComputeTangentSpace(tinygltf::Primitive primitive)
+{
+	tinygltf::BufferView positionsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["POSITION"]].bufferView];
+	DirectX::XMFLOAT3* vertices = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + positionsBV.byteOffset);
+	unsigned int verticesCount = m_model.accessors[primitive.attributes["POSITION"]].count;
+
+	tinygltf::BufferView normalsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["NORMAL"]].bufferView];
+	DirectX::XMFLOAT3* normals = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + normalsBV.byteOffset);
+
+	
+	//tinygltf::BufferView tangentsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["TANGENT"]].bufferView];
+	//DirectX::XMFLOAT4* tangents = (DirectX::XMFLOAT4*)(m_model.buffers[0].data.data() + tangentsBV.byteOffset);
+
+
+	tinygltf::BufferView texCoord0BV = m_model.bufferViews[m_model.accessors[primitive.attributes["TEXCOORD_0"]].bufferView];
+	DirectX::XMFLOAT2* texCoords = (DirectX::XMFLOAT2*)(m_model.buffers[0].data.data() + texCoord0BV.byteOffset);
+
+	tinygltf::BufferView indicesBV = m_model.bufferViews[m_model.accessors[primitive.indices].bufferView];
+	uint16_t* indexes = (uint16_t*)(m_model.buffers[0].data.data() + indicesBV.byteOffset);
+	unsigned int indexesCount = m_model.accessors[primitive.indices].count;
+
+	std::unique_ptr<DirectX::XMFLOAT3[]> tan1(new DirectX::XMFLOAT3[verticesCount]);
+	ZeroMemory(tan1.get(), verticesCount * sizeof(DirectX::XMFLOAT3));
+	std::unique_ptr<DirectX::XMFLOAT3[]> tan2(new DirectX::XMFLOAT3[verticesCount]);
+	ZeroMemory(tan2.get(), verticesCount * sizeof(DirectX::XMFLOAT3));
+	//std::unique_ptr<DirectX::XMVECTOR[]> tan1(new DirectX::XMVECTOR[verticesCount]);
+	//std::unique_ptr<DirectX::XMVECTOR[]> tan2(new DirectX::XMVECTOR[verticesCount]);
+	std::unique_ptr<DirectX::XMFLOAT4[]> tangent(new DirectX::XMFLOAT4[verticesCount]);
+	ZeroMemory(tangent.get(), verticesCount * sizeof(DirectX::XMFLOAT3));
+
+	for(int i=0; i<indexesCount; i+=3)	
+	{
+		long i1 = indexes[i];
+		long i2 = indexes[i+1];
+		long i3 = indexes[i+2];
+		
+		DirectX::XMFLOAT3 v1 = vertices[i1];
+		DirectX::XMFLOAT3 v2 = vertices[i2];
+		DirectX::XMFLOAT3 v3 = vertices[i3];
+		
+		DirectX::XMFLOAT2 w1 = texCoords[i1];
+		DirectX::XMFLOAT2 w2 = texCoords[i2];
+		DirectX::XMFLOAT2 w3 = texCoords[i3];
+
+		float x1 = v2.x - v1.x;
+		float x2 = v3.x - v1.x;
+		float y1 = v2.y - v1.y;        
+		float y2 = v3.y - v1.y;        
+		float z1 = v2.z - v1.z;        
+		float z2 = v3.z - v1.z;        
+		float s1 = w2.x - w1.x;        
+		float s2 = w3.x - w1.x;        
+		float t1 = w2.y - w1.y;        
+		float t2 = w3.y - w1.y;        
+		float r = 1.0f / (s1 * t2 - s2 * t1);        
+		DirectX::XMFLOAT3 sdir((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r);
+		DirectX::XMFLOAT3 tdir((s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r);
+		tan1[i1] = { tan1[i1].x + sdir.x, tan1[i1].y + sdir.y, tan1[i1].z + sdir.z };
+		tan1[i2] = { tan1[i2].x + sdir.x, tan1[i2].y + sdir.y, tan1[i2].z + sdir.z };
+		tan1[i3] = { tan1[i3].x + sdir.x, tan1[i3].y + sdir.y, tan1[i3].z + sdir.z };
+		tan2[i1] = { tan2[i1].x + sdir.x, tan2[i1].y + sdir.y, tan2[i1].z + sdir.z };
+		tan2[i2] = { tan2[i2].x + sdir.x, tan2[i2].y + sdir.y, tan2[i2].z + sdir.z };
+		tan2[i3] = { tan2[i3].x + sdir.x, tan2[i3].y + sdir.y, tan2[i3].z + sdir.z };
+	}
+
+	for (int i = 0; i < verticesCount; i++)
+	{
+
+		DirectX::XMVECTOR n = DirectX::XMLoadFloat3(&normals[i]);
+		DirectX::XMVECTOR t = DirectX::XMLoadFloat3(&tan1[i]);
+
+		// Gram-Schmidt orthogonalize        
+		DirectX::XMVECTOR xmTangent = XMVector3Normalize(XMVectorSubtract(t, XMVectorScale(n, XMVectorGetX(XMVector3Dot(n, t)))));
+
+		// Calculate handedness        
+		DirectX::XMVECTOR t2 = DirectX::XMLoadFloat3(&tan2[i]);
+		float handedness = (XMVectorGetX(XMVector3Dot(XMVector3Cross(n, t), t2)) < 0.0f) ? -1.0f : 1.0f;
+		xmTangent = DirectX::XMVectorSetW(xmTangent, handedness);
+		DirectX::XMStoreFloat4(&tangent[i], xmTangent);
+	}
+
+	GPUHeapUploader gpuHeapUploader(m_renderer->GetDevice().Get(), m_renderer->GetCommandQueue().Get());
+	m_assetsManager->AddGPUBuffer(gpuHeapUploader.Upload(tangent.get(), verticesCount * sizeof(DirectX::XMFLOAT4)));
+}
+
 
 std::vector<Mesh> GLTFScene::getMeshes()
 {

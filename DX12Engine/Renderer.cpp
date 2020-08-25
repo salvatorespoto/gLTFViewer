@@ -12,6 +12,7 @@ void Renderer::Init(HWND hWnd, unsigned int width, unsigned int height, std::sha
     m_hWnd = hWnd;
     m_assetsManager = assetsManager;
     m_width = width; m_height = height;
+    m_lightPosition = { 0.0f, 3.0f, 0.0f };
     SetViewport({ 0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f });
     SetScissorRect({ 0, 0, static_cast<long>(m_width), static_cast<long>(m_height) });
     EnableDebugLayer();
@@ -351,10 +352,10 @@ void Renderer::CreatePipelineState()
 {
     D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
     inputLayoutDesc.pInputElementDescs = vertexElementsDesc;
-    inputLayoutDesc.NumElements = 3;
+    inputLayoutDesc.NumElements = 4;
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-    psoDesc.InputLayout = { vertexElementsDesc, 3 };
+    psoDesc.InputLayout = { vertexElementsDesc, 4 };
     psoDesc.pRootSignature = m_rootSignature.Get();
     psoDesc.VS = { reinterpret_cast<UINT8*>(m_vertexShader->GetBufferPointer()), m_vertexShader->GetBufferSize() };
     psoDesc.PS = { reinterpret_cast<UINT8*>(m_pixelShader->GetBufferPointer()), m_pixelShader->GetBufferSize() };

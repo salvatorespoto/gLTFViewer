@@ -2,14 +2,14 @@
 
 #include "DXUtil.h"
 
-/**
- * Constants relative to frame rendering
- */
+/** All the common constants used for a single frame rendering */
 struct PassConstants
 {
 	DirectX::XMFLOAT4X4 viewMtx;
 	DirectX::XMFLOAT4X4 projMtx;
 	DirectX::XMFLOAT4X4 projViewMtx;
+	DirectX::XMFLOAT3 eyePosition; float _pad0;
+	DirectX::XMFLOAT3 lightPosition; float _pad1;
 };
 
 /**

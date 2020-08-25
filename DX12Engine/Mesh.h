@@ -14,6 +14,7 @@ struct SubMesh
 	BufferView verticesBufferView;
 	BufferView indicesBufferView;
 	BufferView normalsBufferView;
+	BufferView tangentsBufferView;
 	BufferView texCoord0BufferView;
 	BufferView texCoord1BufferView;
 	unsigned int materialId;

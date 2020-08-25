@@ -26,6 +26,7 @@ struct AppState
 	unsigned int currentScreenWidth = 1280;
 	unsigned int currentScreenHeight = 1024;
 	float meshRotationX = 0.0f, meshRotationY = 0.0f, meshRotationZ = 0.0f;
+	float lightPositionX = 0.0f, lightPositionY = 3.0f, lightPositionZ = 0.0f;
 };
 
 /** The 3D viewer application */

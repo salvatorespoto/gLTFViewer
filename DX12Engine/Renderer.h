@@ -47,6 +47,7 @@ public:
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_samplersDescriptorHeap;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_CBV_SRV_DescriptorHeap;
     std::shared_ptr<AssetsManager> m_assetsManager;
+    DirectX::XMFLOAT3 m_lightPosition;
 
 
 private:

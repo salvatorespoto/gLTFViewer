@@ -323,6 +323,8 @@ void ViewerApp::UpdateCamera()
     passConstants.projMtx = m_camera->getProjMtx();
     passConstants.viewMtx = m_camera->getViewMtx();
     XMStoreFloat4x4(&passConstants.projViewMtx, DirectX::XMMatrixTranspose(XMMatrixMultiply(XMLoadFloat4x4(&passConstants.viewMtx), XMLoadFloat4x4(&passConstants.projMtx))));
+    passConstants.eyePosition = m_camera->GetPosition();
+    passConstants.lightPosition = DirectX::XMFLOAT3(m_appState.lightPositionX, m_appState.lightPositionY, m_appState.lightPositionZ);
     m_renderer->UpdatePassConstants(passConstants);
 }
 

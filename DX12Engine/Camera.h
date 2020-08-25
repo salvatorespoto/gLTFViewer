@@ -25,6 +25,9 @@ public:
 	/** Set camera position */
 	void setPosition(DirectX::XMFLOAT3 position);
 	
+	/** Get camera position */
+	DirectX::XMFLOAT3 GetPosition();
+
 	/** Move the camera in the forward direction */
 	void moveForward(float distance);
 	

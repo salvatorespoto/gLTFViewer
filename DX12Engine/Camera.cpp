@@ -44,6 +44,11 @@ void Camera::setPosition(DirectX::XMFLOAT3 position)
 	m_dirty = true;
 }
 
+DirectX::XMFLOAT3 Camera::GetPosition() 
+{
+	return m_position;
+}
+
 void Camera::moveForward(float distance)
 {
 	XMVECTOR forward = XMLoadFloat3(&m_forward);

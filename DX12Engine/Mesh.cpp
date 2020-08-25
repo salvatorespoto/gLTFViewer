@@ -13,7 +13,8 @@ D3D12_INPUT_ELEMENT_DESC vertexElementsDesc[] =
 		0								// Instaced data step rate
 	},
 	{"NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-	{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+	{"TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+	{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 };
 
 Mesh::Mesh(std::shared_ptr<AssetsManager> assetsManager)
@@ -51,13 +52,18 @@ void Mesh::Draw(ID3D12GraphicsCommandList* commandList)
 		nbView.StrideInBytes = sizeof(DirectX::XMFLOAT3);
 		nbView.SizeInBytes = subMesh.verticesBufferView.byteLength;
 
+		D3D12_VERTEX_BUFFER_VIEW tanbView;
+		tanbView.BufferLocation = m_assetsManager->m_buffersGPU[subMesh.tangentsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.tangentsBufferView.byteOffset;
+		tanbView.StrideInBytes = sizeof(DirectX::XMFLOAT4);
+		tanbView.SizeInBytes = subMesh.tangentsBufferView.byteLength;
+
 		D3D12_VERTEX_BUFFER_VIEW tbView;
 		tbView.BufferLocation = m_assetsManager->m_buffersGPU[subMesh.texCoord0BufferView.bufferId]->GetGPUVirtualAddress() + subMesh.texCoord0BufferView.byteOffset;
 		tbView.StrideInBytes = sizeof(DirectX::XMFLOAT2);
 		tbView.SizeInBytes = subMesh.texCoord0BufferView.byteLength;;
 
-		D3D12_VERTEX_BUFFER_VIEW vertexBuffers[3] = { vbView, nbView, tbView };
-		commandList->IASetVertexBuffers(0, 3, vertexBuffers);
+		D3D12_VERTEX_BUFFER_VIEW vertexBuffers[4] = { vbView, nbView, tanbView, tbView };
+		commandList->IASetVertexBuffers(0, 4, vertexBuffers);
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		D3D12_INDEX_BUFFER_VIEW ibView;

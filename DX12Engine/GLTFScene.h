@@ -19,6 +19,9 @@ public:
 	std::vector<Mesh> getMeshes();
 
 protected:
+
+	void ComputeTangentSpace(tinygltf::Primitive primitive);
+	std::shared_ptr<AssetsManager> m_assetsManager;
 	std::shared_ptr<Renderer> m_renderer;
 	ID3D12GraphicsCommandList* m_cmdList;
 	//std::vector<Mesh> m_meshes;

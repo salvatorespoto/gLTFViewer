@@ -4,9 +4,8 @@
 
 struct TextureAccessor 
 {
-	uint32_t textureId;
-	uint32_t texCoordId;
-	DirectX::XMFLOAT2 _pad;
+	uint32_t textureId; DirectX::XMFLOAT3 _pad0;
+	uint32_t texCoordId; DirectX::XMFLOAT3 _pad1;
 };
 
 struct RoughMetallicMaterial

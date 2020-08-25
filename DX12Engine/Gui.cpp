@@ -123,6 +123,12 @@ void Gui::Draw(AppState* appState)
         ImGui::SliderAngle("Rotation Z", &appState->meshRotationZ);
         ImGui::End();
 
+        ImGui::Begin("Light");
+        ImGui::SliderFloat("Position X", &appState->lightPositionX, -10.0f, 10.0f, "x = %.3f");
+        ImGui::SliderFloat("Position Y", &appState->lightPositionY, -10.0f, 10.0f, "x = %.3f");
+        ImGui::SliderFloat("Position Z", &appState->lightPositionZ, -10.0f, 10.0f, "x = %.3f");
+        ImGui::End();
+
         //std::vector<DXGI_MODE_DESC> displayModes = m_renderer->GetDisplayModes();
 
         ImGui::Begin("Shader source");
