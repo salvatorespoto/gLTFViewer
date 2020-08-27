@@ -1,17 +1,32 @@
 static const float PI = 3.14159265f;
 
-cbuffer cb0 : register(b0)
+static const uint MESH_CONSTANTS_N_DESCRIPTORS = 15;
+static const uint MATERIALS_N_DESCRIPTORS = 15;
+static const uint TEXTURES_N_DESCRIPTORS = 15;
+static const uint SAMPLERS_N_DESCRIPTORS = 15;
+static const uint MAX_LIGHT_NUMBER = 7;
+
+static const float3 dielectricSpecular = { 0.04f, 0.04f, 0.04f };
+static const float3 black = { 0.0f, 0.0f, 0.0f };
+
+struct Light 
+{
+    float4 position;
+    float4 color;
+};
+
+struct FrameConstants
 {
     float4x4 viewMtx;
     float4x4 projMtx;
     float4x4 viewProjMtx;
     float4 eyePosition;
-    float4 lightPosition;
+    Light lights[MAX_LIGHT_NUMBER];
 };
 
-cbuffer cb1 : register(b1)
+struct MeshConstants
 {
-    float4x4 meshModelMtx;
+    float4x4 modelMtx;
 };
 
 struct TextureAccessor
@@ -32,14 +47,11 @@ struct RoughMetallicMaterial
     TextureAccessor occlusionTA;
 };
 
-//const float3 dielectricSpecular = { 0.04f, 0.04f, 0.04f };
-const float3 black = { 0.0f, 0.0f, 0.0f };
-
-ConstantBuffer<RoughMetallicMaterial> materials : register(b2);
-
-Texture2D textures[5] : register(t0);
-
-SamplerState texSampler : register(s0);
+FrameConstants frameConstants : register(b0, space0);
+ConstantBuffer<MeshConstants> meshConstants : register(b1, space0);
+ConstantBuffer<RoughMetallicMaterial> materials[MATERIALS_N_DESCRIPTORS]  : register(b0, space1);
+Texture2D textures[TEXTURES_N_DESCRIPTORS] : register(t0, space0);
+SamplerState samplers[SAMPLERS_N_DESCRIPTORS] : register(s0);
 
 struct VertexIn
 {
@@ -62,11 +74,11 @@ struct VertexOut
 VertexOut VSMain(VertexIn vIn)
 {
     VertexOut vOut;
-    vOut.shadingLocation = mul(float4(vIn.position, 1.0f), meshModelMtx).xyz;
-    vOut.normal = mul(float4(vIn.normal, 1.0f), meshModelMtx);
-    vOut.position = mul(float4(vIn.position, 1.0f), mul(meshModelMtx, viewProjMtx));
+    vOut.shadingLocation = mul(float4(vIn.position, 1.0f), meshConstants.modelMtx).xyz;
+    vOut.normal = mul(float4(vIn.normal, 1.0f), meshConstants.modelMtx).xyz;
+    vOut.position = mul(float4(vIn.position, 1.0f), mul(meshConstants.modelMtx, frameConstants.viewProjMtx));
     vOut.textCoord = vIn.textCoord;
-    vOut.tangent = mul(float4(vIn.tangent.xyz, 1.0f), meshModelMtx);;
+    vOut.tangent = mul(float4(vIn.tangent.xyz, 1.0f), meshConstants.modelMtx);
     return vOut;
 }
 
@@ -79,8 +91,8 @@ float diffuseDisney(float3 C_diff, float F90, float NdotL, float NdotV);    // D
 // The pixel shader
 float4 PSMain(VertexOut vIn) : SV_Target // SV_Target means that the output should match the rendering target format
 {
-    float3 V = normalize(eyePosition.xyz - vIn.shadingLocation);      // V is the normalized vector from the shading location to the eye
-    float3 L = normalize(lightPosition.xyz - vIn.shadingLocation);    // L is the normalized vector from the shading location to the light
+    float3 V = normalize(frameConstants.eyePosition.xyz - vIn.shadingLocation);      // V is the normalized vector from the shading location to the eye
+    float3 L = normalize(frameConstants.lights[0].position.xyz - vIn.shadingLocation);    // L is the normalized vector from the shading location to the light
     float3 N = vIn.normal;                                 // N is the surface normal in the same space as the above values
     float3 H = normalize(L + V);                           // H is the half vector, where H = normalize(L + V)
     float VdotH = dot(V, H);
@@ -92,10 +104,10 @@ float4 PSMain(VertexOut vIn) : SV_Target // SV_Target means that the output shou
     float3 dielectricSpecular = { 0.04f, 0.04f, 0.04f };
     float3 black = { 0.0f, 0.0f, 0.0f };
 
-    float4 baseColor = textures[materials.baseColorTA.textureId].Sample(texSampler, vIn.textCoord);
-    float4 roughMetallic = textures[materials.roughMetallicTA.textureId].Sample(texSampler, vIn.textCoord);
-    float4 emissive = textures[materials.emissiveTA.textureId].Sample(texSampler, vIn.textCoord);
-    float4 occlusion = textures[materials.occlusionTA.textureId].Sample(texSampler, vIn.textCoord);
+    float4 baseColor = textures[materials[0].baseColorTA.textureId].Sample(samplers[0], vIn.textCoord);
+    float4 roughMetallic = textures[materials[0].roughMetallicTA.textureId].Sample(samplers[0], vIn.textCoord);
+    float4 emissive = textures[materials[0].emissiveTA.textureId].Sample(samplers[0], vIn.textCoord);
+    float4 occlusion = textures[materials[0].occlusionTA.textureId].Sample(samplers[0], vIn.textCoord);
 
 
     float roughness = roughMetallic.g;

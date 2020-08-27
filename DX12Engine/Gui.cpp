@@ -1,15 +1,23 @@
 #include "Gui.h"
 #include "ViewerApp.h"
-
+#include "Mesh.h"
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include "imgui/imfilebrowser.h"
 
 using DXUtil::ThrowIfFailed;
+using DirectX::XMMATRIX;
+using DirectX::XMMatrixRotationAxis;
+using DirectX::XMMatrixMultiply;
 
-void Gui::Init(std::shared_ptr<Renderer> renderer)
+
+
+void Gui::Init(std::shared_ptr<Renderer> renderer, AppState* appState)
 {
+    DEBUG_LOG("Initializing Gui object")
     m_renderer = renderer;
+    m_appState = appState;
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -33,7 +41,12 @@ void Gui::Init(std::shared_ptr<Renderer> renderer)
 
     LoadShaderSource();
 
+    m_fileDialog.SetTitle("title");
+    m_fileDialog.SetTypeFilters({ ".glb", ".gltf" });
+
     m_isInitialized = true;
+
+
 }
 
 void Gui::Draw(AppState* appState)
@@ -44,39 +57,11 @@ void Gui::Draw(AppState* appState)
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
     
-    // Draw the GUI here
+    // Draw the GUI
     {
         if (ImGui::BeginMainMenuBar())
         {
-            if (ImGui::BeginMenu("File"))
-            {
-
-                if (ImGui::MenuItem("Exit"))
-                    // Exit...
-                    ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Edit"))
-            {
-                //...
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Window"))
-            {
-                //...
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::MenuItem("VIP")) // !!!
-                // Very important command...
-
-                if (ImGui::BeginMenu("Help"))
-                {
-                    //...
-                    ImGui::EndMenu();
-                }
-
+            FileMenu();
             ImGui::EndMainMenuBar();
         }
 
@@ -118,15 +103,21 @@ void Gui::Draw(AppState* appState)
         ImGui::ShowDemoWindow();
 
         ImGui::Begin("Mesh");
-        ImGui::SliderAngle("Rotation X", &appState->meshRotationX);
-        ImGui::SliderAngle("Rotation Y", &appState->meshRotationY);
-        ImGui::SliderAngle("Rotation Z", &appState->meshRotationZ);
+        float rotX = 0.0f, rotY = 0.0f, rotZ = 0.0f;
+        ImGui::SliderAngle("Rotation X", &rotX);
+        ImGui::SliderAngle("Rotation Y", &rotY);
+        ImGui::SliderAngle("Rotation Z", &rotZ);
+        XMMATRIX meshRotation = XMMatrixMultiply(XMMatrixMultiply(XMMatrixRotationAxis({ 1.0f, 0.0f, 0.0f }, rotX), XMMatrixRotationAxis({ 0.0f, 1.0f, 0.0f }, rotY)), XMMatrixRotationAxis({ 0.0f, 0.0f, 1.0f }, rotZ));
+        DirectX::XMStoreFloat4x4(&appState->meshConstants[0].modelMtx, meshRotation);
         ImGui::End();
 
         ImGui::Begin("Light");
-        ImGui::SliderFloat("Position X", &appState->lightPositionX, -10.0f, 10.0f, "x = %.3f");
-        ImGui::SliderFloat("Position Y", &appState->lightPositionY, -10.0f, 10.0f, "x = %.3f");
-        ImGui::SliderFloat("Position Z", &appState->lightPositionZ, -10.0f, 10.0f, "x = %.3f");
+        ImGui::SliderFloat("Position X", &appState->lights[0].position.x, -10.0f, 10.0f, "x = %.3f");
+        ImGui::SliderFloat("Position Y", &appState->lights[0].position.y, -10.0f, 10.0f, "x = %.3f");
+        ImGui::SliderFloat("Position Z", &appState->lights[0].position.z, -10.0f, 10.0f, "x = %.3f");
+        ImGui::SliderFloat("R", &appState->lights[0].color.x, 0.0f, 1.0f, "x = %.3f");
+        ImGui::SliderFloat("G", &appState->lights[0].color.y, 0.0f, 1.0f, "x = %.3f");
+        ImGui::SliderFloat("B", &appState->lights[0].color.z, 0.0f, 1.0f, "x = %.3f");
         ImGui::End();
 
         //std::vector<DXGI_MODE_DESC> displayModes = m_renderer->GetDisplayModes();
@@ -201,4 +192,30 @@ void Gui::SaveShaderSource()
     }
     out.write((char*)m_shaderText, strlen(m_shaderText));
     out.close();
+}
+
+void Gui::FileMenu() 
+{
+    if (ImGui::BeginMenu("File"))
+    {
+        if (ImGui::Button("Open glTF ...")) { m_fileDialog.Open(); }
+        m_fileDialog.Display();
+        if (m_fileDialog.HasSelected())
+        {
+            std::cout << "Selected filename" << m_fileDialog.GetSelected().string() << std::endl;
+            m_appState->isOpenGLTFPressed = true;
+            m_appState->gltfFileLoaded = m_fileDialog.GetSelected().string();
+            m_fileDialog.Close();
+            ImGui::CloseCurrentPopup();
+        }
+
+        if (ImGui::Button("Exit"))
+        {
+            m_appState->isExitTriggered = true;
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndMenu();
+    }
+
 }

@@ -64,6 +64,15 @@ namespace DXUtil
         }
     }
 
+    /** Output the message in an ID3DBlob error blog object */
+    inline std::string GetErrorBlobMsg(Microsoft::WRL::ComPtr<ID3DBlob> errorBlob)
+    {
+        if (errorBlob == nullptr) return "";
+        std::string errorMsg;
+        errorMsg.assign((char*)errorBlob->GetBufferPointer());
+        return errorMsg;
+    }
+
     /** Throw exception on failure with a given message */
     inline void ThrowException(std::string errorMsg)
     {
@@ -84,7 +93,7 @@ namespace DXUtil
     void printAdaptersInfo();
 
     /** Compute the byte size of a buffer after padding it to a 256 byte multiple */
-    UINT padByteSizeTo256Mul(UINT byteSize);
+    UINT PadByteSizeTo256Mul(UINT byteSize);
 
     /* Store an indentity matmrix in a XMFLOAT4X4 */
     DirectX::XMFLOAT4X4 IdentityMtx();

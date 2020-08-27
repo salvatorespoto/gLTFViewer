@@ -17,9 +17,9 @@ D3D12_INPUT_ELEMENT_DESC vertexElementsDesc[] =
 	{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 };
 
-Mesh::Mesh(std::shared_ptr<AssetsManager> assetsManager)
+Mesh::Mesh()
 {
-	m_assetsManager = assetsManager;
+	constants.modelMtx = DXUtil::IdentityMtx();
 }
 
 void Mesh::SetId(unsigned int id)
@@ -27,53 +27,17 @@ void Mesh::SetId(unsigned int id)
 	m_id = id;
 }
 
-void Mesh::SetModelMtx(const DirectX::XMFLOAT4X4& modelMtx)
+unsigned int Mesh::GetId() const
 {
-	m_modelMtx = modelMtx;
+	return m_id;
 }
 
+void Mesh::SetModelMtx(const DirectX::XMFLOAT4X4& modelMtx)
+{
+	constants.modelMtx = modelMtx;
+}
 
 void Mesh::AddSubMesh(const SubMesh& subMesh)
 {
 	m_subMeshes.push_back(subMesh);
-}
-
-void Mesh::Draw(ID3D12GraphicsCommandList* commandList)
-{
-	for (SubMesh subMesh : m_subMeshes)
-	{
-		D3D12_VERTEX_BUFFER_VIEW vbView;
-		vbView.BufferLocation = m_assetsManager->m_buffersGPU[subMesh.verticesBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.verticesBufferView.byteOffset;
-		vbView.StrideInBytes = sizeof(DirectX::XMFLOAT3);
-		vbView.SizeInBytes = subMesh.verticesBufferView.byteLength;
-
-		D3D12_VERTEX_BUFFER_VIEW nbView;
-		nbView.BufferLocation = m_assetsManager->m_buffersGPU[subMesh.normalsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.normalsBufferView.byteOffset;
-		nbView.StrideInBytes = sizeof(DirectX::XMFLOAT3);
-		nbView.SizeInBytes = subMesh.verticesBufferView.byteLength;
-
-		D3D12_VERTEX_BUFFER_VIEW tanbView;
-		tanbView.BufferLocation = m_assetsManager->m_buffersGPU[subMesh.tangentsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.tangentsBufferView.byteOffset;
-		tanbView.StrideInBytes = sizeof(DirectX::XMFLOAT4);
-		tanbView.SizeInBytes = subMesh.tangentsBufferView.byteLength;
-
-		D3D12_VERTEX_BUFFER_VIEW tbView;
-		tbView.BufferLocation = m_assetsManager->m_buffersGPU[subMesh.texCoord0BufferView.bufferId]->GetGPUVirtualAddress() + subMesh.texCoord0BufferView.byteOffset;
-		tbView.StrideInBytes = sizeof(DirectX::XMFLOAT2);
-		tbView.SizeInBytes = subMesh.texCoord0BufferView.byteLength;;
-
-		D3D12_VERTEX_BUFFER_VIEW vertexBuffers[4] = { vbView, nbView, tanbView, tbView };
-		commandList->IASetVertexBuffers(0, 4, vertexBuffers);
-		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-		D3D12_INDEX_BUFFER_VIEW ibView;
-		ibView.BufferLocation = m_assetsManager->m_buffersGPU[subMesh.indicesBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.indicesBufferView.byteOffset;
-		ibView.Format = DXGI_FORMAT_R16_UINT;
-		ibView.SizeInBytes = subMesh.indicesBufferView.byteLength;
-
-		D3D12_INDEX_BUFFER_VIEW indexBuffers[1] = { ibView };
-		commandList->IASetIndexBuffer(indexBuffers);
-
-		commandList->DrawIndexedInstanced(subMesh.indicesBufferView.count, 1, 0, 0, 0);
-	}
 }

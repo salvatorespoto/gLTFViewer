@@ -6,9 +6,9 @@
 struct BufferView
 {
 	unsigned int bufferId = -1;
-	unsigned int byteOffset = 0;
-	unsigned int byteLength = 0;
-	unsigned int count = 0;
+	size_t byteOffset = 0;
+	size_t byteLength = 0;
+	size_t count = 0;
 };
 
 /** Upload data to a default heap buffer and return a com pointer to it */

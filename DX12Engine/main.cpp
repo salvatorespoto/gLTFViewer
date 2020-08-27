@@ -3,7 +3,6 @@
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdLine, int nCmdShow)
 {
     ViewerApp viewer(hInstance);
-    viewer.init();
-    viewer.run();
+    viewer.Run();
     return 0;
 }

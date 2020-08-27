@@ -22,6 +22,9 @@ Camera::Camera(UINT32 width, UINT32 height, float fovY, float nearZ, float farZ)
 	update();
 }
 
+Camera::~Camera()
+{}
+
 void Camera::setLens(float fovY, float aspectRatio, float nearZ, float farZ)
 {
 	m_fovY = fovY;
@@ -44,7 +47,7 @@ void Camera::setPosition(DirectX::XMFLOAT3 position)
 	m_dirty = true;
 }
 
-DirectX::XMFLOAT3 Camera::GetPosition() 
+DirectX::XMFLOAT3 Camera::GetPosition()  const
 {
 	return m_position;
 }

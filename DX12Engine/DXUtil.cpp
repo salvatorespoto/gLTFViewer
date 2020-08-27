@@ -77,7 +77,7 @@ namespace DXUtil
 	}
 
 
-	UINT padByteSizeTo256Mul(UINT byteSize)
+	UINT PadByteSizeTo256Mul(UINT byteSize)
 	{
 		return (byteSize + 255) & ~255;
 	}

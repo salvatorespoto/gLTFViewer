@@ -1,7 +1,7 @@
 #pragma once
 
 #include "DXUtil.h"
-#include "AssetsManager.h"
+#include "Scene.h"
 
 #define DESCRIPTORS_HEAP_SIZE 50
 
@@ -21,25 +21,29 @@ struct SubMesh
 	unsigned int renderMode;
 };
 
-class AssetsManager;
+/** MeshConstants contains all mesh constants used from shaders */
+struct MeshConstants
+{
+	DirectX::XMFLOAT4X4 modelMtx;
+};
 
 /** A 3D mesh */
 class Mesh
 {
 public:
-	Mesh() = delete;
-	Mesh(std::shared_ptr<AssetsManager> assetsManager);
+	Mesh();
 	Mesh(const Mesh& mesh) = default;
 	Mesh& operator=(const Mesh& mesh) = default;
 	
 	void SetId(unsigned int id);
+	unsigned int GetId() const;
 	void SetModelMtx(const DirectX::XMFLOAT4X4& modelMtx);
 	void AddSubMesh(const SubMesh& subMesh);
-	void Draw(ID3D12GraphicsCommandList* commandList);
 
-public:
+	friend void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList);
+
+protected:
 	unsigned int m_id;
+	MeshConstants constants;
 	std::vector<SubMesh> m_subMeshes;
-	DirectX::XMFLOAT4X4 m_modelMtx = DXUtil::IdentityMtx();
-	std::shared_ptr<AssetsManager> m_assetsManager;
 };

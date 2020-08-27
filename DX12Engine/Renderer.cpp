@@ -1,18 +1,16 @@
 #include "Renderer.h"
-#include "AssetsManager.h"
+#include "Scene.h"
 #include "Buffers.h"
-#include "FrameContext.h"
 #include "Mesh.h"
 
 using Microsoft::WRL::ComPtr;
 using DXUtil::ThrowIfFailed;
 
-void Renderer::Init(HWND hWnd, unsigned int width, unsigned int height, std::shared_ptr<AssetsManager> assetsManager)
+void Renderer::Init(HWND hWnd, unsigned int width, unsigned int height)
 {
+    DEBUG_LOG("Initializing Renderer object")
     m_hWnd = hWnd;
-    m_assetsManager = assetsManager;
     m_width = width; m_height = height;
-    m_lightPosition = { 0.0f, 3.0f, 0.0f };
     SetViewport({ 0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f });
     SetScissorRect({ 0, 0, static_cast<long>(m_width), static_cast<long>(m_height) });
     EnableDebugLayer();
@@ -25,8 +23,8 @@ void Renderer::Init(HWND hWnd, unsigned int width, unsigned int height, std::sha
     CreateConstantBuffer();
     std::string errorMsg;
     CompileShaders(L"shaders.hlsl", errorMsg);
-    CreateRootSignature();
-    CreatePipelineState();
+    //CreateRootSignature();
+    //CreatePipelineState();
 }
 
 void Renderer::SetSize(unsigned int width, unsigned int height)
@@ -72,6 +70,7 @@ void Renderer::EnableDebugLayer()
     ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)), "Cannot enable debug layer");
     debugController->EnableDebugLayer();
 #endif
+    DEBUG_LOG("Enabled debug layer")
 }
 
 void Renderer::CreateDefaultDevice()
@@ -89,6 +88,7 @@ void Renderer::CreateDefaultDevice()
         ThrowIfFailed(dxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&warpAdapter)), "Cannot create Direct3D device on WARP adapter");
         ThrowIfFailed(D3D12CreateDevice(warpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_device)), "Cannot create WARP adapter");
     }
+    DEBUG_LOG("Created default Direct3D device")
 }
 
 std::vector<DXGI_MODE_DESC> Renderer::GetDisplayModes()
@@ -126,6 +126,7 @@ void Renderer::CreateSwapChain()
     fullScreenSwapChainDesc.Windowed = !m_isFullScreen;
 
     m_swapChain.Create(m_device, swapChainDesc, fullScreenSwapChainDesc, m_hWnd, m_commandQueue);
+    DEBUG_LOG("Created swapchain")
 }
 
 
@@ -136,11 +137,13 @@ void Renderer::CreateCommandQueue()
     ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandListAlloc)), "Cannot create command allocator");
     ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandListAlloc.Get(), nullptr, IID_PPV_ARGS(&m_commandList)), "Cannot create the command list");
     m_commandList->Close();
+    DEBUG_LOG("Created command queue")
 }
 
 void Renderer::CreateFence()
 {
     ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)), "Cannot create fence");
+    DEBUG_LOG("Created fence")
 }
 
 void Renderer::FlushCommandQueue()
@@ -198,6 +201,7 @@ void Renderer::CreateDepthStencilBuffer()
     depthStencilDescView.Flags = D3D12_DSV_FLAG_NONE;
     // Create the depth stencil view
     m_device->CreateDepthStencilView(m_depthStencilBuffer.Get(), &depthStencilDescView, GetDepthStencilView());
+    DEBUG_LOG("Created depth stencil buffer and view")
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE Renderer::GetCurrentBackBufferView() const
@@ -212,11 +216,11 @@ D3D12_CPU_DESCRIPTOR_HANDLE Renderer::GetDepthStencilView() const
 
 void Renderer::CreateConstantBuffer()
 {
-    m_passConstantBuffer = std::make_unique<UploadBuffer<PassConstants>>(m_device.Get(), 1, true);
-    m_meshConstantBuffer = std::make_unique<UploadBuffer<DirectX::XMFLOAT4X4>>(m_device.Get(), 1, true);
-    m_materialConstantBuffer = std::make_unique<UploadBuffer<RoughMetallicMaterial>>(m_device.Get(), 1, true);
+    //m_passConstantBuffer = std::make_unique<UploadBuffer<PassConstants>>(m_device.Get(), 1, true);
+    //m_meshConstantBuffer = std::make_unique<UploadBuffer<DirectX::XMFLOAT4X4>>(m_device.Get(), 1, true);
+    //m_materialConstantBuffer = std::make_unique<UploadBuffer<RoughMetallicMaterial>>(m_device.Get(), 1, true);
 
-    m_CBV_SRV_DescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+  /*  m_CBV_SRV_DescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     D3D12_DESCRIPTOR_HEAP_DESC CBV_SRV_heapDesc = {};
     CBV_SRV_heapDesc = {};
     CBV_SRV_heapDesc.NumDescriptors = 10;
@@ -228,17 +232,18 @@ void Renderer::CreateConstantBuffer()
     D3D12_CONSTANT_BUFFER_VIEW_DESC meshMtxDesc;
     D3D12_GPU_VIRTUAL_ADDRESS cbAddress = m_meshConstantBuffer->getResource()->GetGPUVirtualAddress();
     meshMtxDesc.BufferLocation = cbAddress;
-    meshMtxDesc.SizeInBytes = DXUtil::padByteSizeTo256Mul(sizeof(DirectX::XMFLOAT4X4));
+    meshMtxDesc.SizeInBytes = DXUtil::PadByteSizeTo256Mul(sizeof(DirectX::XMFLOAT4X4));
     CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHeapHandle_CPU(m_CBV_SRV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
     m_device->CreateConstantBufferView(&meshMtxDesc, cbvHeapHandle_CPU);
 
     D3D12_CONSTANT_BUFFER_VIEW_DESC materialViewDesc;
     cbAddress = m_materialConstantBuffer->getResource()->GetGPUVirtualAddress();
     materialViewDesc.BufferLocation = cbAddress;
-    materialViewDesc.SizeInBytes = DXUtil::padByteSizeTo256Mul(sizeof(RoughMetallicMaterial));
+    materialViewDesc.SizeInBytes = DXUtil::PadByteSizeTo256Mul(sizeof(RoughMetallicMaterial));
     CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_CBV_SRV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
     hDescriptor.Offset(1, m_CBV_SRV_DescriptorSize);
     m_device->CreateConstantBufferView(&materialViewDesc, hDescriptor);
+    */
     // Srv Descriptor heap for textures
     //D3D12_DESCRIPTOR_HEAP_DESC SRV_heapDesc = {};
     //SRV_heapDesc = {};
@@ -247,7 +252,7 @@ void Renderer::CreateConstantBuffer()
     //SRV_heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     //ThrowIfFailed(m_device->CreateDescriptorHeap(&SRV_heapDesc, IID_PPV_ARGS(&m_texturesDescriptorHeap)),
     //    "Cannot create CBV SRV UAV descriptor heap");
-
+/*
     // Descriptor heap for samples
     D3D12_DESCRIPTOR_HEAP_DESC samplerHeapDesc = {};
     samplerHeapDesc.NumDescriptors = 1;
@@ -255,29 +260,8 @@ void Renderer::CreateConstantBuffer()
     samplerHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     ThrowIfFailed(m_device->CreateDescriptorHeap(&samplerHeapDesc, IID_PPV_ARGS(&m_samplersDescriptorHeap)),
         "Cannot create sampler descriptor heap");
+        */
 }
-
-void Renderer::AddTexture(ID3D12Resource* texture)
-{
-    m_textures.push_back(texture);
-    CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_CBV_SRV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-    hDescriptor.Offset(m_textures.size(), m_CBV_SRV_DescriptorSize);
-
-    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srvDesc.Format = texture->GetDesc().Format;
-    srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-    srvDesc.Texture2D.MostDetailedMip = 0;
-    srvDesc.Texture2D.MipLevels = texture->GetDesc().MipLevels;
-    srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-    m_device->CreateShaderResourceView(texture, &srvDesc, hDescriptor);
-}
-
-void Renderer::AddSample(D3D12_SAMPLER_DESC samplerDesc)
-{
-    m_device->CreateSampler(&samplerDesc, m_samplersDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-}
-
 
 bool Renderer::CompileShaders(std::wstring fileName, std::string& errorMsg)
 {
@@ -288,52 +272,35 @@ bool Renderer::CompileShaders(std::wstring fileName, std::string& errorMsg)
     UINT compileFlags = 0;
 #endif
     Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
-    HRESULT hr = D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, "VSMain", "vs_5_1", compileFlags, 0, &m_vertexShader, &errorBlob);
-    if (FAILED(hr))
+    if (FAILED(D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, "VSMain", "vs_5_1", compileFlags, 0, &m_vertexShader, &errorBlob)))
     {
-        if (errorBlob)
-        {
-            errorMsg.assign((char*)errorBlob->GetBufferPointer());
-            OutputDebugStringA(errorMsg.c_str());
-            errorBlob->Release();
-        }
+        DEBUG_LOG(DXUtil::GetErrorBlobMsg(errorBlob).c_str())
+        return false;
+    }
+    if (FAILED(D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, "PSMain", "ps_5_1", compileFlags, 0, &m_pixelShader, &errorBlob)))
+    {
+        DEBUG_LOG(DXUtil::GetErrorBlobMsg(errorBlob).c_str())
         return false;
     }
 
-    hr = D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, "PSMain", "ps_5_1", compileFlags, 0, &m_pixelShader, &errorBlob);
-    if (FAILED(hr))
-    {
-        if (errorBlob)
-        {
-            errorMsg.assign((char*)errorBlob->GetBufferPointer());
-            OutputDebugStringA(errorMsg.c_str());
-            errorBlob->Release();
-        }
-        return false;
-    }
+    DEBUG_LOG("Compiled shaders")
     return true;
 }
 
+/*
 void Renderer::CreateRootSignature()
 {
-    CD3DX12_ROOT_PARAMETER rootParameters[5];
+    CD3DX12_ROOT_PARAMETER rootParameters[5] = {};
 
-    // Parameter 1: Root descriptor
-    rootParameters[0].InitAsConstantBufferView(0);
 
-    // Parameter 2: descriptor table
-    CD3DX12_DESCRIPTOR_RANGE cbvTable;
-    cbvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
-    rootParameters[1].InitAsDescriptorTable(1, &cbvTable);
+    rootParameters[0].InitAsConstantBufferView(0);          // Parameter 1: Root descriptor that will holds the pass constants PassConstants
 
-    // Parameter 3: materials descriptor table
-    CD3DX12_DESCRIPTOR_RANGE matTable;
-    matTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
-    rootParameters[2].InitAsDescriptorTable(1, &matTable);
+    CD3DX12_DESCRIPTOR_RANGE constantBuffersTable;           // Parameter 2: Descriptor table for the scene constants (MESH CONSTANTS, MATERIALS)
+    constantBuffersTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, Scene::MESH_CONSTANTS_N_DESCRIPTORS + Scene::MATERIALS_N_DESCRIPTORS, 1);
+    rootParameters[1].InitAsDescriptorTable(1, &constantBuffersTable);
 
-    // Parameter 4: texture descriptor table
-    CD3DX12_DESCRIPTOR_RANGE srvTable;
-    srvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 5, 0);
+    CD3DX12_DESCRIPTOR_RANGE srvTable;                      // Parameter 2: Descriptor table for textures
+    srvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, Scene::TEXTURES_N_DESCRIPTORS, 0);
     rootParameters[3].InitAsDescriptorTable(1, &srvTable);
 
     // Samplers
@@ -347,8 +314,8 @@ void Renderer::CreateRootSignature()
     ThrowIfFailed(D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf()), "Cannot serialize root signature");
     ThrowIfFailed(m_device->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)), "Cannot create root signature");
 }
-
-void Renderer::CreatePipelineState()
+*/
+void Renderer::CreatePipelineState(Scene* scene)
 {
     D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
     inputLayoutDesc.pInputElementDescs = vertexElementsDesc;
@@ -356,7 +323,7 @@ void Renderer::CreatePipelineState()
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
     psoDesc.InputLayout = { vertexElementsDesc, 4 };
-    psoDesc.pRootSignature = m_rootSignature.Get();
+    psoDesc.pRootSignature = scene->CreateRootSignature().Get();
     psoDesc.VS = { reinterpret_cast<UINT8*>(m_vertexShader->GetBufferPointer()), m_vertexShader->GetBufferSize() };
     psoDesc.PS = { reinterpret_cast<UINT8*>(m_pixelShader->GetBufferPointer()), m_pixelShader->GetBufferSize() };
     D3D12_RASTERIZER_DESC rasterDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
@@ -389,30 +356,11 @@ void Renderer::ExecuteCommandList(ID3D12GraphicsCommandList* commandList)
     m_commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 }
 
-void Renderer::UpdatePassConstants(const PassConstants& passConstants)
-{
-    DirectX::XMFLOAT4X4 projViewMtx;
-    XMStoreFloat4x4(&projViewMtx, DirectX::XMMatrixTranspose(XMMatrixMultiply(XMLoadFloat4x4(&passConstants.viewMtx), XMLoadFloat4x4(&passConstants.projMtx))));
-    m_passConstantBuffer->copyData(0, passConstants);
-
-    m_materialConstantBuffer->copyData(0, m_assetsManager->m_materials[0]);
-}
-
-void Renderer::UpdateMeshConstants(DirectX::XMFLOAT4X4& meshModelMtx) 
-{
-    m_meshConstantBuffer->copyData(0, meshModelMtx);
-}
-
-void Renderer::UpdateMaterialConstants(RoughMetallicMaterial material)
-{
-    m_materialConstantBuffer->copyData(0, material);
-}
-
 void Renderer::SetPipelineState(ID3D12GraphicsCommandList* commandList)
 {
     commandList->SetPipelineState(m_pipelineState.Get());
 }
-
+/*
 void Renderer::SetRootSignature(ID3D12GraphicsCommandList* commandList)
 {
     commandList->SetGraphicsRootSignature(m_rootSignature.Get());
@@ -436,30 +384,42 @@ void Renderer::SetRootSignature(ID3D12GraphicsCommandList* commandList)
 
     commandList->SetGraphicsRootDescriptorTable(4, m_samplersDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 }
-
+*/
 void Renderer::ResetCommandList() 
 {
     ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
     ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
 }
 
-void Renderer::NewFrame() 
+void Renderer::Draw(Scene& scene) 
 {
-    ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
-    ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
-    CreatePipelineState();
+    //ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
+    //ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
+    CreatePipelineState(&scene);
     SetPipelineState(m_commandList.Get());
-    SetRootSignature(m_commandList.Get());
     m_commandList->RSSetViewports(1, &m_viewPort);
     m_commandList->RSSetScissorRects(1, &m_scissorRect);
     //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
-    m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_swapChain.GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-    m_commandList->ClearRenderTargetView(m_swapChain.GetCurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
+    //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_swapChain.GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    m_commandList->ClearRenderTargetView(m_swapChain.GetCurrentBackBufferView(), backgroundColor, 0, nullptr);
     m_commandList->ClearDepthStencilView(m_DSV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
     m_commandList->OMSetRenderTargets(1, &m_swapChain.GetCurrentBackBufferView(), FALSE, &GetDepthStencilView());
+    scene.Draw(m_commandList.Get());
+    //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_swapChain.GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencilBuffer.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_COMMON));
+    //m_commandList->Close();
+    //ExecuteCommandList(m_commandList.Get());
+    //FlushCommandQueue();
+    //m_swapChain.Present();
 }
 
-void Renderer::EndFrame()
+void Renderer::BeginDraw()
+{
+    ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
+    ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
+    m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_swapChain.GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+}
+void Renderer::EndDraw() 
 {
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_swapChain.GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
     //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencilBuffer.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_COMMON));

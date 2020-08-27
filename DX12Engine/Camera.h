@@ -19,14 +19,14 @@ public:
 	/** Constructor */
 	Camera(UINT32 width, UINT32 height, float fovY, float nearZ, float farZ);
 
+	/** Destructor */
+	~Camera();
+
 	/** Set camera lens */
 	void setLens(float fovY, float aspect, float nearZ, float farZ);
 
 	/** Set camera position */
 	void setPosition(DirectX::XMFLOAT3 position);
-	
-	/** Get camera position */
-	DirectX::XMFLOAT3 GetPosition();
 
 	/** Move the camera in the forward direction */
 	void moveForward(float distance);
@@ -46,6 +46,7 @@ public:
 	/** Update the camera: compute the view matrix using the current setted parameters */
 	void update();
 
+	DirectX::XMFLOAT3 GetPosition() const;
 	float getAspectRatio() const;
 	float getNearZ() const;
 	float getFarZ() const;

@@ -88,6 +88,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -116,6 +117,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -139,12 +141,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AssetsManager.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Buffers.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DXUtil.cpp" />
-    <ClCompile Include="GLTFScene.cpp" />
+    <ClCompile Include="GLTFSceneLoader.cpp" />
     <ClCompile Include="Gui.cpp" />
     <ClCompile Include="ImGUI\imgui.cpp" />
     <ClCompile Include="ImGUI\imgui_demo.cpp" />
@@ -158,17 +160,17 @@
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="ViewerApp.cpp" />
-    <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AssetsManager.h" />
+    <ClInclude Include="Light.h" />
+    <ClInclude Include="Scene.h" />
+    <ClInclude Include="imgui\imfilebrowser.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Buffers.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DXUtil.h" />
-    <ClInclude Include="FrameContext.h" />
-    <ClInclude Include="GLTFScene.h" />
+    <ClInclude Include="GLTFSceneLoader.h" />
     <ClInclude Include="Gui.h" />
     <ClInclude Include="ImGUI\imconfig.h" />
     <ClInclude Include="ImGUI\imgui.h" />
@@ -185,7 +187,6 @@
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="ViewerApp.h" />
-    <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DX12Engine.rc" />
@@ -210,11 +211,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\directxtk12_desktop_2017.2020.8.15.1\build\native\directxtk12_desktop_2017.targets" Condition="Exists('..\packages\directxtk12_desktop_2017.2020.8.15.1\build\native\directxtk12_desktop_2017.targets')" />
+    <Import Project="..\packages\dirent.1.13.1\build\native\dirent.targets" Condition="Exists('..\packages\dirent.1.13.1\build\native\dirent.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\directxtk12_desktop_2017.2020.8.15.1\build\native\directxtk12_desktop_2017.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk12_desktop_2017.2020.8.15.1\build\native\directxtk12_desktop_2017.targets'))" />
+    <Error Condition="!Exists('..\packages\dirent.1.13.1\build\native\dirent.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\dirent.1.13.1\build\native\dirent.targets'))" />
   </Target>
 </Project>
