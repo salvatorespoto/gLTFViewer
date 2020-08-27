@@ -28,6 +28,7 @@ public:
     void ShutDown();
 
 private:
+    void SetStyle();
     void LoadShaderSource();
     void SaveShaderSource();
     void FileMenu();
