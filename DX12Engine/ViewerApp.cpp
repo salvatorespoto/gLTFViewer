@@ -93,7 +93,7 @@ void ViewerApp::InitRenderer()
 
 void ViewerApp::InitCamera()
 {
-    m_camera = std::make_unique<Camera>(m_clientWidth, m_clientHeight, DirectX::XM_PIDIV4, 1.0f, 1000.0f);
+    m_camera = std::make_unique<Camera>(m_clientWidth, m_clientHeight, DirectX::XM_PIDIV4, 0.1f, 1000.0f);
     m_camera->setPosition({ 0.0f, 0.0f, -5.0f });
     DEBUG_LOG("Camera initialized");
 }
@@ -253,7 +253,7 @@ void ViewerApp::OnResize(UINT width, UINT height)
     
     ImGui_ImplDX12_InvalidateDeviceObjects();
     m_renderer->SetSize(width, height);
-    m_camera->setLens(DirectX::XM_PIDIV4, static_cast<float>(m_clientWidth) / static_cast<float>(m_clientHeight), 1.0f, 1000.f);
+    m_camera->setLens(DirectX::XM_PIDIV4, static_cast<float>(m_clientWidth) / static_cast<float>(m_clientHeight), 0.1f, 1000.f);
     
     
     //ImGui_ImplDX12_CreateDeviceObjects();
