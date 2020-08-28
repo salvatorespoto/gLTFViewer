@@ -298,10 +298,10 @@ void ViewerApp::OnMouseUp(WPARAM btnState, int x, int y)
 void ViewerApp::OnKeyDown(WPARAM wParam)
 {    
     // Handle camera movements
-    if (wParam == VK_KEY_W) m_camera->moveForward(0.2f);
-    if (wParam == VK_KEY_S) m_camera->moveForward(-0.2f);
-    if (wParam == VK_KEY_A) m_camera->strafe(-0.2f);
-    if (wParam == VK_KEY_D) m_camera->strafe(0.2f);
+    if (wParam == VK_KEY_W) m_camera->moveForward(0.05f);
+    if (wParam == VK_KEY_S) m_camera->moveForward(-0.05f);
+    if (wParam == VK_KEY_A) m_camera->strafe(-0.05f);
+    if (wParam == VK_KEY_D) m_camera->strafe(0.05f);
 }
 
 void ViewerApp::UpdateScene()
