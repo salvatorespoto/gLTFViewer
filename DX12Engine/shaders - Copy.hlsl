@@ -9,7 +9,7 @@ static const uint MAX_LIGHT_NUMBER = 7;
 static const float3 dielectricSpecular = { 0.04f, 0.04f, 0.04f };
 static const float3 black = { 0.0f, 0.0f, 0.0f };
 
-struct Light
+struct Light 
 {
     float4 position;
     float4 color;
@@ -27,7 +27,6 @@ struct FrameConstants
 struct MeshConstants
 {
     float4x4 modelMtx;
-    float4 rotationXYZ; // rotations about X, Y and Z axes. Fourth component unused;
 };
 
 struct TextureAccessor
@@ -104,22 +103,70 @@ float4 PSMain(VertexOut vIn) : SV_Target // SV_Target means that the output shou
 
     float3 dielectricSpecular = { 0.04f, 0.04f, 0.04f };
     float3 black = { 0.0f, 0.0f, 0.0f };
-    float3 ambientLight = { 0.2f, 0.2f, 0.5f };
 
     float4 baseColor = textures[materials[0].baseColorTA.textureId].Sample(samplers[0], vIn.textCoord);
     float4 roughMetallic = textures[materials[0].roughMetallicTA.textureId].Sample(samplers[0], vIn.textCoord);
     float4 emissive = textures[materials[0].emissiveTA.textureId].Sample(samplers[0], vIn.textCoord);
     float4 occlusion = textures[materials[0].occlusionTA.textureId].Sample(samplers[0], vIn.textCoord);
 
+
     float roughness = roughMetallic.g;
     float metallic = roughMetallic.b;
-    float3 albedo = baseColor.xyz;
 
-    float3 C_ambient = ambientLight * albedo;
-    return float4(C_ambient, 1.0f);
+    float3 C_diff = lerp(baseColor.rgb * (1.0f - dielectricSpecular.r), black, metallic);
+    float3 F0 = lerp(dielectricSpecular, baseColor.rgb, metallic); // F0 is Freshnel reflectance at 0 degrees
+    //float3 F90 = { 1.0f, 1.0f, 1.0f };                           // F90 is Freshnel reflectance at 90 degrees
+    float3 F90 = 2.0f * LdotH * LdotH * roughness + 0.5f;          // F90 accordind to Disney model 
+    float ALPHA_roughness = roughness * roughness;
+
+
+    float3 F = fresnel(F0, F90, VdotH);
+    float G = V_GGX(NdotL, NdotV, ALPHA_roughness);             // G is Geometric Occlusion 
+    float Vis = G / (4.0f * NdotL * NdotV);                     // Vis
+    float D = D_GGX(NdotH, ALPHA_roughness);                    // D is Microfacet Distribution
+    //float diffuse = diffuseLambert(C_diff);                     // Diffuse term
+    float diffuse = diffuseDisney(C_diff, F90, NdotL, NdotV);   // Diffuse term according to Disney model
+
+    float3 f_diffuse = (1.0f - F) * diffuse;
+    float3 f_specular = D * Vis * F; // D * Vis * F;
+    float3 f = float3(10.1f, 10.1f, 10.1f) * (f_diffuse + f_specular) * occlusion.xyz * 0.2f;
+    f = f + (emissive.xyz * 1.5f);
+    return float4(f, 1.0f);
 }
 
 float3 fresnel(float3 F0, float3 F90, float VdotH)
 {
     return F0 + (F90 - F0) * pow(clamp(1.0f - VdotH, 0.0f, 1.0f), 5.0f);
+}
+
+float V_GGX(float NdotL, float NdotV, float ALPHA_roughness)
+{
+    float ALPHA_roughness_sq = ALPHA_roughness * ALPHA_roughness;
+
+    float GGXV = NdotL * sqrt(NdotV * NdotV * (1.0 - ALPHA_roughness_sq) + ALPHA_roughness_sq);
+    float GGXL = NdotV * sqrt(NdotL * NdotL * (1.0 - ALPHA_roughness_sq) + ALPHA_roughness_sq);
+
+    float GGX = GGXV + GGXL;
+    if (GGX > 0.0)
+    {
+        return 0.5 / GGX;
+    }
+    return 0.0;
+}
+
+float D_GGX(float NdotH, float ALPHA_roughness)
+{
+    float ALPHA_roughness_sq = ALPHA_roughness * ALPHA_roughness;
+    float f = (NdotH * NdotH) * (ALPHA_roughness_sq - 1.0) + 1.0;
+    return ALPHA_roughness_sq / (PI * f * f);
+}
+
+float3 diffuseLambert(float3 C_diff)
+{
+    return C_diff / PI;
+}
+
+float diffuseDisney(float3 C_diff, float F90, float NdotL, float NdotV)
+{
+    return (C_diff / PI) * (1.0f + (F90 - 1.0f) * pow(1.0f - NdotL, 5.0f)) * (1.0f + (F90 - 1.0f) * pow(1.0f - NdotV, 5.0f));
 }

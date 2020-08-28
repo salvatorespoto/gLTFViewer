@@ -25,6 +25,7 @@ struct SubMesh
 struct MeshConstants
 {
 	DirectX::XMFLOAT4X4 modelMtx;
+	DirectX::XMFLOAT4 rotXYZ; // Rotations about the X, Y and Z axis. The fourth component is not used
 };
 
 /** A 3D mesh */

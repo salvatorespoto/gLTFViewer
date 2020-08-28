@@ -25,6 +25,8 @@ public:
     void Init(std::shared_ptr<Renderer> renderer, AppState* appState);
     void Draw(AppState* state);
     void ReSize(unsigned int widht, unsigned int height);
+    bool WantCaptureMouse();
+    bool WantCaptureKeyboard();
     void ShutDown();
 
 private:

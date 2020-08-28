@@ -272,17 +272,24 @@ bool Renderer::CompileShaders(std::wstring fileName, std::string& errorMsg)
     UINT compileFlags = 0;
 #endif
     Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
-    if (FAILED(D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, "VSMain", "vs_5_1", compileFlags, 0, &m_vertexShader, &errorBlob)))
+    Microsoft::WRL::ComPtr<ID3DBlob> vertexShader;
+    if (FAILED(D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, "VSMain", "vs_5_1", compileFlags, 0, &vertexShader, &errorBlob)))
     {
-        DEBUG_LOG(DXUtil::GetErrorBlobMsg(errorBlob).c_str())
-        return false;
-    }
-    if (FAILED(D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, "PSMain", "ps_5_1", compileFlags, 0, &m_pixelShader, &errorBlob)))
-    {
-        DEBUG_LOG(DXUtil::GetErrorBlobMsg(errorBlob).c_str())
+        errorMsg = DXUtil::GetErrorBlobMsg(errorBlob);
+        DEBUG_LOG(errorMsg.c_str())
         return false;
     }
 
+    Microsoft::WRL::ComPtr<ID3DBlob> pixelShader;
+    if (FAILED(D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, "PSMain", "ps_5_1", compileFlags, 0, &pixelShader, &errorBlob)))
+    {
+        errorMsg = DXUtil::GetErrorBlobMsg(errorBlob);
+        DEBUG_LOG(errorMsg.c_str())
+        return false;
+    }
+
+    m_vertexShader = vertexShader;
+    m_pixelShader = pixelShader;
     DEBUG_LOG("Compiled shaders")
     return true;
 }

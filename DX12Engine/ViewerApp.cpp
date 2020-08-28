@@ -8,10 +8,12 @@
 #include "GUI.h"
 
 using Microsoft::WRL::ComPtr;
+using DirectX::XMMATRIX;
 using DirectX::XMStoreFloat4x4;
 using DirectX::XMMatrixMultiply;
 using DirectX::XMLoadFloat4x4;
 using DirectX::XMConvertToRadians;
+using DirectX::XMMatrixRotationAxis;
 using DXUtil::ThrowIfFailed;
 
 LRESULT CALLBACK wndMsgCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -166,6 +168,7 @@ LRESULT ViewerApp::WndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
         case WM_LBUTTONDOWN:
         case WM_MBUTTONDOWN:
         case WM_RBUTTONDOWN:
+            if (m_gui->WantCaptureMouse()) return 0;
             // wParam identifies wich button has been pressed, while the macros GET_#_LPARAM get the coordinates from lParam
             OnMouseDown(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
             return 0;
@@ -173,14 +176,17 @@ LRESULT ViewerApp::WndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
         case WM_LBUTTONUP:
         case WM_MBUTTONUP:
         case WM_RBUTTONUP:
+            if (m_gui->WantCaptureMouse()) return 0;
             OnMouseUp(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
             return 0;
 
         case WM_MOUSEMOVE:
+            if (m_gui->WantCaptureMouse()) return 0;
             OnMouseMove(wParam, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
             return 0;
 
         case WM_KEYDOWN:
+            if (m_gui->WantCaptureKeyboard()) return 0;
             OnKeyDown(wParam);
             return 0;
 
@@ -263,12 +269,19 @@ void ViewerApp::OnResize(UINT width, UINT height)
 
 void ViewerApp::OnMouseMove(WPARAM btnState, int x, int y)
 {
-    if (btnState == MK_RBUTTON) 
+    if (btnState == MK_LBUTTON) 
     {
         // Rotate camera
         float rotWorldUp= m_mouseSensitivity * XMConvertToRadians(static_cast<float>(x - m_lastMousePosX));
         float  pitch = m_mouseSensitivity* XMConvertToRadians(static_cast<float>(y - m_lastMousePosY));
         m_camera->rotate(pitch, rotWorldUp);
+    }
+
+    if (btnState == MK_RBUTTON)
+    {
+        // Rotate mesh
+        m_appState.meshConstants[0].rotXYZ.z += m_mouseSensitivity * XMConvertToRadians(static_cast<float>(x - m_lastMousePosX));
+        m_appState.meshConstants[0].rotXYZ.x += XMConvertToRadians(static_cast<float>(y - m_lastMousePosY));
     }
  
     // Update cached mouse position
@@ -301,6 +314,11 @@ void ViewerApp::UpdateScene()
     for (auto light : m_appState.lights) { m_scene->SetLight(light.first, light.second); }
 
     // Update mesh constants
+    float rotX = m_appState.meshConstants[0].rotXYZ.x;
+    float rotY = m_appState.meshConstants[0].rotXYZ.y;
+    float rotZ = m_appState.meshConstants[0].rotXYZ.z;
+    XMMATRIX meshRotation = XMMatrixMultiply(XMMatrixMultiply(XMMatrixRotationAxis({ 1.0f, 0.0f, 0.0f }, rotX), XMMatrixRotationAxis({ 0.0f, 1.0f, 0.0f }, rotY)), XMMatrixRotationAxis({ 0.0f, 0.0f, 1.0f }, rotZ));
+    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[0].modelMtx, meshRotation);
     for (auto meshConstants : m_appState.meshConstants) { m_scene->SetMeshConstants(meshConstants.first, meshConstants.second); }
 }
 

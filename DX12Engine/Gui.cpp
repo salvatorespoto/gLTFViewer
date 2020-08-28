@@ -11,8 +11,6 @@ using DirectX::XMMATRIX;
 using DirectX::XMMatrixRotationAxis;
 using DirectX::XMMatrixMultiply;
 
-
-
 void Gui::Init(std::shared_ptr<Renderer> renderer, AppState* appState)
 {
     DEBUG_LOG("Initializing Gui object")
@@ -104,11 +102,9 @@ void Gui::Draw(AppState* appState)
 
         ImGui::Begin("Mesh");
         float rotX = 0.0f, rotY = 0.0f, rotZ = 0.0f;
-        ImGui::SliderAngle("Rotation X", &rotX);
-        ImGui::SliderAngle("Rotation Y", &rotY);
-        ImGui::SliderAngle("Rotation Z", &rotZ);
-        XMMATRIX meshRotation = XMMatrixMultiply(XMMatrixMultiply(XMMatrixRotationAxis({ 1.0f, 0.0f, 0.0f }, rotX), XMMatrixRotationAxis({ 0.0f, 1.0f, 0.0f }, rotY)), XMMatrixRotationAxis({ 0.0f, 0.0f, 1.0f }, rotZ));
-        DirectX::XMStoreFloat4x4(&appState->meshConstants[0].modelMtx, meshRotation);
+        ImGui::SliderAngle("Rotation X", &appState->meshConstants[0].rotXYZ.x);
+        ImGui::SliderAngle("Rotation Y", &appState->meshConstants[0].rotXYZ.y);
+        ImGui::SliderAngle("Rotation Z", &appState->meshConstants[0].rotXYZ.z);
         ImGui::End();
 
         ImGui::Begin("Light");
@@ -139,6 +135,13 @@ void Gui::Draw(AppState* appState)
             ImGui::PopStyleColor(1);
             ImGui::Spacing();
         }
+        else 
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.33f, 0.5f, 1.0f));
+            ImGui::TextWrapped("Compilation success");
+            ImGui::PopStyleColor(1);
+            ImGui::Spacing();
+        }
 
         ImGui::SetNextItemWidth(ImGui::GetWindowWidth());
         ImGui::SetNextItemWidth(ImGui::GetWindowHeight());
@@ -162,6 +165,16 @@ void Gui::ReSize(unsigned int width, unsigned int height)
     //ImGui_ImplDX12_InvalidateDeviceObjects();
     //ImGui_ImplDX12_CreateDeviceObjects();
    // m_io.DisplaySize = { float(width), float(height) };
+}
+
+bool Gui::WantCaptureMouse()
+{
+    return ImGui::GetIO().WantCaptureMouse;
+}
+
+bool Gui::WantCaptureKeyboard()
+{
+    return ImGui::GetIO().WantCaptureKeyboard;
 }
 
 void Gui::ShutDown()
