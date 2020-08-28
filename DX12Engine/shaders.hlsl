@@ -83,17 +83,15 @@ VertexOut VSMain(VertexIn vIn)
     return vOut;
 }
 
-float3 fresnel(float3 F0, float3 F90, float VdotH);                         // Fresnel
-float V_GGX(float NdotL, float NdotV, float ALPHA_roughness);               // Geometric occlusion
-float D_GGX(float NdotH, float ALPHA_roughness);                            // Microfaced distribution
-float3 diffuseLambert(float3 C_diff);                                       // Diffuse term
-float diffuseDisney(float3 C_diff, float F90, float NdotL, float NdotV);    // Diffuse term according to Disney model
+float3 diffuse(float3 albedo, float3 lightColor, float NdotL); // Lambertian diffuse
+float3 fresnel(float m, float3 lightColor, float3 F0, float NdotH, float NdotL, float LdotH); // Specular fresnel 
 
 // The pixel shader
 float4 PSMain(VertexOut vIn) : SV_Target // SV_Target means that the output should match the rendering target format
 {
+    Light light0 = frameConstants.lights[0];
     float3 V = normalize(frameConstants.eyePosition.xyz - vIn.shadingLocation);      // V is the normalized vector from the shading location to the eye
-    float3 L = normalize(frameConstants.lights[0].position.xyz - vIn.shadingLocation);    // L is the normalized vector from the shading location to the light
+    float3 L = normalize(light0.position.xyz - vIn.shadingLocation);    // L is the normalized vector from the shading location to the light
     float3 N = vIn.normal;                                 // N is the surface normal in the same space as the above values
     float3 H = normalize(L + V);                           // H is the half vector, where H = normalize(L + V)
     float VdotH = dot(V, H);
@@ -102,9 +100,9 @@ float4 PSMain(VertexOut vIn) : SV_Target // SV_Target means that the output shou
     float NdotV = dot(N, V);
     float NdotH = dot(N, H);
 
-    float3 dielectricSpecular = { 0.04f, 0.04f, 0.04f };
+    float3 dieletricSpecular = { 0.04f, 0.04f, 0.04f };
     float3 black = { 0.0f, 0.0f, 0.0f };
-    float3 ambientLight = { 0.2f, 0.2f, 0.5f };
+    float3 ambientLight = { 0.2f, 0.2f, 0.2f };
 
     float4 baseColor = textures[materials[0].baseColorTA.textureId].Sample(samplers[0], vIn.textCoord);
     float4 roughMetallic = textures[materials[0].roughMetallicTA.textureId].Sample(samplers[0], vIn.textCoord);
@@ -115,11 +113,26 @@ float4 PSMain(VertexOut vIn) : SV_Target // SV_Target means that the output shou
     float metallic = roughMetallic.b;
     float3 albedo = baseColor.xyz;
 
-    float3 C_ambient = ambientLight * albedo;
-    return float4(C_ambient, 1.0f);
+    float3 C_diff = lerp(baseColor.rgb * (1.0f - dielectricSpecular.r), black, metallic);
+    float3 F0 = lerp(dieletricSpecular, baseColor.rgb, metallic);
+
+    float3 C_ambient = ambientLight * albedo * occlusion.xyz;
+    float3 C_diffuse = diffuse(C_diff, light0.color.xyz, NdotL);
+
+    float m = metallic * 256.0f;	// Exponent in the model for the roughness. Higher the value, more the material is shine.
+    float3 C_specular = fresnel(m, light0.color.rgb, F0, NdotH, NdotL, LdotH);
+    float3 f = C_ambient + C_diffuse + C_specular + emissive.xyz;
+    return float4(f, 1.0f);
 }
 
-float3 fresnel(float3 F0, float3 F90, float VdotH)
+float3 diffuse(float3 albedo, float3 lightColor, float NdotL)
 {
-    return F0 + (F90 - F0) * pow(clamp(1.0f - VdotH, 0.0f, 1.0f), 5.0f);
+    return albedo * (lightColor * max(NdotL, 0.0f));
+}
+
+float3 fresnel(float m, float3 lightColor, float3 F0, float NdotH, float NdotL, float LdotH)
+{
+    float3 R = F0 + (1.0f - F0) * (1.0f - max(LdotH, 0.0f));
+    R = R * ((m + 8) / 8) * pow(NdotH, m);
+    return saturate(lightColor * max(NdotL, 0.0f) * R);
 }
