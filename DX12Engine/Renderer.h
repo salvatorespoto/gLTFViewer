@@ -6,6 +6,7 @@
 #include "Material.h"
 #include "Light.h"
 
+
 constexpr unsigned int MAX_LIGHT_NUMBER = 7;
 const DirectX::XMVECTORF32 backgroundColor = DirectX::Colors::DarkGray;
 
@@ -20,6 +21,7 @@ struct FrameConstants
 };
 
 class Scene;
+class SkyBox;
 
 class Renderer
 {
@@ -48,10 +50,12 @@ public:
     
     void BeginDraw();
     void Draw(Scene& scene);
+    void Draw(SkyBox& skyBox);
     void EndDraw();
 
     std::vector<DXGI_MODE_DESC> GetDisplayModes();
     bool CompileShaders(std::wstring fileName, std::string& errorMsg);
+    void CreatePipelineState(SkyBox* skyBox);
     void CreatePipelineState(Scene* scene);
 
 private:
@@ -97,6 +101,7 @@ private:
 
     Microsoft::WRL::ComPtr<ID3DBlob> m_vertexShader;
     Microsoft::WRL::ComPtr<ID3DBlob> m_pixelShader;
-    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineStateSky;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineStateScene;
 };
 

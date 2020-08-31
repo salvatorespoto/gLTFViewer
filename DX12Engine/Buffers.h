@@ -8,6 +8,7 @@ struct BufferView
 	unsigned int bufferId = -1;
 	size_t byteOffset = 0;
 	size_t byteLength = 0;
+	size_t byteStride = 0;
 	size_t count = 0;
 };
 

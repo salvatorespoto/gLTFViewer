@@ -21,11 +21,7 @@ public:
 
 protected:
 	virtual void ComputeTangentSpace(tinygltf::Primitive primitive, Scene* scene);
-
-	const int CLAMP_TO_EDGE = 33071;
-	const int MIRRORED_REPEAT = 33648;
-	const int REPEAT = 10497;
-
+	
 	tinygltf::Model m_model;
 	tinygltf::TinyGLTF m_glTFLoader;
 		

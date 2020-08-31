@@ -52,6 +52,7 @@ FrameConstants frameConstants : register(b0, space0);
 ConstantBuffer<MeshConstants> meshConstants : register(b1, space0);
 ConstantBuffer<RoughMetallicMaterial> materials[MATERIALS_N_DESCRIPTORS]  : register(b0, space1);
 Texture2D textures[TEXTURES_N_DESCRIPTORS] : register(t0, space0);
+TextureCube cubeMap : register(t0, space1);
 SamplerState samplers[SAMPLERS_N_DESCRIPTORS] : register(s0);
 
 struct VertexIn
@@ -78,7 +79,7 @@ VertexOut VSMain(VertexIn vIn)
     vOut.shadingLocation = mul(float4(vIn.position, 1.0f), meshConstants.modelMtx).xyz;
     vOut.normal = mul(float4(vIn.normal, 1.0f), meshConstants.modelMtx).xyz;
     vOut.position = mul(float4(vIn.position, 1.0f), mul(meshConstants.modelMtx, frameConstants.viewProjMtx));
-    vOut.textCoord = vIn.textCoord;
+    vOut.textCoord = float2(vIn.textCoord.x, 1 - vIn.textCoord.y);
     vOut.tangent = mul(float4(vIn.tangent.xyz, 1.0f), meshConstants.modelMtx);
     return vOut;
 }
@@ -94,6 +95,7 @@ float4 PSMain(VertexOut vIn) : SV_Target // SV_Target means that the output shou
     float3 L = normalize(light0.position.xyz - vIn.shadingLocation);    // L is the normalized vector from the shading location to the light
     float3 N = vIn.normal;                                 // N is the surface normal in the same space as the above values
     float3 H = normalize(L + V);                           // H is the half vector, where H = normalize(L + V)
+    float3 R = reflect(-V, N);                              // R 
     float VdotH = dot(V, H);
     float LdotH = dot(L, H);
     float NdotL = dot(N, L);
@@ -104,10 +106,17 @@ float4 PSMain(VertexOut vIn) : SV_Target // SV_Target means that the output shou
     float3 black = { 0.0f, 0.0f, 0.0f };
     float3 ambientLight = { 0.2f, 0.2f, 0.2f };
 
-    float4 baseColor = textures[materials[0].baseColorTA.textureId].Sample(samplers[0], vIn.textCoord);
-    float4 roughMetallic = textures[materials[0].roughMetallicTA.textureId].Sample(samplers[0], vIn.textCoord);
-    float4 emissive = textures[materials[0].emissiveTA.textureId].Sample(samplers[0], vIn.textCoord);
-    float4 occlusion = textures[materials[0].occlusionTA.textureId].Sample(samplers[0], vIn.textCoord);
+    float4 baseColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+    float4 roughMetallic = { 0.0f, 0.0f, 0.0f, 1.0f };;
+    float4 emissive = { 0.0f, 0.0f, 0.0f, 1.0f };
+    float4 occlusion = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+    if (materials[0].baseColorTA.textureId != -1) baseColor = textures[materials[0].baseColorTA.textureId].Sample(samplers[0], vIn.textCoord);
+    if (materials[0].roughMetallicTA.textureId != -1) roughMetallic = textures[materials[0].roughMetallicTA.textureId].Sample(samplers[0], vIn.textCoord);
+    if (materials[0].emissiveTA.textureId != -1) emissive = textures[materials[0].emissiveTA.textureId].Sample(samplers[0], vIn.textCoord);
+    if (materials[0].occlusionTA.textureId != -1) occlusion = textures[materials[0].occlusionTA.textureId].Sample(samplers[0], vIn.textCoord);
+    
+    float4 cubeMapSample = cubeMap.Sample(samplers[0], R);
 
     float roughness = roughMetallic.g;
     float metallic = roughMetallic.b;
@@ -117,12 +126,12 @@ float4 PSMain(VertexOut vIn) : SV_Target // SV_Target means that the output shou
     float3 F0 = lerp(dieletricSpecular, baseColor.rgb, metallic);
 
     float3 C_ambient = ambientLight * albedo * occlusion.xyz;
-    float3 C_diffuse = diffuse(C_diff, light0.color.xyz, NdotL);
+    float3 C_diffuse = diffuse(C_diff, light0.color.xyz * cubeMapSample.xyz, NdotL);
 
     float m = metallic * 256.0f;	// Exponent in the model for the roughness. Higher the value, more the material is shine.
-    float3 C_specular = fresnel(m, light0.color.rgb, F0, NdotH, NdotL, LdotH);
-    float3 f = C_ambient + C_diffuse + C_specular + emissive.xyz;
-    return float4(f, 1.0f);
+    float3 C_specular = fresnel(m, cubeMapSample.xyz, F0, NdotH, NdotL, LdotH);
+    float3 f = C_ambient + C_diffuse + C_specular + emissive.xyz + cubeMapSample.xyz;
+    return float4(baseColor.xyz, 1.0f);
 }
 
 float3 diffuse(float3 albedo, float3 lightColor, float NdotL)

@@ -11,12 +11,13 @@
 class Camera;
 class Mesh;
 struct MeshConstants;
+class SkyBox;
 
 class Scene
 {
 public:
 	Scene(Microsoft::WRL::ComPtr<ID3D12Device> device);
-
+	~Scene();
 	void AddGPUBuffer(Microsoft::WRL::ComPtr<ID3D12Resource> buffer);
 	void AddMaterial(unsigned int materialId, RoughMetallicMaterial material);
 	void AddTexture(unsigned int textureId, Microsoft::WRL::ComPtr<ID3D12Resource> texture);
@@ -27,6 +28,7 @@ public:
 	void SetCamera(const Camera& camera);
 	void SetMeshConstants(unsigned int meshId, MeshConstants meshConstant);
 	void SetLight(unsigned int lightId, Light light);
+	void SetCubeMapTexture(Microsoft::WRL::ComPtr<ID3D12Resource> cubeMapTexture);
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignature();
 	void Draw(ID3D12GraphicsCommandList* commandList);
@@ -36,11 +38,13 @@ protected:
 	void AddFrameConstantsBuffer();
 	void SetRootSignature(ID3D12GraphicsCommandList* commandList, unsigned int meshId);
 	void UpdateConstants(FrameConstants frameConstants);
+
 	
 	const unsigned int MESH_CONSTANTS_N_DESCRIPTORS = 15;	// Mesh constants descriptors goes from 0 to 15 in the CBV_SRV_UAV descriptor heap (maximum 15 mesh)
 	const unsigned int MATERIALS_N_DESCRIPTORS = 15;		// Materials descriptors goes from 15 to 29 in the CBV_SRV_UAV descriptor heap (maximum 15 materials)
 	const unsigned int TEXTURES_N_DESCRIPTORS = 15;			// Texture resource view descriptors go from 30 to 44 in the CBV_SRV_UAV descriptor heap (maximum 15 textures)
 	const unsigned int SAMPLERS_N_DESCRIPTORS = 15;			// Number of samplers descriptors in the samplers descriptor heap
+
 
 	Microsoft::WRL::ComPtr<ID3D12Device> m_device;	
 	UINT m_CBVSRVDescriptorSize = 0;
@@ -54,6 +58,7 @@ protected:
 	std::map<unsigned int, RoughMetallicMaterial> m_materials;
 	std::map<unsigned int, std::unique_ptr<UploadBuffer<RoughMetallicMaterial>>> m_materialsBuffer;
 	std::map<unsigned int, Microsoft::WRL::ComPtr<ID3D12Resource>> m_textures;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_cubeMapTexture;
 	std::map<unsigned int, Mesh> m_meshes;
 	std::map<unsigned int, std::unique_ptr<UploadBuffer<MeshConstants>>> m_meshConstantsBuffer;
 	std::map<unsigned int, Light> m_lights;

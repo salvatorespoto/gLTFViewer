@@ -56,38 +56,51 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 		for (tinygltf::Primitive primitive : mesh.primitives)
 		{
 			SubMesh sm;
+			sm.verticesBufferView.bufferId = -1;
+			sm.normalsBufferView.bufferId = -1;
+			sm.tangentsBufferView.bufferId = -1;
+			sm.texCoord0BufferView.bufferId = -1;
+
 			// Attribute (es. "POSITION") -> Accessors -> BufferView -> Buffer
 			if(primitive.attributes.find("POSITION") != primitive.attributes.end()) 
 			{
 				tinygltf::BufferView positionsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["POSITION"]].bufferView];
 				sm.verticesBufferView.bufferId = positionsBV.buffer;
-				sm.verticesBufferView.byteOffset = positionsBV.byteOffset;
+				sm.verticesBufferView.byteOffset = positionsBV.byteOffset + m_model.accessors[primitive.attributes["POSITION"]].byteOffset; // Accessors defines an additional offset
 				sm.verticesBufferView.byteLength = positionsBV.byteLength;
+				sm.verticesBufferView.byteStride = positionsBV.byteStride;
 				sm.verticesBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;
 			}
 			if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) 
 			{
 				tinygltf::BufferView normalsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["NORMAL"]].bufferView];
 				sm.normalsBufferView.bufferId = normalsBV.buffer;
-				sm.normalsBufferView.byteOffset = normalsBV.byteOffset;
+				sm.normalsBufferView.byteOffset = normalsBV.byteOffset + m_model.accessors[primitive.attributes["NORMAL"]].byteOffset;
 				sm.normalsBufferView.byteLength = normalsBV.byteLength;
+				sm.normalsBufferView.byteStride = normalsBV.byteStride;
 				sm.normalsBufferView.count = m_model.accessors[primitive.attributes["NORMAL"]].count;
 			}
+			else 
+			{
+				// Compute normals
+			}
+
 			if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
 			{
 				tinygltf::BufferView tangentsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["TANGENT"]].bufferView];
 				sm.tangentsBufferView.bufferId = tangentsBV.buffer;
 				sm.tangentsBufferView.byteOffset = tangentsBV.byteOffset;
 				sm.tangentsBufferView.byteLength = tangentsBV.byteLength;
+				sm.tangentsBufferView.byteStride = tangentsBV.byteStride;
 				sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["TANGENT"]].count;
 			}
 			else 
 			{
-				tinygltf::BufferView positionsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["POSITION"]].bufferView];
-				sm.tangentsBufferView.bufferId = 1;
+				sm.tangentsBufferView.bufferId = m_model.buffers.size(); // A new GPU buffer will be created for tangents
 				sm.tangentsBufferView.byteOffset = 0;
 				sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;
 				sm.tangentsBufferView.byteLength = sm.tangentsBufferView.count * sizeof(DirectX::XMFLOAT4);
+				sm.tangentsBufferView.byteStride = 0;	// Tighly packed
 				ComputeTangentSpace(primitive, scene.get());
 			}
 
@@ -97,26 +110,39 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 				sm.texCoord0BufferView.bufferId = texCoord0BV.buffer;
 				sm.texCoord0BufferView.byteOffset = texCoord0BV.byteOffset;
 				sm.texCoord0BufferView.byteLength = texCoord0BV.byteLength;
+				sm.texCoord0BufferView.byteStride = texCoord0BV.byteStride;
 				sm.texCoord0BufferView.count = m_model.accessors[primitive.attributes["TEXCOORD_0"]].count;
 			}
+
 			if (primitive.attributes.find("TEXCOORD_1") != primitive.attributes.end())
 			{
 				tinygltf::BufferView texCoord1BV = m_model.bufferViews[m_model.accessors[primitive.attributes["TEXCOORD_1"]].bufferView];
 				sm.texCoord1BufferView.bufferId = texCoord1BV.buffer;
 				sm.texCoord1BufferView.byteOffset = texCoord1BV.byteOffset;
 				sm.texCoord1BufferView.byteLength = texCoord1BV.byteLength;
+				sm.texCoord1BufferView.byteStride = texCoord1BV.byteStride;
 				sm.texCoord1BufferView.count = m_model.accessors[primitive.attributes["TEXCOORD_1"]].count;
 			}
+
 			if (primitive.indices != -1)
 			{
 				tinygltf::BufferView indicesBV = m_model.bufferViews[m_model.accessors[primitive.indices].bufferView];
 				sm.indicesBufferView.bufferId = indicesBV.buffer;
 				sm.indicesBufferView.byteOffset = indicesBV.byteOffset;
 				sm.indicesBufferView.byteLength = indicesBV.byteLength;
+				sm.indicesBufferView.byteStride = indicesBV.byteStride;
 				sm.indicesBufferView.count = m_model.accessors[primitive.indices].count;
 			}
-			sm.materialId = primitive.material;
-			
+
+			if (sm.materialId == -1) primitive.material = 0; // No material in the file, will use the default material
+		
+			if (primitive.mode == TINYGLTF_MODE_POINTS) sm.topology = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+			if (primitive.mode == TINYGLTF_MODE_LINE) sm.topology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+			//if (primitive.mode == tinygltf::TINYGLTF_MODE_LINE_LOOP) sm.topology = ; UNSUPPORTED
+			if (primitive.mode == TINYGLTF_MODE_LINE_STRIP) sm.topology = D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+			if (primitive.mode == TINYGLTF_MODE_TRIANGLES) sm.topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+			if (primitive.mode == TINYGLTF_MODE_TRIANGLE_STRIP) sm.topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+			//if (primitive.mode == TINYGLTF_MODE_TRIANGLE_FAN) sm.topology = ; UNSUPPORTED
 
 			m.AddSubMesh(sm);
 		}
@@ -134,31 +160,40 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 	}
 
 
-	// Set up materials
+	// Set up MATERIALS
 	int materialId = 0;
-	for (tinygltf::Material material : m_model.materials)
+	if (m_model.materials.empty())
 	{
+		// Default material is black
 		RoughMetallicMaterial rmMaterial;
-		rmMaterial.baseColorFactor =
+		rmMaterial.baseColorFactor = { 0.0f, 0.0f, 0.0f, 0.0f };
+	}
+	else 
+	{
+		for (tinygltf::Material material : m_model.materials)
 		{
-			static_cast<float>(material.pbrMetallicRoughness.baseColorFactor[0]),
-			static_cast<float>(material.pbrMetallicRoughness.baseColorFactor[1]),
-			static_cast<float>(material.pbrMetallicRoughness.baseColorFactor[2]),
-			static_cast<float>(material.pbrMetallicRoughness.baseColorFactor[3])
-		};
-		rmMaterial.roughnessFactor = static_cast<float>(material.pbrMetallicRoughness.roughnessFactor);
-		rmMaterial.metallicFactor = static_cast<float>(material.pbrMetallicRoughness.metallicFactor);
-		rmMaterial.baseColorTA.textureId = material.pbrMetallicRoughness.baseColorTexture.index;
-		rmMaterial.baseColorTA.texCoordId = material.pbrMetallicRoughness.baseColorTexture.texCoord;
-		rmMaterial.roughMetallicTA.textureId = material.pbrMetallicRoughness.metallicRoughnessTexture.index;
-		rmMaterial.roughMetallicTA.texCoordId = material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord;
-		rmMaterial.normalTA.textureId = material.normalTexture.index;
-		rmMaterial.normalTA.texCoordId = material.normalTexture.texCoord;
-		rmMaterial.occlusionTA.textureId = material.occlusionTexture.index;
-		rmMaterial.occlusionTA.texCoordId = material.occlusionTexture.texCoord;
-		rmMaterial.emissiveTA.textureId = material.emissiveTexture.index;
-		rmMaterial.emissiveTA.texCoordId = material.emissiveTexture.texCoord;
-		scene->AddMaterial(materialId++, rmMaterial);
+			RoughMetallicMaterial rmMaterial;
+			rmMaterial.baseColorFactor =
+			{
+				static_cast<float>(material.pbrMetallicRoughness.baseColorFactor[0]),
+				static_cast<float>(material.pbrMetallicRoughness.baseColorFactor[1]),
+				static_cast<float>(material.pbrMetallicRoughness.baseColorFactor[2]),
+				static_cast<float>(material.pbrMetallicRoughness.baseColorFactor[3])
+			};
+			rmMaterial.roughnessFactor = static_cast<float>(material.pbrMetallicRoughness.roughnessFactor);
+			rmMaterial.metallicFactor = static_cast<float>(material.pbrMetallicRoughness.metallicFactor);
+			rmMaterial.baseColorTA.textureId = material.pbrMetallicRoughness.baseColorTexture.index;
+			rmMaterial.baseColorTA.texCoordId = material.pbrMetallicRoughness.baseColorTexture.texCoord;
+			rmMaterial.roughMetallicTA.textureId = material.pbrMetallicRoughness.metallicRoughnessTexture.index;
+			rmMaterial.roughMetallicTA.texCoordId = material.pbrMetallicRoughness.metallicRoughnessTexture.texCoord;
+			rmMaterial.normalTA.textureId = material.normalTexture.index;
+			rmMaterial.normalTA.texCoordId = material.normalTexture.texCoord;
+			rmMaterial.occlusionTA.textureId = material.occlusionTexture.index;
+			rmMaterial.occlusionTA.texCoordId = material.occlusionTexture.texCoord;
+			rmMaterial.emissiveTA.textureId = material.emissiveTexture.index;
+			rmMaterial.emissiveTA.texCoordId = material.emissiveTexture.texCoord;
+			scene->AddMaterial(materialId++, rmMaterial);
+		}
 	}
 
 	// Set up textures
@@ -181,9 +216,9 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 		// Default sampler
 		D3D12_SAMPLER_DESC samplerDesc = {};
 		samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-		samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-		samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-		samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+		samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+		samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
 		samplerDesc.MinLOD = 0;
 		samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
 		samplerDesc.MipLODBias = 0.0f;
@@ -196,19 +231,20 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 		for (tinygltf::Sampler sampler : m_model.samplers)
 		{
 			D3D12_SAMPLER_DESC samplerDesc = {};
-			samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-		
-			if (sampler.wrapS == REPEAT) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			else if (sampler.wrapS == CLAMP_TO_EDGE) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-			else if (sampler.wrapS == MIRRORED_REPEAT) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
 
-			if (sampler.wrapT == REPEAT) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			else if (sampler.wrapT == CLAMP_TO_EDGE) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-			else if (sampler.wrapT == MIRRORED_REPEAT) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+			samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;	// Other filters type are unsupported 
+			
+			if (sampler.wrapS == TINYGLTF_TEXTURE_WRAP_REPEAT) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+			else if (sampler.wrapS == TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+			else if (sampler.wrapS == TINYGLTF_TEXTURE_WRAP_MIRRORED_REPEAT) samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+
+			if (sampler.wrapT == TINYGLTF_TEXTURE_WRAP_REPEAT) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+			else if (sampler.wrapT == TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+			else if (sampler.wrapT == TINYGLTF_TEXTURE_WRAP_MIRRORED_REPEAT) samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
 		
-			if (sampler.wrapR == REPEAT) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			else if (sampler.wrapR == CLAMP_TO_EDGE) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-			else if (sampler.wrapR == MIRRORED_REPEAT) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+			if (sampler.wrapR == TINYGLTF_TEXTURE_WRAP_REPEAT) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+			else if (sampler.wrapR == TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+			else if (sampler.wrapR == TINYGLTF_TEXTURE_WRAP_MIRRORED_REPEAT) samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
 	
 			samplerDesc.MinLOD = 0;
 			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;

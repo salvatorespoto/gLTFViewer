@@ -1,6 +1,7 @@
 #include "Scene.h"
 #include "Mesh.h"
 #include "Camera.h"
+#include "SkyBox.h"
 
 using Microsoft::WRL::ComPtr;
 using DirectX::XMStoreFloat4x4;
@@ -9,6 +10,8 @@ using DirectX::XMLoadFloat4x4;
 using DirectX::XMConvertToRadians;
 using DXUtil::ThrowIfFailed;
 using DXUtil::ThrowIfFailed;
+
+Scene::~Scene() {}
 
 Scene::Scene(Microsoft::WRL::ComPtr<ID3D12Device> device)
 {
@@ -20,7 +23,7 @@ Scene::Scene(Microsoft::WRL::ComPtr<ID3D12Device> device)
 	// Create CBV_SRV_UAV descriptor heap
 	D3D12_DESCRIPTOR_HEAP_DESC CBVSRVHeapDesc = {};
 	CBVSRVHeapDesc = {};
-	CBVSRVHeapDesc.NumDescriptors = MESH_CONSTANTS_N_DESCRIPTORS + MATERIALS_N_DESCRIPTORS + TEXTURES_N_DESCRIPTORS;
+	CBVSRVHeapDesc.NumDescriptors = MATERIALS_N_DESCRIPTORS + TEXTURES_N_DESCRIPTORS + 6; // +6 is the cube map
 	CBVSRVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	CBVSRVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(m_device->CreateDescriptorHeap(&CBVSRVHeapDesc, IID_PPV_ARGS(&m_CBVSRVDescriptorHeap)),
@@ -110,6 +113,23 @@ void Scene::AddMesh(Mesh mesh)
 	m_device->CreateConstantBufferView(&meshConstantsDesc, hDescriptor);
 }
 
+void Scene::SetCubeMapTexture(Microsoft::WRL::ComPtr<ID3D12Resource> cubeMapTexture)
+{
+	m_cubeMapTexture = cubeMapTexture;
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+	srvDesc.TextureCube.MostDetailedMip = 0;
+	srvDesc.TextureCube.MipLevels = m_cubeMapTexture->GetDesc().MipLevels;
+	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+	srvDesc.Format = m_cubeMapTexture->GetDesc().Format;
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_CBVSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	hDescriptor.Offset(MATERIALS_N_DESCRIPTORS + TEXTURES_N_DESCRIPTORS, m_CBVSRVDescriptorSize);
+	m_device->CreateShaderResourceView(m_cubeMapTexture.Get(), &srvDesc, hDescriptor);
+}
+
 ComPtr<ID3D12RootSignature> Scene::CreateRootSignature()
 {
 	if (m_rootSignature) return m_rootSignature;
@@ -119,12 +139,14 @@ ComPtr<ID3D12RootSignature> Scene::CreateRootSignature()
 	rootParameters[0].InitAsConstantBufferView(0, 0);	// Parameter 1: Root descriptor that will holds the pass constants PassConstants
 	rootParameters[1].InitAsConstantBufferView(1, 0);	// Parameter 2: Root descriptor for mesh constants
 
-	CD3DX12_DESCRIPTOR_RANGE descriptorRangesCBVSRV[2] = {};	// Parameter 3: Descriptor table with different ranges
+	CD3DX12_DESCRIPTOR_RANGE descriptorRangesCBVSRV[3] = {};	// Parameter 3: Descriptor table with different ranges
 	// Descriptor range for materials
 	descriptorRangesCBVSRV[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, MATERIALS_N_DESCRIPTORS, 0, 1, 0);
 	// Descriptor range for textures
 	descriptorRangesCBVSRV[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, TEXTURES_N_DESCRIPTORS, 0, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);		
-	rootParameters[2].InitAsDescriptorTable(2, descriptorRangesCBVSRV);
+	// Descriptor range for cubemap
+	descriptorRangesCBVSRV[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 6, 0, 1, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+	rootParameters[2].InitAsDescriptorTable(3, descriptorRangesCBVSRV);
 
 	CD3DX12_DESCRIPTOR_RANGE descriptorRangeSamplers[1] = {};	// Parameter 4: Descriptor table for samplers
 	descriptorRangeSamplers[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, SAMPLERS_N_DESCRIPTORS, 0);
@@ -203,27 +225,51 @@ void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList)
 	for (SubMesh subMesh : mesh.m_subMeshes)
 	{
 		D3D12_VERTEX_BUFFER_VIEW vbView; // Vertices buffer view
-		vbView.BufferLocation = m_buffersGPU[subMesh.verticesBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.verticesBufferView.byteOffset;
-		vbView.StrideInBytes = sizeof(DirectX::XMFLOAT3);
-		vbView.SizeInBytes = subMesh.verticesBufferView.byteLength;
-
+		if(subMesh.verticesBufferView.bufferId != -1) 
+		{
+			vbView.BufferLocation = m_buffersGPU[subMesh.verticesBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.verticesBufferView.byteOffset;
+			vbView.StrideInBytes = (subMesh.verticesBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT3) : subMesh.verticesBufferView.byteStride;
+			vbView.SizeInBytes = subMesh.verticesBufferView.byteLength;
+		}
+		
 		D3D12_VERTEX_BUFFER_VIEW nbView; // Normals buffer view
-		nbView.BufferLocation = m_buffersGPU[subMesh.normalsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.normalsBufferView.byteOffset;
-		nbView.StrideInBytes = sizeof(DirectX::XMFLOAT3);
-		nbView.SizeInBytes = subMesh.verticesBufferView.byteLength;
+		if (subMesh.normalsBufferView.bufferId != -1)
+		{
+			nbView.BufferLocation = m_buffersGPU[subMesh.normalsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.normalsBufferView.byteOffset;
+			nbView.StrideInBytes = (subMesh.normalsBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT3) : subMesh.normalsBufferView.byteStride;
+			nbView.SizeInBytes = subMesh.verticesBufferView.byteLength;
+		}
+		else nbView = vbView;
 
 		D3D12_VERTEX_BUFFER_VIEW tbView; // Tangents buffer view
-		tbView.BufferLocation = m_buffersGPU[subMesh.tangentsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.tangentsBufferView.byteOffset;
-		tbView.StrideInBytes = sizeof(DirectX::XMFLOAT4);
-		tbView.SizeInBytes = subMesh.tangentsBufferView.byteLength;
+		if (subMesh.tangentsBufferView.bufferId != -1)
+		{
+			tbView.BufferLocation = m_buffersGPU[subMesh.tangentsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.tangentsBufferView.byteOffset;
+			tbView.StrideInBytes = (subMesh.tangentsBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT4) : subMesh.tangentsBufferView.byteStride;
+			tbView.SizeInBytes = subMesh.tangentsBufferView.byteLength;
+		}
+		else tbView = vbView;
 
-		D3D12_VERTEX_BUFFER_VIEW tcbView; // Texture coordinates buffer view
-		tcbView.BufferLocation = m_buffersGPU[subMesh.texCoord0BufferView.bufferId]->GetGPUVirtualAddress() + subMesh.texCoord0BufferView.byteOffset;
-		tcbView.StrideInBytes = sizeof(DirectX::XMFLOAT2);
-		tcbView.SizeInBytes = subMesh.texCoord0BufferView.byteLength;;
+		D3D12_VERTEX_BUFFER_VIEW tc0bView; // Texture coordinates buffer view
+		if (subMesh.texCoord0BufferView.bufferId != -1)
+		{
+			tc0bView.BufferLocation = m_buffersGPU[subMesh.texCoord0BufferView.bufferId]->GetGPUVirtualAddress() + subMesh.texCoord0BufferView.byteOffset;
+			tc0bView.StrideInBytes = (subMesh.texCoord0BufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT2) : subMesh.texCoord0BufferView.byteStride;
+			tc0bView.SizeInBytes = subMesh.texCoord0BufferView.byteLength;
+		}
+		else tc0bView = vbView;
 
-		D3D12_VERTEX_BUFFER_VIEW vertexBuffers[4] = { vbView, nbView, tbView, tcbView };
-		commandList->IASetVertexBuffers(0, 4, vertexBuffers);
+		D3D12_VERTEX_BUFFER_VIEW tc1bView; // Texture coordinates buffer view
+		if (subMesh.texCoord1BufferView.bufferId != -1)
+		{
+			tc1bView.BufferLocation = m_buffersGPU[subMesh.texCoord1BufferView.bufferId]->GetGPUVirtualAddress() + subMesh.texCoord0BufferView.byteOffset;
+			tc1bView.StrideInBytes = (subMesh.texCoord1BufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT2) : subMesh.texCoord1BufferView.byteStride;
+			tc1bView.SizeInBytes = subMesh.texCoord0BufferView.byteLength;
+		}
+		else tc1bView = vbView;
+
+		D3D12_VERTEX_BUFFER_VIEW vertexBuffers[5] = { vbView, nbView, tbView, tc0bView, tc1bView };
+		commandList->IASetVertexBuffers(0, 5, vertexBuffers);
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		D3D12_INDEX_BUFFER_VIEW ibView; // Index buffer view

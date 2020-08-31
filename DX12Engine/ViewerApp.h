@@ -11,6 +11,7 @@ struct MeshConstants;
 class Scene;
 class Camera;
 class Scene;
+class SkyBox;
 class Renderer;
 class GLTFSceneLoader;
 
@@ -75,7 +76,9 @@ protected:
 	std::unique_ptr<Gui> m_gui;
 	std::unique_ptr<Camera> m_camera;
 	std::shared_ptr<Scene> m_scene;
+	std::unique_ptr<SkyBox> m_skyBox;
 	std::shared_ptr<Renderer> m_renderer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> m_cubeMapTexture;
 
 	float m_mouseSensitivity = 0.25f;
 	int m_lastMousePosX;

@@ -2,6 +2,8 @@
 #include "Scene.h"
 #include "Buffers.h"
 #include "Mesh.h"
+#include "SkyBox.h"
+
 
 using Microsoft::WRL::ComPtr;
 using DXUtil::ThrowIfFailed;
@@ -322,6 +324,31 @@ void Renderer::CreateRootSignature()
     ThrowIfFailed(m_device->CreateRootSignature(0, serializedRootSig->GetBufferPointer(), serializedRootSig->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)), "Cannot create root signature");
 }
 */
+
+void Renderer::CreatePipelineState(SkyBox* skyBox)
+{
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+    psoDesc.InputLayout = { skyBoxVertexElementsDesc, 3 };
+    psoDesc.pRootSignature = skyBox->GetRootSignature().Get();
+    psoDesc.VS = { reinterpret_cast<UINT8*>(skyBox->GetVertexShader()->GetBufferPointer()), skyBox->GetVertexShader()->GetBufferSize() };
+    psoDesc.PS = { reinterpret_cast<UINT8*>(skyBox->GetPixelShader()->GetBufferPointer()), skyBox->GetPixelShader()->GetBufferSize() };
+    D3D12_RASTERIZER_DESC rasterDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    rasterDesc.FillMode = D3D12_FILL_MODE_SOLID;
+    psoDesc.RasterizerState = rasterDesc;
+    psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+    psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    psoDesc.SampleMask = UINT_MAX;
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+    psoDesc.SampleDesc.Count = 1;
+    ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateSky)), "Cannot create the pipeline state");
+}
+
+
 void Renderer::CreatePipelineState(Scene* scene)
 {
     D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
@@ -344,7 +371,7 @@ void Renderer::CreatePipelineState(Scene* scene)
     psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
     psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
     psoDesc.SampleDesc.Count = 1;
-    ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineState)), "Cannot create the pipeline state");
+    ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateScene)), "Cannot create the pipeline state");
 }
 
 ComPtr<ID3D12GraphicsCommandList> Renderer::GetCommandList() 
@@ -365,7 +392,6 @@ void Renderer::ExecuteCommandList(ID3D12GraphicsCommandList* commandList)
 
 void Renderer::SetPipelineState(ID3D12GraphicsCommandList* commandList)
 {
-    commandList->SetPipelineState(m_pipelineState.Get());
 }
 /*
 void Renderer::SetRootSignature(ID3D12GraphicsCommandList* commandList)
@@ -398,19 +424,41 @@ void Renderer::ResetCommandList()
     ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
 }
 
+void Renderer::Draw(SkyBox& skyBox)
+{
+    //ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
+    //ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
+    CreatePipelineState(&skyBox);
+    m_commandList->SetPipelineState(m_pipelineStateSky.Get());
+    m_commandList->RSSetViewports(1, &m_viewPort);
+    m_commandList->RSSetScissorRects(1, &m_scissorRect);
+    //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+    //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_swapChain.GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    //m_commandList->ClearRenderTargetView(m_swapChain.GetCurrentBackBufferView(), backgroundColor, 0, nullptr);
+    //m_commandList->ClearDepthStencilView(m_DSV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    //m_commandList->OMSetRenderTargets(1, &m_swapChain.GetCurrentBackBufferView(), FALSE, &GetDepthStencilView());
+    skyBox.Draw(m_commandList.Get());
+    //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_swapChain.GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencilBuffer.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_COMMON));
+    //m_commandList->Close();
+    //ExecuteCommandList(m_commandList.Get());
+    //FlushCommandQueue();
+    //m_swapChain.Present();
+}
+
 void Renderer::Draw(Scene& scene) 
 {
     //ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
     //ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
     CreatePipelineState(&scene);
-    SetPipelineState(m_commandList.Get());
-    m_commandList->RSSetViewports(1, &m_viewPort);
-    m_commandList->RSSetScissorRects(1, &m_scissorRect);
+    m_commandList->SetPipelineState(m_pipelineStateScene.Get());
+    //m_commandList->RSSetViewports(1, &m_viewPort);
+    //m_commandList->RSSetScissorRects(1, &m_scissorRect);
     //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
     //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_swapChain.GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-    m_commandList->ClearRenderTargetView(m_swapChain.GetCurrentBackBufferView(), backgroundColor, 0, nullptr);
-    m_commandList->ClearDepthStencilView(m_DSV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-    m_commandList->OMSetRenderTargets(1, &m_swapChain.GetCurrentBackBufferView(), FALSE, &GetDepthStencilView());
+    //m_commandList->ClearRenderTargetView(m_swapChain.GetCurrentBackBufferView(), backgroundColor, 0, nullptr);
+    //m_commandList->ClearDepthStencilView(m_DSV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    //m_commandList->OMSetRenderTargets(1, &m_swapChain.GetCurrentBackBufferView(), FALSE, &GetDepthStencilView());
     scene.Draw(m_commandList.Get());
     //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_swapChain.GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
     //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencilBuffer.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_COMMON));
@@ -425,6 +473,14 @@ void Renderer::BeginDraw()
     ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
     ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
     m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_swapChain.GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    m_commandList->RSSetViewports(1, &m_viewPort);
+    m_commandList->RSSetScissorRects(1, &m_scissorRect);
+    //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_depthStencilBuffer.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+    //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_swapChain.GetCurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    m_commandList->ClearRenderTargetView(m_swapChain.GetCurrentBackBufferView(), backgroundColor, 0, nullptr);
+    m_commandList->ClearDepthStencilView(m_DSV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    m_commandList->OMSetRenderTargets(1, &m_swapChain.GetCurrentBackBufferView(), FALSE, &GetDepthStencilView());
+
 }
 void Renderer::EndDraw() 
 {
