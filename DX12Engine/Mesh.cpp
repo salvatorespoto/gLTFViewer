@@ -37,6 +37,11 @@ void Mesh::SetModelMtx(const DirectX::XMFLOAT4X4& modelMtx)
 	constants.modelMtx = modelMtx;
 }
 
+void Mesh::SetNodeMtx(const DirectX::XMFLOAT4X4& nodeMtx)
+{
+	constants.nodeTransformMtx = nodeMtx;
+}
+
 void Mesh::AddSubMesh(const SubMesh& subMesh)
 {
 	m_subMeshes.push_back(subMesh);

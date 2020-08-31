@@ -114,7 +114,10 @@ void ViewerApp::InitScene()
     m_skyBox = std::make_unique<SkyBox>();
     m_skyBox->Init(m_renderer->GetDevice(), m_renderer->GetCommandQueue());
     m_skyBox->SetCubeMapTexture(m_cubeMapTexture);
+    
     DEBUG_LOG("Scene initalized");
+
+
 }
 
 void ViewerApp::InitGui()
@@ -329,6 +332,7 @@ void ViewerApp::UpdateScene()
     float rotZ = m_appState.meshConstants[0].rotXYZ.z;
     XMMATRIX meshRotation = XMMatrixMultiply(XMMatrixMultiply(XMMatrixRotationAxis({ 1.0f, 0.0f, 0.0f }, rotX), XMMatrixRotationAxis({ 0.0f, 1.0f, 0.0f }, rotY)), XMMatrixRotationAxis({ 0.0f, 0.0f, 1.0f }, rotZ));
     DirectX::XMStoreFloat4x4(&m_appState.meshConstants[0].modelMtx, meshRotation);
+    m_appState.meshConstants[0].nodeTransformMtx = DXUtil::IdentityMtx();
     for (auto meshConstants : m_appState.meshConstants) { m_scene->SetMeshConstants(meshConstants.first, meshConstants.second); }
 
     // Update SkyBox

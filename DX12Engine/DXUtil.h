@@ -97,4 +97,7 @@ namespace DXUtil
 
     /* Store an indentity matmrix in a XMFLOAT4X4 */
     DirectX::XMFLOAT4X4 IdentityMtx();
+
+    /* Store an indentity matmrix in a XMFLOAT4X4 */
+    DirectX::XMFLOAT4X4 RightToLeftHandedMtx();
 }

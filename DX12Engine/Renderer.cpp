@@ -363,6 +363,7 @@ void Renderer::CreatePipelineState(Scene* scene)
     D3D12_RASTERIZER_DESC rasterDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
     rasterDesc.FillMode = D3D12_FILL_MODE_SOLID;
     psoDesc.RasterizerState = rasterDesc;
+    //psoDesc.RasterizerState.FrontCounterClockwise = true;
     psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
     psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
     psoDesc.SampleMask = UINT_MAX;

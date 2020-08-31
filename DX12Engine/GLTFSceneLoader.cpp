@@ -39,18 +39,14 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 	GPUHeapUploader gpuHeapUploader(m_device.Get(), m_commandQueue.Get());
 	scene = std::make_shared<Scene>(m_device.Get());
 
-	// Load all buffers
-	for (tinygltf::Buffer buffer : m_model.buffers)
-	{
-		scene->AddGPUBuffer(gpuHeapUploader.Upload(buffer.data.data(), buffer.data.size()));
-	}
-
 	// Set up meshes
 	int meshId = 0;
 	for (tinygltf::Mesh mesh : m_model.meshes)
 	{
 		Mesh m;
 		m.SetId(meshId++);
+		m.SetModelMtx(DXUtil::IdentityMtx());
+		m.SetNodeMtx(DXUtil::IdentityMtx());
 
 		// Create a submesh for each primitive
 		for (tinygltf::Primitive primitive : mesh.primitives)
@@ -70,7 +66,12 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 				sm.verticesBufferView.byteLength = positionsBV.byteLength;
 				sm.verticesBufferView.byteStride = positionsBV.byteStride;
 				sm.verticesBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;
+
+				// Flip the z-coordinate becouse we are converting from right handed to left handed
+				DirectX::XMFLOAT3* vp = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + positionsBV.byteOffset);
+				for (int i = 0; i <= sm.verticesBufferView.count; i++, vp++) { vp->z *= -1; }	
 			}
+
 			if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) 
 			{
 				tinygltf::BufferView normalsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["NORMAL"]].bufferView];
@@ -96,12 +97,12 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 			}
 			else 
 			{
-				sm.tangentsBufferView.bufferId = m_model.buffers.size(); // A new GPU buffer will be created for tangents
-				sm.tangentsBufferView.byteOffset = 0;
-				sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;
-				sm.tangentsBufferView.byteLength = sm.tangentsBufferView.count * sizeof(DirectX::XMFLOAT4);
-				sm.tangentsBufferView.byteStride = 0;	// Tighly packed
-				ComputeTangentSpace(primitive, scene.get());
+				//sm.tangentsBufferView.bufferId = m_model.buffers.size(); // A new GPU buffer will be created for tangents
+				//sm.tangentsBufferView.byteOffset = 0;
+				//sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;
+				//sm.tangentsBufferView.byteLength = sm.tangentsBufferView.count * sizeof(DirectX::XMFLOAT4);
+				//sm.tangentsBufferView.byteStride = 0;	// Tighly packed
+				//ComputeTangentSpace(primitive, scene.get());
 			}
 
 			if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
@@ -132,6 +133,16 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 				sm.indicesBufferView.byteLength = indicesBV.byteLength;
 				sm.indicesBufferView.byteStride = indicesBV.byteStride;
 				sm.indicesBufferView.count = m_model.accessors[primitive.indices].count;
+
+				// Switch first and third vertex in a triangle to handle the right handed to left handed coordinate change
+				uint16_t* indexes = (uint16_t*)(m_model.buffers[0].data.data() + indicesBV.byteOffset);
+				size_t indexesCount = m_model.accessors[primitive.indices].count;
+				for (int i = 0; i < indexesCount; i += 3) 
+				{ 
+					int tmp = indexes[i]; 
+					indexes[i] = indexes[i + 2]; 
+					indexes[i + 2] = tmp;
+				}
 			}
 
 			if (sm.materialId == -1) primitive.material = 0; // No material in the file, will use the default material
@@ -158,7 +169,6 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 		Light light = { { 0.0f, 3.0f, 0.0f, 0.1f }, { 0.5f, 0.5f, 0.5f, 0.1f } };
 		scene->AddLight(0, light);
 	}
-
 
 	// Set up MATERIALS
 	int materialId = 0;
@@ -253,6 +263,12 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
 			scene->AddSampler(samplerId++, samplerDesc);
 		}
+	}
+
+	// Load all buffers to the GPU
+	for (tinygltf::Buffer buffer : m_model.buffers)
+	{ 
+		scene->AddGPUBuffer(gpuHeapUploader.Upload(buffer.data.data(), buffer.data.size()));
 	}
 }
 

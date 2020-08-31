@@ -27,6 +27,7 @@ struct FrameConstants
 struct MeshConstants
 {
     float4x4 modelMtx;
+    float4x4 nodeMtx;
     float4 rotationXYZ; // rotations about X, Y and Z axes. Fourth component unused;
 };
 
@@ -76,11 +77,12 @@ struct VertexOut
 VertexOut VSMain(VertexIn vIn)
 {
     VertexOut vOut;
-    vOut.shadingLocation = mul(float4(vIn.position, 1.0f), meshConstants.modelMtx).xyz;
-    vOut.normal = mul(float4(vIn.normal, 1.0f), meshConstants.modelMtx).xyz;
-    vOut.position = mul(float4(vIn.position, 1.0f), mul(meshConstants.modelMtx, frameConstants.viewProjMtx));
-    vOut.textCoord = float2(vIn.textCoord.x, 1 - vIn.textCoord.y);
-    vOut.tangent = mul(float4(vIn.tangent.xyz, 1.0f), meshConstants.modelMtx);
+    float4x4 modelMtx = mul(meshConstants.modelMtx, meshConstants.nodeMtx);
+    vOut.shadingLocation = mul(float4(vIn.position, 1.0f), modelMtx).xyz;
+    vOut.normal = mul(float4(vIn.normal, 1.0f), modelMtx).xyz;
+    vOut.position = mul(float4(vIn.position, 1.0f), mul(modelMtx, frameConstants.viewProjMtx));
+    vOut.textCoord = float2(vIn.textCoord.x, vIn.textCoord.y);
+    vOut.tangent = mul(float4(vIn.tangent.xyz, 1.0f), modelMtx);
     return vOut;
 }
 
@@ -115,7 +117,7 @@ float4 PSMain(VertexOut vIn) : SV_Target // SV_Target means that the output shou
     if (materials[0].roughMetallicTA.textureId != -1) roughMetallic = textures[materials[0].roughMetallicTA.textureId].Sample(samplers[0], vIn.textCoord);
     if (materials[0].emissiveTA.textureId != -1) emissive = textures[materials[0].emissiveTA.textureId].Sample(samplers[0], vIn.textCoord);
     if (materials[0].occlusionTA.textureId != -1) occlusion = textures[materials[0].occlusionTA.textureId].Sample(samplers[0], vIn.textCoord);
-    
+
     float4 cubeMapSample = cubeMap.Sample(samplers[0], R);
 
     float roughness = roughMetallic.g;

@@ -25,6 +25,7 @@ struct SubMesh
 struct MeshConstants
 {
 	DirectX::XMFLOAT4X4 modelMtx;
+	DirectX::XMFLOAT4X4 nodeTransformMtx;
 	DirectX::XMFLOAT4 rotXYZ; // Rotations about the X, Y and Z axis. The fourth component is not used
 };
 
@@ -39,6 +40,7 @@ public:
 	void SetId(unsigned int id);
 	unsigned int GetId() const;
 	void SetModelMtx(const DirectX::XMFLOAT4X4& modelMtx);
+	void SetNodeMtx(const DirectX::XMFLOAT4X4& nodeMtx); // A model transformation defined as the default position of the mesh in the world
 	void AddSubMesh(const SubMesh& subMesh);
 
 	friend void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList);
