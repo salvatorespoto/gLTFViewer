@@ -10,10 +10,10 @@ Camera::Camera(UINT32 width, UINT32 height, float fovY, float nearZ, float farZ)
 {
 	m_position = { 0.0f, 0.0f, 0.0f };
 	
-	// The camera reference basis in world coordinate, the camera frame is right handed
-	m_right = { 1.0f, 0.0f, 0.0f };		// X camera axis
-	m_up = { 0.0f, 1.0f, 0.0f };		// Y camera axis
-	m_forward = { 0.0f, 0.0f, 1.0f };	// Z camera axis
+	// The camera reference basis in world coordinate
+	m_right = { 1.0f, 0.0f, 0.0f };	
+	m_up = { 0.0f, 1.0f, 0.0f };		
+	m_forward = { 0.0f, 0.0f, 1.0f };
 	
 	m_aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
 	setLens(fovY, m_aspectRatio, nearZ, farZ);

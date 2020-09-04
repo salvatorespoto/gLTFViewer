@@ -332,7 +332,25 @@ void ViewerApp::UpdateScene()
     float rotZ = m_appState.meshConstants[0].rotXYZ.z;
     XMMATRIX meshRotation = XMMatrixMultiply(XMMatrixMultiply(XMMatrixRotationAxis({ 1.0f, 0.0f, 0.0f }, rotX), XMMatrixRotationAxis({ 0.0f, 1.0f, 0.0f }, rotY)), XMMatrixRotationAxis({ 0.0f, 0.0f, 1.0f }, rotZ));
     DirectX::XMStoreFloat4x4(&m_appState.meshConstants[0].modelMtx, meshRotation);
-    m_appState.meshConstants[0].nodeTransformMtx = DXUtil::IdentityMtx();
+    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[1].modelMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[2].modelMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[3].modelMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[4].modelMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[5].modelMtx, meshRotation);
+    
+    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[0].nodeTransformMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[1].nodeTransformMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[2].nodeTransformMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[3].nodeTransformMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[4].nodeTransformMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[5].nodeTransformMtx, meshRotation);
+
+    //m_appState.meshConstants[0].nodeTransformMtx = DXUtil::IdentityMtx();
+    //m_appState.meshConstants[1].nodeTransformMtx = DXUtil::IdentityMtx();
+    //m_appState.meshConstants[2].nodeTransformMtx = DXUtil::IdentityMtx();
+    //m_appState.meshConstants[3].nodeTransformMtx = DXUtil::IdentityMtx();
+    //m_appState.meshConstants[4].nodeTransformMtx = DXUtil::IdentityMtx();
+    //m_appState.meshConstants[5].nodeTransformMtx = DXUtil::IdentityMtx();
     for (auto meshConstants : m_appState.meshConstants) { m_scene->SetMeshConstants(meshConstants.first, meshConstants.second); }
 
     // Update SkyBox

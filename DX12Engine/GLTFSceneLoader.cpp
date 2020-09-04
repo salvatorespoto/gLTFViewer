@@ -7,13 +7,11 @@
 #include <cmath>
 
 using Microsoft::WRL::ComPtr;
-using DirectX::XMVector3Normalize; 
-using DirectX::XMVectorSubtract;
-using DirectX::XMVectorScale;
-using DirectX::XMVectorMultiply;
-using DirectX::XMVector3Dot;
-using DirectX::XMVectorGetX;
-using DirectX::XMVector3Cross;
+
+using DirectX::XMFLOAT4, DirectX::XMFLOAT4X4, DirectX::XMVECTOR, DirectX::XMMATRIX, DirectX::XMLoadFloat4, DirectX::XMStoreFloat4,
+DirectX::XMVector3Normalize, DirectX::XMVectorSubtract, DirectX::XMVectorScale, DirectX::XMVectorMultiply, 
+DirectX::XMVector3Dot, DirectX::XMVectorGetX, DirectX::XMVector3Cross, DirectX::XMMatrixTranslation, 
+DirectX::XMMatrixRotationQuaternion, DirectX::XMMatrixScaling, DirectX::XMMatrixMultiply;
 
 GLTFSceneLoader::GLTFSceneLoader(Microsoft::WRL::ComPtr<ID3D12Device> device, Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue)
 {
@@ -26,10 +24,19 @@ void GLTFSceneLoader::Load(std::string fileName)
 	std::string err;
 	std::string warn;
 
-	bool ret = m_glTFLoader.LoadBinaryFromFile(&m_model, &err, &warn, fileName.c_str());
+	bool ret = false;
+	if(fileName.find(".glb") != std::string::npos)
+	{
+		ret = m_glTFLoader.LoadBinaryFromFile(&m_model, &err, &warn, fileName.c_str());
+	}
+	else if(fileName.find(".gltf") != std::string::npos)
+	{
+		ret = m_glTFLoader.LoadASCIIFromFile(&m_model, &err, &warn, fileName.c_str());
+	}
 	if (!warn.empty()) { printf("Warn: %s\n", warn.c_str()); }
 	if (!err.empty()) { printf("Err: %s\n", err.c_str()); }
 	if (!ret) { printf("Failed to parse glTF\n"); return; }
+	
 }
 
 void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
@@ -38,6 +45,61 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 
 	GPUHeapUploader gpuHeapUploader(m_device.Get(), m_commandQueue.Get());
 	scene = std::make_shared<Scene>(m_device.Get());
+
+	// Set up scene graph
+	tinygltf::Scene root = m_model.scenes[sceneId];
+	
+	std::function<std::shared_ptr<SceneNode>(const int, const tinygltf::Model)> ParseSceneNode;
+	ParseSceneNode = [&ParseSceneNode](const int nodeId, const tinygltf::Model& model) -> std::shared_ptr<SceneNode>
+	{
+		tinygltf::Node currentNode = model.nodes[nodeId];
+		std::shared_ptr<SceneNode> sceneNode = std::make_shared<SceneNode>();
+		sceneNode->meshId = -1;
+		sceneNode->meshId = currentNode.mesh;
+		
+		XMMATRIX M, T, R, S;
+		M = T = R = S = DirectX::XMMatrixIdentity();
+		std::vector<double> t = currentNode.translation;
+		std::vector<double> r = currentNode.rotation;
+		std::vector<double> s = currentNode.scale;
+
+		if (!t.empty()) { T = XMMatrixTranslation(t[0], t[1], -t[2]); }
+		if (!r.empty()) { R = XMMatrixRotationQuaternion(XMLoadFloat4(&XMFLOAT4(r[0], r[1], r[2], -r[3]))); }
+		if (!s.empty()) { S = XMMatrixScaling(s[0], s[1], s[2]); }
+		M = XMMatrixMultiply(XMMatrixMultiply(T, R), S);
+
+		if(!currentNode.matrix.empty()) 
+		{
+			DirectX::XMFLOAT4X4 m;
+			for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) { m(j, i) = static_cast<float>(currentNode.matrix[4 * i + j]); }
+			M = DirectX::XMLoadFloat4x4(&m);
+		}
+		
+		DirectX::XMStoreFloat4x4(&sceneNode->transformMtx, M);
+		
+		for(int childId : currentNode.children)
+		{
+			sceneNode->children.push_back(ParseSceneNode(childId, model));
+		}
+
+		return sceneNode;
+	};
+
+	std::function<std::shared_ptr<SceneNode>(const int, const tinygltf::Model)> ParseSceneGraph;
+	ParseSceneGraph = [ParseSceneNode](const int sceneId, const tinygltf::Model& model)->std::shared_ptr<SceneNode>
+	{
+		std::shared_ptr<SceneNode> root = std::make_shared<SceneNode>();
+		root->meshId = -1;
+		root->transformMtx = DXUtil::IdentityMtx();
+		for (int childId : model.scenes[sceneId].nodes)
+		{
+			root->children.push_back(ParseSceneNode(childId, model));
+		}
+		return root;
+	};
+
+	std::shared_ptr<SceneNode> sceneGraphRoot = ParseSceneGraph(sceneId, m_model);
+	scene->m_sceneRoot = *sceneGraphRoot;
 
 	// Set up meshes
 	int meshId = 0;
@@ -69,7 +131,7 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 
 				// Flip the z-coordinate becouse we are converting from right handed to left handed
 				DirectX::XMFLOAT3* vp = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + positionsBV.byteOffset);
-				for (int i = 0; i <= sm.verticesBufferView.count; i++, vp++) { vp->z *= -1; }	
+				for (int i = 0; i < sm.verticesBufferView.count; i++, vp++) { vp->z *= -1; }	
 			}
 
 			if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) 
@@ -80,29 +142,16 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 				sm.normalsBufferView.byteLength = normalsBV.byteLength;
 				sm.normalsBufferView.byteStride = normalsBV.byteStride;
 				sm.normalsBufferView.count = m_model.accessors[primitive.attributes["NORMAL"]].count;
+
+				DirectX::XMFLOAT3* normals = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + normalsBV.byteOffset);
+				// Flip the z-coordinate becouse we are converting from right handed to left handed
+				DirectX::XMFLOAT3* np = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + normalsBV.byteOffset);
+				for (int i = 0; i < sm.normalsBufferView.count; i++, np++) { np->z *= -1; }
+
 			}
 			else 
 			{
 				// Compute normals
-			}
-
-			if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
-			{
-				tinygltf::BufferView tangentsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["TANGENT"]].bufferView];
-				sm.tangentsBufferView.bufferId = tangentsBV.buffer;
-				sm.tangentsBufferView.byteOffset = tangentsBV.byteOffset;
-				sm.tangentsBufferView.byteLength = tangentsBV.byteLength;
-				sm.tangentsBufferView.byteStride = tangentsBV.byteStride;
-				sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["TANGENT"]].count;
-			}
-			else 
-			{
-				//sm.tangentsBufferView.bufferId = m_model.buffers.size(); // A new GPU buffer will be created for tangents
-				//sm.tangentsBufferView.byteOffset = 0;
-				//sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;
-				//sm.tangentsBufferView.byteLength = sm.tangentsBufferView.count * sizeof(DirectX::XMFLOAT4);
-				//sm.tangentsBufferView.byteStride = 0;	// Tighly packed
-				//ComputeTangentSpace(primitive, scene.get());
 			}
 
 			if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
@@ -145,6 +194,35 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 				}
 			}
 
+			if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
+			{
+				tinygltf::BufferView tangentsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["TANGENT"]].bufferView];
+				sm.tangentsBufferView.bufferId = tangentsBV.buffer;
+				sm.tangentsBufferView.byteOffset = tangentsBV.byteOffset;
+				sm.tangentsBufferView.byteLength = tangentsBV.byteLength;
+				sm.tangentsBufferView.byteStride = tangentsBV.byteStride;
+				sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["TANGENT"]].count;
+
+				DirectX::XMFLOAT3* tp = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + tangentsBV.byteOffset);
+				for (int i = 0; i < sm.tangentsBufferView.count; i++, tp++) { tp->z *= -1; }
+			}
+
+			// Load all buffers to the GPU
+			for (tinygltf::Buffer buffer : m_model.buffers)
+			{
+				scene->AddGPUBuffer(gpuHeapUploader.Upload(buffer.data.data(), buffer.data.size()));
+			}
+
+			if (primitive.attributes.find("TANGENT") == primitive.attributes.end())
+			{
+				sm.tangentsBufferView.bufferId = m_model.buffers.size(); // A new GPU buffer will be created for tangents
+				sm.tangentsBufferView.byteOffset = 0;
+				sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;
+				sm.tangentsBufferView.byteLength = sm.tangentsBufferView.count * sizeof(DirectX::XMFLOAT4);
+				sm.tangentsBufferView.byteStride = 0;	// Tighly packed
+				ComputeTangentSpace(primitive, scene.get());
+			}
+			
 			if (sm.materialId == -1) primitive.material = 0; // No material in the file, will use the default material
 		
 			if (primitive.mode == TINYGLTF_MODE_POINTS) sm.topology = D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
@@ -211,12 +289,22 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 	for (tinygltf::Texture texture : m_model.textures)
 	{
 		tinygltf::Image image = m_model.images[texture.source];
-		tinygltf::BufferView imageBufferView = m_model.bufferViews[image.bufferView];
-		tinygltf::Buffer imageBuffer = m_model.buffers[imageBufferView.buffer];
-		uint8_t* imageBufferBegin = imageBuffer.data.data() + imageBufferView.byteOffset;
-		Microsoft::WRL::ComPtr<ID3D12Resource> pTexture;
-		CreateTextureFromMemory(m_device.Get(), m_commandQueue.Get(), imageBufferBegin, imageBufferView.byteLength, &pTexture);
-		scene->AddTexture(textureId++, pTexture);
+		if(image.bufferView != -1) 
+		{
+			tinygltf::BufferView imageBufferView = m_model.bufferViews[image.bufferView];
+			tinygltf::Buffer imageBuffer = m_model.buffers[imageBufferView.buffer];
+			uint8_t* imageBufferBegin = imageBuffer.data.data() + imageBufferView.byteOffset;
+			Microsoft::WRL::ComPtr<ID3D12Resource> pTexture;
+			CreateTextureFromMemory(m_device.Get(), m_commandQueue.Get(), imageBufferBegin, imageBufferView.byteLength, &pTexture);
+			scene->AddTexture(textureId++, pTexture);
+		}
+		else
+		{
+			Microsoft::WRL::ComPtr<ID3D12Resource> pTexture;
+			CreateTextureFromFile(m_device.Get(), m_commandQueue.Get(), "models/" + image.uri, &pTexture);
+			scene->AddTexture(textureId++, pTexture);
+		}
+		
 	}
 
 	// Set up samplers
@@ -226,9 +314,9 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 		// Default sampler
 		D3D12_SAMPLER_DESC samplerDesc = {};
 		samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-		samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-		samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-		samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+		samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 		samplerDesc.MinLOD = 0;
 		samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
 		samplerDesc.MipLODBias = 0.0f;
@@ -265,11 +353,7 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 		}
 	}
 
-	// Load all buffers to the GPU
-	for (tinygltf::Buffer buffer : m_model.buffers)
-	{ 
-		scene->AddGPUBuffer(gpuHeapUploader.Upload(buffer.data.data(), buffer.data.size()));
-	}
+	scene->m_isInitialized = true;
 }
 
 void GLTFSceneLoader::ComputeTangentSpace(tinygltf::Primitive primitive, Scene* scene)
@@ -295,10 +379,11 @@ void GLTFSceneLoader::ComputeTangentSpace(tinygltf::Primitive primitive, Scene* 
 	ZeroMemory(tan1.get(), verticesCount * sizeof(DirectX::XMFLOAT3));
 	std::unique_ptr<DirectX::XMFLOAT3[]> tan2(new DirectX::XMFLOAT3[verticesCount]);
 	ZeroMemory(tan2.get(), verticesCount * sizeof(DirectX::XMFLOAT3));
-	//std::unique_ptr<DirectX::XMVECTOR[]> tan1(new DirectX::XMVECTOR[verticesCount]);
-	//std::unique_ptr<DirectX::XMVECTOR[]> tan2(new DirectX::XMVECTOR[verticesCount]);
 	std::unique_ptr<DirectX::XMFLOAT4[]> tangent(new DirectX::XMFLOAT4[verticesCount]);
 	ZeroMemory(tangent.get(), verticesCount * sizeof(DirectX::XMFLOAT3));
+
+	std::unique_ptr<int[]> idxAvgCount(new int[indexesCount]);
+	ZeroMemory(idxAvgCount.get(), indexesCount * sizeof(int));
 
 	for(size_t i=0; i<indexesCount; i+=3)
 	{
@@ -306,51 +391,53 @@ void GLTFSceneLoader::ComputeTangentSpace(tinygltf::Primitive primitive, Scene* 
 		long i2 = indexes[i+1];
 		long i3 = indexes[i+2];
 		
-		DirectX::XMFLOAT3 v1 = vertices[i1];
-		DirectX::XMFLOAT3 v2 = vertices[i2];
-		DirectX::XMFLOAT3 v3 = vertices[i3];
+		DirectX::XMFLOAT3 v0 = vertices[i1];
+		DirectX::XMFLOAT3 v1 = vertices[i2];
+		DirectX::XMFLOAT3 v2 = vertices[i3];
 		
-		DirectX::XMFLOAT2 w1 = texCoords[i1];
-		DirectX::XMFLOAT2 w2 = texCoords[i2];
-		DirectX::XMFLOAT2 w3 = texCoords[i3];
+		DirectX::XMFLOAT2 uv0 = texCoords[i1];
+		DirectX::XMFLOAT2 uv1 = texCoords[i2];
+		DirectX::XMFLOAT2 uv2 = texCoords[i3];
 
-		float x1 = v2.x - v1.x;
-		float x2 = v3.x - v1.x;
-		float y1 = v2.y - v1.y;        
-		float y2 = v3.y - v1.y;        
-		float z1 = v2.z - v1.z;        
-		float z2 = v3.z - v1.z;        
-		float s1 = w2.x - w1.x;        
-		float s2 = w3.x - w1.x;        
-		float t1 = w2.y - w1.y;        
-		float t2 = w3.y - w1.y;        
-		float r = 1.0f / (s1 * t2 - s2 * t1);        
-		DirectX::XMFLOAT3 sdir((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r);
-		DirectX::XMFLOAT3 tdir((s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r);
-		tan1[i1] = { tan1[i1].x + sdir.x, tan1[i1].y + sdir.y, tan1[i1].z + sdir.z };
-		tan1[i2] = { tan1[i2].x + sdir.x, tan1[i2].y + sdir.y, tan1[i2].z + sdir.z };
-		tan1[i3] = { tan1[i3].x + sdir.x, tan1[i3].y + sdir.y, tan1[i3].z + sdir.z };
-		tan2[i1] = { tan2[i1].x + sdir.x, tan2[i1].y + sdir.y, tan2[i1].z + sdir.z };
-		tan2[i2] = { tan2[i2].x + sdir.x, tan2[i2].y + sdir.y, tan2[i2].z + sdir.z };
-		tan2[i3] = { tan2[i3].x + sdir.x, tan2[i3].y + sdir.y, tan2[i3].z + sdir.z };
+		DirectX::XMFLOAT3 e0 = { v1.x - v0.x, v1.y - v0.y, v1.z - v0.z };
+		DirectX::XMFLOAT3 e1 = { v2.x - v0.x, v2.y - v0.y, v2.z - v0.z };
+
+		float deltaU0 = uv1.x - uv0.x;	// U coordinate differences between v1 and v0
+		float deltaV0 = uv1.y - uv0.y;	// V coordinate differences between v1 and v0
+		float deltaU1 = uv2.x - uv0.x;	// U coordinate differences between v2 and v0
+		float deltaV1 = uv2.y - uv0.y;	// V coordinate differences between v1 and v0
+		
+		float denominator = deltaU0 * deltaV1 - deltaV0 * deltaU1;
+
+		DirectX::XMFLOAT4 T;
+		DirectX::XMFLOAT4 B;
+
+		T.x = (deltaV1 * e0.x - deltaV0 * e1.x) / denominator;
+		T.y = (deltaV1 * e0.y - deltaV0 * e1.y) / denominator;
+		T.z = (deltaV1 * e0.z - deltaV0 * e1.z) / denominator;
+		T.w = 1.0f;
+
+		B.x = (-deltaV0 * e0.x + deltaU0 * e1.x) / denominator;
+		B.y = (-deltaV0 * e0.y + deltaU0 * e1.y) / denominator;
+		B.z = (-deltaV0 * e0.z + deltaU0 * e1.z) / denominator;
+		B.w = 1.0f;
+
+		XMStoreFloat4(&T, XMVector3Normalize(XMLoadFloat4(&T)));
+		tangent[i1] = { tangent[i1].x + T.x, tangent[i1].y + T.y, tangent[i1].z + T.z, 1.0f };
+		tangent[i2] = { tangent[i2].x + T.x, tangent[i2].y + T.y, tangent[i2].z + T.z, 1.0f };
+		tangent[i3] = { tangent[i3].x + T.x, tangent[i3].y + T.y, tangent[i3].z + T.z, 1.0f };
+		idxAvgCount[i1]++;
+		idxAvgCount[i2]++;
+		idxAvgCount[i3]++;
 	}
 
 	for (size_t i = 0; i < verticesCount; i++)
-	{
-
-		DirectX::XMVECTOR n = DirectX::XMLoadFloat3(&normals[i]);
-		DirectX::XMVECTOR t = DirectX::XMLoadFloat3(&tan1[i]);
-
-		// Gram-Schmidt orthogonalize        
-		DirectX::XMVECTOR xmTangent = XMVector3Normalize(XMVectorSubtract(t, XMVectorScale(n, XMVectorGetX(XMVector3Dot(n, t)))));
-
-		// Calculate handedness        
-		DirectX::XMVECTOR t2 = DirectX::XMLoadFloat3(&tan2[i]);
-		float handedness = (XMVectorGetX(XMVector3Dot(XMVector3Cross(n, t), t2)) < 0.0f) ? -1.0f : 1.0f;
-		xmTangent = DirectX::XMVectorSetW(xmTangent, handedness);
-		DirectX::XMStoreFloat4(&tangent[i], xmTangent);
+	{ 
+		tangent[i].x /= (float)idxAvgCount[i]; 
+		tangent[i].y /= (float)idxAvgCount[i];
+		tangent[i].z /= (float)idxAvgCount[i];
+		tangent[i].w /= (float)idxAvgCount[i];
 	}
-
 	GPUHeapUploader gpuHeapUploader(m_device, m_commandQueue);
 	scene->AddGPUBuffer(gpuHeapUploader.Upload(tangent.get(), verticesCount * sizeof(DirectX::XMFLOAT4)));
 }

@@ -213,12 +213,31 @@ void Scene::UpdateConstants(FrameConstants frameConstants)
 
 void Scene::Draw(ID3D12GraphicsCommandList* commandList)
 {
-	for (const auto& mesh : m_meshes) 
+	if (m_isInitialized) 
 	{
-		SetRootSignature(commandList, mesh.second.GetId());
-		DrawMesh(mesh.second, commandList); 
+		DrawNode(m_sceneRoot, commandList, DXUtil::IdentityMtx());
 	}
 }
+
+void Scene::DrawNode(SceneNode node, ID3D12GraphicsCommandList* commandList, DirectX::XMFLOAT4X4 parentMtx)
+{
+	DirectX::XMFLOAT4X4 M;
+	DirectX::XMStoreFloat4x4(&M, DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&parentMtx), DirectX::XMLoadFloat4x4(&node.transformMtx)));
+
+	if(node.meshId != -1) 
+	{
+		m_meshes[node.meshId].SetNodeMtx(M);
+		SetMeshConstants(node.meshId, m_meshes[node.meshId].constants);
+		SetRootSignature(commandList, node.meshId);
+		DrawMesh(m_meshes[node.meshId], commandList);
+	}
+
+	for (std::shared_ptr<SceneNode> child : node.children)
+	{
+		DrawNode(*child, commandList, M);
+	}
+}
+
 
 void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList) 
 {

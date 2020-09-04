@@ -44,9 +44,9 @@ public:
 	void AddSubMesh(const SubMesh& subMesh);
 
 	friend void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList);
-
+	MeshConstants constants;
 protected:
 	unsigned int m_id;
-	MeshConstants constants;
+	
 	std::vector<SubMesh> m_subMeshes;
 };

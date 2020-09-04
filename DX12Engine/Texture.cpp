@@ -14,6 +14,17 @@ void CreateTextureFromMemory(ID3D12Device* device, ID3D12CommandQueue* commandQu
 	//auto desc = (*texture)->GetDesc();
 }
 
+void CreateTextureFromFile(ID3D12Device* device, ID3D12CommandQueue* commandQueue, std::string fileName, ID3D12Resource** texture)
+{
+	DirectX::ResourceUploadBatch resourceUploadBatch(device);
+	resourceUploadBatch.Begin();
+	DXUtil::ThrowIfFailed(DirectX::CreateWICTextureFromFile(device, resourceUploadBatch, std::wstring(fileName.begin(), fileName.end()).c_str(), texture, true),
+		"Cannot create texture");
+	auto finish = resourceUploadBatch.End(commandQueue);
+	finish.wait();
+	//auto desc = (*texture)->GetDesc();
+}
+
 void CreateTextureFromDDSFile(ID3D12Device* device, ID3D12CommandQueue* commandQueue, std::string fileName, ID3D12Resource** texture)
 {
 	DirectX::ResourceUploadBatch resourceUploadBatch(device);
