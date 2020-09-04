@@ -63,16 +63,16 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 		std::vector<double> r = currentNode.rotation;
 		std::vector<double> s = currentNode.scale;
 
-		if (!t.empty()) { T = XMMatrixTranslation(t[0], t[1], -t[2]); }
-		if (!r.empty()) { R = XMMatrixRotationQuaternion(XMLoadFloat4(&XMFLOAT4(r[0], r[1], r[2], -r[3]))); }
-		if (!s.empty()) { S = XMMatrixScaling(s[0], s[1], s[2]); }
-		M = XMMatrixMultiply(XMMatrixMultiply(T, R), S);
+		if (!t.empty()) { T = XMMatrixTranslation(static_cast<float>(t[0]), static_cast<float>(t[1]), static_cast<float>(t[2])); }
+		if (!r.empty()) { R = XMMatrixRotationQuaternion(XMLoadFloat4(&XMFLOAT4(static_cast<float>(r[0]), static_cast<float>(r[1]), static_cast<float>(r[2]), static_cast<float>(r[3])))); }
+		if (!s.empty()) { S = XMMatrixScaling(static_cast<float>(s[0]), static_cast<float>(s[1]), static_cast<float>(s[2])); }
+		M = XMMatrixTranspose(XMMatrixMultiply(S, XMMatrixMultiply(R,T)));
 
 		if(!currentNode.matrix.empty()) 
 		{
 			DirectX::XMFLOAT4X4 m;
 			for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) { m(j, i) = static_cast<float>(currentNode.matrix[4 * i + j]); }
-			M = DirectX::XMLoadFloat4x4(&m);
+			M = XMMatrixTranspose(DirectX::XMLoadFloat4x4(&m));
 		}
 		
 		DirectX::XMStoreFloat4x4(&sceneNode->transformMtx, M);
