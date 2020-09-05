@@ -3,13 +3,7 @@
 #include "Camera.h"
 #include "SkyBox.h"
 
-using Microsoft::WRL::ComPtr;
-using DirectX::XMStoreFloat4x4;
-using DirectX::XMMatrixMultiply;
-using DirectX::XMLoadFloat4x4;
-using DirectX::XMConvertToRadians;
-using DXUtil::ThrowIfFailed;
-using DXUtil::ThrowIfFailed;
+#include "UsingDirectives.h"
 
 Scene::~Scene() {}
 
@@ -195,6 +189,7 @@ void Scene::SetCamera(const Camera& camera)
 void Scene::SetMeshConstants(unsigned int meshId, MeshConstants meshConstants)
 {
 	if (m_meshes.find(meshId) == m_meshes.end()) return;
+	XMStoreFloat4x4(&meshConstants.nodeTransformMtx, XMMatrixTranspose(XMLoadFloat4x4(&meshConstants.nodeTransformMtx)));	// Transpose the matrix due HLSL use a column-major memory layout by default
 	m_meshes[meshId].SetModelMtx(meshConstants.modelMtx);
 	m_meshConstantsBuffer[meshId]->copyData(0, meshConstants);
 }
@@ -213,31 +208,30 @@ void Scene::UpdateConstants(FrameConstants frameConstants)
 
 void Scene::Draw(ID3D12GraphicsCommandList* commandList)
 {
-	if (m_isInitialized) 
+	if (m_isInitialized)
 	{
-		DrawNode(m_sceneRoot, commandList, DXUtil::IdentityMtx());
+		DrawNode(m_sceneRoot.get(), commandList, DXUtil::IdentityMtx());
 	}
 }
 
-void Scene::DrawNode(SceneNode node, ID3D12GraphicsCommandList* commandList, DirectX::XMFLOAT4X4 parentMtx)
+void Scene::DrawNode(SceneNode* node, ID3D12GraphicsCommandList* commandList, DirectX::XMFLOAT4X4 parentMtx)
 {
 	DirectX::XMFLOAT4X4 M;
-	DirectX::XMStoreFloat4x4(&M, DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&parentMtx), DirectX::XMLoadFloat4x4(&node.transformMtx)));
+	DirectX::XMStoreFloat4x4(&M, DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&node->transformMtx), DirectX::XMLoadFloat4x4(&parentMtx)));
 
-	if(node.meshId != -1) 
+	if(node->meshId != -1) 
 	{
-		m_meshes[node.meshId].SetNodeMtx(M);
-		SetMeshConstants(node.meshId, m_meshes[node.meshId].constants);
-		SetRootSignature(commandList, node.meshId);
-		DrawMesh(m_meshes[node.meshId], commandList);
+		m_meshes[node->meshId].SetNodeMtx(M);
+		SetMeshConstants(node->meshId, m_meshes[node->meshId].constants);
+		SetRootSignature(commandList, node->meshId);
+		DrawMesh(m_meshes[node->meshId], commandList);
 	}
 
-	for (std::shared_ptr<SceneNode> child : node.children)
+	for (const std::unique_ptr<SceneNode>& child : node->children)
 	{
-		DrawNode(*child, commandList, M);
+		DrawNode(child.get(), commandList, M);
 	}
 }
-
 
 void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList) 
 {
@@ -289,16 +283,23 @@ void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList)
 
 		D3D12_VERTEX_BUFFER_VIEW vertexBuffers[5] = { vbView, nbView, tbView, tc0bView, tc1bView };
 		commandList->IASetVertexBuffers(0, 5, vertexBuffers);
-		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		commandList->IASetPrimitiveTopology(subMesh.topology);
 
 		D3D12_INDEX_BUFFER_VIEW ibView; // Index buffer view
-		ibView.BufferLocation = m_buffersGPU[subMesh.indicesBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.indicesBufferView.byteOffset;
-		ibView.Format = DXGI_FORMAT_R16_UINT;
-		ibView.SizeInBytes = subMesh.indicesBufferView.byteLength;
+		if (subMesh.indicesBufferView.bufferId != -1)
+		{
+			ibView.BufferLocation = m_buffersGPU[subMesh.indicesBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.indicesBufferView.byteOffset;
+			ibView.Format = DXGI_FORMAT_R16_UINT;
+			ibView.SizeInBytes = subMesh.indicesBufferView.byteLength;
+			D3D12_INDEX_BUFFER_VIEW indexBuffers[1] = { ibView };
 
-		D3D12_INDEX_BUFFER_VIEW indexBuffers[1] = { ibView };
-		commandList->IASetIndexBuffer(indexBuffers);
-
-		commandList->DrawIndexedInstanced(subMesh.indicesBufferView.count, 1, 0, 0, 0);
+			commandList->IASetIndexBuffer(indexBuffers);
+			commandList->DrawIndexedInstanced(subMesh.indicesBufferView.count, 1, 0, 0, 0);
+		}
+		else
+		{
+			// No indices, it's a vertices list
+			commandList->DrawInstanced(subMesh.verticesBufferView.count, 1, 0, 0);
+		}
 	}
 }

@@ -8,24 +8,26 @@
 #include <map>
 #include <wrl.h>
 
+class GLTFSceneLoader;
 class Camera;
 class Mesh;
 struct MeshConstants;
 class SkyBox;
 
+/* A SceneNode is a node in the scene graph */
 struct SceneNode 
 {
-	int meshId;
-	std::vector<std::shared_ptr<SceneNode>> children;	
-	DirectX::XMFLOAT4X4 transformMtx = DXUtil::IdentityMtx();		// Node tranformation relative to its parent
+	int meshId;													// Id of the scene mesh associated with this node, -1 for no mesh
+	std::vector<std::unique_ptr<SceneNode>> children;			// Children of this node
+	DirectX::XMFLOAT4X4 transformMtx = DXUtil::IdentityMtx();	// Node tranformation relative to its parent
 };
-
 
 class Scene
 {
 public:
 	Scene(Microsoft::WRL::ComPtr<ID3D12Device> device);
 	~Scene();
+
 	void AddGPUBuffer(Microsoft::WRL::ComPtr<ID3D12Resource> buffer);
 	void AddMaterial(unsigned int materialId, RoughMetallicMaterial material);
 	void AddTexture(unsigned int textureId, Microsoft::WRL::ComPtr<ID3D12Resource> texture);
@@ -40,7 +42,7 @@ public:
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignature();
 	void Draw(ID3D12GraphicsCommandList* commandList);
-	void DrawNode(SceneNode node, ID3D12GraphicsCommandList* commandList, DirectX::XMFLOAT4X4 parentMtx);
+	void DrawNode(SceneNode* node, ID3D12GraphicsCommandList* commandList, DirectX::XMFLOAT4X4 parentMtx);
 	void DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList);
 
 protected:
@@ -73,7 +75,9 @@ protected:
 	std::map<unsigned int, std::unique_ptr<UploadBuffer<Light>>> m_lightsConstantsBuffer;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;
 
-public:
-	SceneNode m_sceneRoot;
+	std::unique_ptr<SceneNode> m_sceneRoot;
 	bool m_isInitialized = false;
+
+private:
+	friend class GLTFSceneLoader;
 };
