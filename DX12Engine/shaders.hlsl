@@ -5,6 +5,7 @@ static const uint MATERIALS_N_DESCRIPTORS = 15;
 static const uint TEXTURES_N_DESCRIPTORS = 15;
 static const uint SAMPLERS_N_DESCRIPTORS = 15;
 static const uint MAX_LIGHT_NUMBER = 7;
+static const uint MAX_MESH_INSTANCES = 10;
 
 static const float3 dielectricSpecular = { 0.04f, 0.04f, 0.04f };
 static const float3 black = { 0.0f, 0.0f, 0.0f };
@@ -50,11 +51,13 @@ struct RoughMetallicMaterial
 };
 
 FrameConstants frameConstants : register(b0, space0);
-ConstantBuffer<MeshConstants> meshConstants : register(b1, space0);
+StructuredBuffer<MeshConstants> meshConstants : register(t0, space0);
 ConstantBuffer<RoughMetallicMaterial> materials[MATERIALS_N_DESCRIPTORS]  : register(b0, space1);
-Texture2D textures[TEXTURES_N_DESCRIPTORS] : register(t0, space0);
-TextureCube cubeMap : register(t0, space1);
+Texture2D textures[TEXTURES_N_DESCRIPTORS] : register(t0, space1);
+TextureCube cubeMap : register(t0, space2);
 SamplerState samplers[SAMPLERS_N_DESCRIPTORS] : register(s0);
+
+//StructuredBuffer<InstanceData> gInstanceData : register(t0, space2);
 
 struct VertexIn
 {
@@ -62,6 +65,7 @@ struct VertexIn
     float3 normal : NORMAL;
     float4 tangent : TANGENT;
     float2 textCoord : TEXCOORD;
+
 };
 
 struct VertexOut
@@ -74,10 +78,10 @@ struct VertexOut
 };
 
 // The vertex shader 
-VertexOut VSMain(VertexIn vIn)
+VertexOut VSMain(VertexIn vIn, uint instanceID : SV_InstanceID)
 {
     VertexOut vOut;
-    float4x4 modelMtx = mul(meshConstants.modelMtx, meshConstants.nodeMtx);
+    float4x4 modelMtx = mul(meshConstants[instanceID].modelMtx, meshConstants[instanceID].nodeMtx);
     vOut.shadingLocation = mul(float4(vIn.position, 1.0f), modelMtx).xyz;
     vOut.normal = mul(float4(vIn.normal, 1.0f), modelMtx).xyz;
     vOut.position = mul(float4(vIn.position, 1.0f), mul(modelMtx, frameConstants.viewProjMtx));

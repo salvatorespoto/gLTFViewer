@@ -9,14 +9,8 @@
 #include "SkyBox.h"
 #include "Texture.h"
 
-using Microsoft::WRL::ComPtr;
-using DirectX::XMMATRIX;
-using DirectX::XMStoreFloat4x4;
-using DirectX::XMMatrixMultiply;
-using DirectX::XMLoadFloat4x4;
-using DirectX::XMConvertToRadians;
-using DirectX::XMMatrixRotationAxis;
-using DXUtil::ThrowIfFailed;
+#include "UsingDirectives.h"
+
 
 LRESULT CALLBACK wndMsgCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -311,10 +305,10 @@ void ViewerApp::OnMouseUp(WPARAM btnState, int x, int y)
 void ViewerApp::OnKeyDown(WPARAM wParam)
 {    
     // Handle camera movements
-    if (wParam == VK_KEY_W) m_camera->moveForward(0.05f);
-    if (wParam == VK_KEY_S) m_camera->moveForward(-0.05f);
-    if (wParam == VK_KEY_A) m_camera->strafe(-0.05f);
-    if (wParam == VK_KEY_D) m_camera->strafe(0.05f);
+    if (wParam == VK_KEY_W) m_camera->moveForward(m_cameraStep);
+    if (wParam == VK_KEY_S) m_camera->moveForward(-m_cameraStep);
+    if (wParam == VK_KEY_A) m_camera->strafe(-m_cameraStep);
+    if (wParam == VK_KEY_D) m_camera->strafe(m_cameraStep);
 }
 
 void ViewerApp::UpdateScene()
@@ -387,9 +381,12 @@ void ViewerApp::OnUpdate()
     // Check if a new model loading has been triggered from the menu
     if(m_appState.isOpenGLTFPressed) 
     {
+        m_gltfLoader = std::make_unique<GLTFSceneLoader>(m_renderer->GetDevice(), m_renderer->GetCommandQueue());
         m_gltfLoader->Load(m_appState.gltfFileLoaded);
         m_gltfLoader->GetScene(0, m_scene);
         m_scene->SetCubeMapTexture(m_cubeMapTexture);
+        m_camera->setPosition({ 0.0f, 0.0f, -m_scene->GetSceneRadius() * 1.5f });
+        m_cameraStep = m_scene->GetSceneRadius() / 10.0f;
         m_appState.isOpenGLTFPressed = false;
     }
     UpdateScene();

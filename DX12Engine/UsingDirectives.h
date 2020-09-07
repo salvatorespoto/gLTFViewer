@@ -32,4 +32,6 @@ DirectX::XMVector3Cross,
 DirectX::XMMatrixTranslation, 
 DirectX::XMMatrixRotationQuaternion, 
 DirectX::XMMatrixScaling, 
-DirectX::XMMatrixMultiply;
+DirectX::XMMatrixMultiply,
+DirectX::XMConvertToRadians,
+DirectX::XMMatrixRotationAxis;

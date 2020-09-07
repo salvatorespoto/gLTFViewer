@@ -2,14 +2,24 @@
 
 #include "DXUtil.h"
 
+constexpr uint8_t BUFFER_ELEM_VEC2 = 2;
+constexpr uint8_t BUFFER_ELEM_VEC3 = 3;
+constexpr uint8_t BUFFER_ELEM_VEC4 = 4;
+constexpr uint8_t BUFFER_ELEM_TYPE_UNSIGNED_CHAR = 1;
+constexpr uint8_t BUFFER_ELEM_TYPE_UNSIGNED_SHORT = 2;
+constexpr uint8_t BUFFER_ELEM_TYPE_UNSIGNED_INT = 3;
+constexpr uint8_t BUFFER_ELEM_TYPE_FLOAT = 4;
+
 /** BufferView is used to address resources in larger memory buffers */
 struct BufferView
 {
-	unsigned int bufferId = -1;
+	int8_t bufferId = -1;
 	size_t byteOffset = 0;
 	size_t byteLength = 0;
 	size_t byteStride = 0;
 	size_t count = 0;
+	uint8_t elemType = BUFFER_ELEM_VEC3;
+	uint8_t componentType = BUFFER_ELEM_TYPE_FLOAT;
 };
 
 /** Upload data to a default heap buffer and return a com pointer to it */

@@ -12,11 +12,12 @@ D3D12_INPUT_ELEMENT_DESC vertexElementsDesc[];
 struct SubMesh
 {
 	BufferView verticesBufferView;
-	BufferView indicesBufferView;
+	BufferView colorsBufferView;
 	BufferView normalsBufferView;
 	BufferView tangentsBufferView;
 	BufferView texCoord0BufferView;
 	BufferView texCoord1BufferView;
+	BufferView indicesBufferView;
 	unsigned int materialId;
 	D3D_PRIMITIVE_TOPOLOGY topology;
 };

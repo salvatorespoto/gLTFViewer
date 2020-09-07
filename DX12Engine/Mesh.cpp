@@ -9,7 +9,7 @@ D3D12_INPUT_ELEMENT_DESC vertexElementsDesc[] =
 		DXGI_FORMAT_R32G32B32_FLOAT,	// A DXGI_FORMAT that describe the data type
 		0,								// Input slot 0
 		0,								// Byte offset from the beginning of the struct, 0 because is the first struct field
-		D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,	// Input slot class
+		D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
 		0								// Instaced data step rate
 	},
 	{"NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},

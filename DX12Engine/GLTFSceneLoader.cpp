@@ -96,7 +96,7 @@ std::unique_ptr<SceneNode> GLTFSceneLoader::ParseSceneNode(const int nodeId)
 	if (!currentNode.matrix.empty())
 	{
 		DirectX::XMFLOAT4X4 m;
-		for (size_t i = 0; i < 4; i++) for (size_t j = 0; j < 4; j++) { m(j, i) = static_cast<float>(currentNode.matrix[4 * i + j]); }
+		for (size_t i = 0; i < 4; i++) for (size_t j = 0; j < 4; j++) { m(i, j) = static_cast<float>(currentNode.matrix[4 * i + j]); }
 		M = DirectX::XMLoadFloat4x4(&m);
 	}
 	
@@ -110,7 +110,7 @@ std::unique_ptr<SceneNode> GLTFSceneLoader::ParseSceneNode(const int nodeId)
 void GLTFSceneLoader::LoadMeshes(Scene* scene)
 {
 	GPUHeapUploader gpuHeapUploader(m_device.Get(), m_commandQueue.Get());
-
+	
 	int meshId = 0;
 	for (tinygltf::Mesh mesh : m_model.meshes)
 	{
@@ -124,6 +124,7 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 		{
 			SubMesh sm;
 			sm.verticesBufferView.bufferId = -1;
+			sm.colorsBufferView.bufferId = -1;
 			sm.normalsBufferView.bufferId = -1;
 			sm.tangentsBufferView.bufferId = -1;
 			sm.texCoord0BufferView.bufferId = -1;
@@ -132,26 +133,55 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 			// Attribute (es. "POSITION") -> Accessors -> BufferView -> Buffer
 			if (primitive.attributes.find("POSITION") != primitive.attributes.end())
 			{
-				tinygltf::BufferView positionsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["POSITION"]].bufferView];
+				tinygltf::Accessor positionAccessor = m_model.accessors[primitive.attributes["POSITION"]];
+				tinygltf::BufferView positionsBV = m_model.bufferViews[positionAccessor.bufferView];
 				sm.verticesBufferView.bufferId = positionsBV.buffer;
-				sm.verticesBufferView.byteOffset = positionsBV.byteOffset + m_model.accessors[primitive.attributes["POSITION"]].byteOffset; // Accessors defines an additional offset
-				sm.verticesBufferView.byteLength = positionsBV.byteLength;
+				sm.verticesBufferView.byteOffset = positionsBV.byteOffset + positionAccessor.byteOffset; // Accessors defines an additional offset
 				sm.verticesBufferView.byteStride = positionsBV.byteStride;
-				sm.verticesBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;
+				sm.verticesBufferView.count = positionAccessor.count;
+				sm.verticesBufferView.elemType = BUFFER_ELEM_VEC3;
+				sm.verticesBufferView.componentType = BUFFER_ELEM_TYPE_FLOAT;
+				sm.verticesBufferView.byteLength = positionAccessor.count * sizeof(XMFLOAT3);
 
-				// Flip the z-coordinate becouse we are converting from right handed to left handed
 				DirectX::XMFLOAT3* vp = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + positionsBV.byteOffset);
-				for (int i = 0; i < sm.verticesBufferView.count; i++, vp++) { vp->z *= -1; }
+				for (int i = 0; i < sm.verticesBufferView.count; i++, vp++) 
+				{ 
+					vp->z *= -1;	// Flip the z-coordinate becouse we are converting from right handed to left handed
+					// Compute the radius of the scene
+					if (abs(vp->x) > scene->m_sceneRadius.x) scene->m_sceneRadius.x = abs(vp->x);
+					if (abs(vp->y) > scene->m_sceneRadius.y) scene->m_sceneRadius.y = abs(vp->y);
+					if (abs(vp->z) > scene->m_sceneRadius.z) scene->m_sceneRadius.z = abs(vp->z);
+				}
+			}
+
+			if (primitive.attributes.find("COLOR_0") != primitive.attributes.end())
+			{
+				tinygltf::Accessor colorAccessor = m_model.accessors[primitive.attributes["COLOR"]];
+				tinygltf::BufferView colorBV = m_model.bufferViews[colorAccessor.bufferView];
+				sm.colorsBufferView.bufferId = colorBV.buffer;
+				sm.colorsBufferView.byteOffset = colorBV.byteOffset + colorAccessor.byteOffset; // Accessors defines an additional offset
+				sm.colorsBufferView.byteLength = colorBV.byteLength;
+				sm.colorsBufferView.byteStride = colorBV.byteStride;
+				sm.colorsBufferView.count = m_model.accessors[primitive.attributes["COLOR"]].count;
+
+				if (colorAccessor.type == TINYGLTF_TYPE_VEC3) sm.texCoord0BufferView.elemType = BUFFER_ELEM_VEC3;
+				if (colorAccessor.type == TINYGLTF_TYPE_VEC4) sm.texCoord0BufferView.elemType = BUFFER_ELEM_VEC4;
+				if (colorAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) sm.colorsBufferView.componentType = BUFFER_ELEM_TYPE_FLOAT;
+				if (colorAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) sm.colorsBufferView.componentType = BUFFER_ELEM_TYPE_UNSIGNED_CHAR;
+				if (colorAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) sm.colorsBufferView.componentType = BUFFER_ELEM_TYPE_UNSIGNED_SHORT;
 			}
 
 			if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
 			{
-				tinygltf::BufferView normalsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["NORMAL"]].bufferView];
+				tinygltf::Accessor normalAccessor = m_model.accessors[primitive.attributes["NORMAL"]];
+				tinygltf::BufferView normalsBV = m_model.bufferViews[normalAccessor.bufferView];
 				sm.normalsBufferView.bufferId = normalsBV.buffer;
-				sm.normalsBufferView.byteOffset = normalsBV.byteOffset + m_model.accessors[primitive.attributes["NORMAL"]].byteOffset;
+				sm.normalsBufferView.byteOffset = normalsBV.byteOffset + normalAccessor.byteOffset;
 				sm.normalsBufferView.byteLength = normalsBV.byteLength;
 				sm.normalsBufferView.byteStride = normalsBV.byteStride;
-				sm.normalsBufferView.count = m_model.accessors[primitive.attributes["NORMAL"]].count;
+				sm.normalsBufferView.count = normalAccessor.count;
+				sm.normalsBufferView.elemType = BUFFER_ELEM_VEC3;
+				sm.normalsBufferView.componentType = BUFFER_ELEM_TYPE_FLOAT;
 
 				DirectX::XMFLOAT3* normals = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + normalsBV.byteOffset);
 				// Flip the z-coordinate becouse we are converting from right handed to left handed
@@ -165,49 +195,95 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 
 			if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
 			{
-				tinygltf::BufferView texCoord0BV = m_model.bufferViews[m_model.accessors[primitive.attributes["TEXCOORD_0"]].bufferView];
+				tinygltf::Accessor texCoord0Accessor = m_model.accessors[primitive.attributes["TEXCOORD_0"]];
+				tinygltf::BufferView texCoord0BV = m_model.bufferViews[texCoord0Accessor.bufferView];
 				sm.texCoord0BufferView.bufferId = texCoord0BV.buffer;
-				sm.texCoord0BufferView.byteOffset = texCoord0BV.byteOffset;
+				sm.texCoord0BufferView.byteOffset = texCoord0BV.byteOffset + texCoord0Accessor.byteOffset;
 				sm.texCoord0BufferView.byteLength = texCoord0BV.byteLength;
 				sm.texCoord0BufferView.byteStride = texCoord0BV.byteStride;
-				sm.texCoord0BufferView.count = m_model.accessors[primitive.attributes["TEXCOORD_0"]].count;
+				sm.texCoord0BufferView.count = texCoord0Accessor.count;
+				sm.texCoord0BufferView.elemType = BUFFER_ELEM_VEC2;
+				if (texCoord0Accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) sm.texCoord0BufferView.componentType = BUFFER_ELEM_TYPE_FLOAT;
+				if (texCoord0Accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) sm.texCoord0BufferView.componentType = BUFFER_ELEM_TYPE_UNSIGNED_CHAR;
+				if (texCoord0Accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) sm.texCoord0BufferView.componentType = BUFFER_ELEM_TYPE_UNSIGNED_SHORT;
 			}
 
 			if (primitive.attributes.find("TEXCOORD_1") != primitive.attributes.end())
 			{
-				tinygltf::BufferView texCoord1BV = m_model.bufferViews[m_model.accessors[primitive.attributes["TEXCOORD_1"]].bufferView];
+				tinygltf::Accessor texCoord1Accessor = m_model.accessors[primitive.attributes["TEXCOORD_1"]];
+				tinygltf::BufferView texCoord1BV = m_model.bufferViews[texCoord1Accessor.bufferView];
+
 				sm.texCoord1BufferView.bufferId = texCoord1BV.buffer;
-				sm.texCoord1BufferView.byteOffset = texCoord1BV.byteOffset;
+				sm.texCoord1BufferView.byteOffset = texCoord1BV.byteOffset + texCoord1Accessor.byteOffset;
 				sm.texCoord1BufferView.byteLength = texCoord1BV.byteLength;
 				sm.texCoord1BufferView.byteStride = texCoord1BV.byteStride;
-				sm.texCoord1BufferView.count = m_model.accessors[primitive.attributes["TEXCOORD_1"]].count;
+				sm.texCoord1BufferView.count = texCoord1Accessor.count;
+				sm.texCoord1BufferView.elemType = BUFFER_ELEM_VEC2;
+				if (texCoord1Accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) sm.texCoord1BufferView.componentType = BUFFER_ELEM_TYPE_FLOAT;
+				if (texCoord1Accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) sm.texCoord1BufferView.componentType = BUFFER_ELEM_TYPE_UNSIGNED_CHAR;
+				if (texCoord1Accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) sm.texCoord1BufferView.componentType = BUFFER_ELEM_TYPE_UNSIGNED_SHORT;
 			}
 
 			if (primitive.indices != -1)
 			{
+				tinygltf::Accessor indicesAccessor = m_model.accessors[primitive.indices];
 				tinygltf::BufferView indicesBV = m_model.bufferViews[m_model.accessors[primitive.indices].bufferView];
 				sm.indicesBufferView.bufferId = indicesBV.buffer;
-				sm.indicesBufferView.byteOffset = indicesBV.byteOffset;
+				sm.indicesBufferView.byteOffset = indicesBV.byteOffset + indicesAccessor.byteOffset;
 				sm.indicesBufferView.byteLength = indicesBV.byteLength;
 				sm.indicesBufferView.byteStride = indicesBV.byteStride;
 				sm.indicesBufferView.count = m_model.accessors[primitive.indices].count;
 
-				// Switch first and third vertex in a triangle to handle the right handed to left handed coordinate change
-				uint16_t* indexes = (uint16_t*)(m_model.buffers[0].data.data() + indicesBV.byteOffset);
-				size_t indexesCount = m_model.accessors[primitive.indices].count;
-				for (int i = 0; i < indexesCount; i += 3)
+				if (indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
 				{
-					int tmp = indexes[i];
-					indexes[i] = indexes[i + 2];
-					indexes[i + 2] = tmp;
+					sm.indicesBufferView.componentType = BUFFER_ELEM_TYPE_UNSIGNED_CHAR;
+					uint8_t* indexes = (uint8_t*)(m_model.buffers[0].data.data() + indicesBV.byteOffset);
+					
+					// Switch first and third vertex in a triangle to handle the right handed to left handed coordinate change
+					size_t indexesCount = m_model.accessors[primitive.indices].count;
+					for (int i = 0; i < indexesCount; i += 3)
+					{
+						int tmp = indexes[i];
+						indexes[i] = indexes[i + 2];
+						indexes[i + 2] = tmp;
+					}
+				}
+
+				if (indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+				{
+					sm.indicesBufferView.componentType = BUFFER_ELEM_TYPE_UNSIGNED_SHORT;
+					uint16_t* indexes = (uint16_t*)(m_model.buffers[0].data.data() + indicesBV.byteOffset);
+
+					size_t indexesCount = m_model.accessors[primitive.indices].count;
+					for (int i = 0; i < indexesCount; i += 3)
+					{
+						int tmp = indexes[i];
+						indexes[i] = indexes[i + 2];
+						indexes[i + 2] = tmp;
+					}
+				}
+
+				if (indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+				{
+					sm.indicesBufferView.componentType = BUFFER_ELEM_TYPE_UNSIGNED_INT;
+					uint32_t* indexes = (uint32_t*)(m_model.buffers[0].data.data() + indicesBV.byteOffset);
+					
+					size_t indexesCount = m_model.accessors[primitive.indices].count;
+					for (int i = 0; i < indexesCount; i += 3)
+					{
+						int tmp = indexes[i];
+						indexes[i] = indexes[i + 2];
+						indexes[i + 2] = tmp;
+					}
 				}
 			}
 
 			if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
 			{
-				tinygltf::BufferView tangentsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["TANGENT"]].bufferView];
+				tinygltf::Accessor tangentsAccessor = m_model.accessors[primitive.attributes["TANGENT"]];
+				tinygltf::BufferView tangentsBV = m_model.bufferViews[tangentsAccessor.bufferView];
 				sm.tangentsBufferView.bufferId = tangentsBV.buffer;
-				sm.tangentsBufferView.byteOffset = tangentsBV.byteOffset;
+				sm.tangentsBufferView.byteOffset = tangentsBV.byteOffset + tangentsAccessor.byteOffset;
 				sm.tangentsBufferView.byteLength = tangentsBV.byteLength;
 				sm.tangentsBufferView.byteStride = tangentsBV.byteStride;
 				sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["TANGENT"]].count;
@@ -241,8 +317,8 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 			// Compute tangents if they are not specified into the file
 			if (primitive.attributes.find("TANGENT") == primitive.attributes.end())
 			{
-				// Tangents computing is only supported for primitives that define normals and indices
-				if (primitive.attributes.find("NORMAL") != primitive.attributes.end() && primitive.indices != -1)
+				// Tangents computing is only supported for primitives that define texture coords, normals and indices
+				if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end() && primitive.attributes.find("NORMAL") != primitive.attributes.end() && primitive.indices != -1)
 				{
 					sm.tangentsBufferView.bufferId = m_model.buffers.size(); // A new GPU buffer will be created for tangents
 					sm.tangentsBufferView.byteOffset = 0;
@@ -413,7 +489,7 @@ void GLTFSceneLoader::ComputeTangents(tinygltf::Primitive primitive, Scene* scen
 	tinygltf::BufferView indicesBV = m_model.bufferViews[m_model.accessors[primitive.indices].bufferView];
 	uint16_t* indexes = (uint16_t*)(m_model.buffers[0].data.data() + indicesBV.byteOffset);
 	size_t indexesCount = m_model.accessors[primitive.indices].count;
-
+	
 	std::unique_ptr<DirectX::XMFLOAT3[]> tan1(new DirectX::XMFLOAT3[verticesCount]);
 	ZeroMemory(tan1.get(), verticesCount * sizeof(DirectX::XMFLOAT3));
 	std::unique_ptr<DirectX::XMFLOAT3[]> tan2(new DirectX::XMFLOAT3[verticesCount]);

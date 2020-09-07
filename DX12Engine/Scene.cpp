@@ -95,7 +95,7 @@ void Scene::AddMesh(Mesh mesh)
 {
 	unsigned int meshId = mesh.GetId();
 	m_meshes[meshId] = mesh;
-	m_meshConstantsBuffer[meshId] = std::make_unique<UploadBuffer<MeshConstants>>(m_device.Get(), 1, true);
+	m_meshConstantsBuffer[meshId] = std::make_unique<UploadBuffer<MeshConstants>>(m_device.Get(), MAX_MESH_INSTANCES, false);
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_CBVSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	hDescriptor.Offset(meshId, m_CBVSRVDescriptorSize); // Texture descriptors starts after material descrisptors, in the CBV_SRV_UAV descriptor heap layout of the Scene class
@@ -124,6 +124,11 @@ void Scene::SetCubeMapTexture(Microsoft::WRL::ComPtr<ID3D12Resource> cubeMapText
 	m_device->CreateShaderResourceView(m_cubeMapTexture.Get(), &srvDesc, hDescriptor);
 }
 
+float Scene::GetSceneRadius()
+{
+	return sqrt(m_sceneRadius.x*m_sceneRadius.x + m_sceneRadius.y * m_sceneRadius.y + m_sceneRadius.z * m_sceneRadius.z);
+}
+
 ComPtr<ID3D12RootSignature> Scene::CreateRootSignature()
 {
 	if (m_rootSignature) return m_rootSignature;
@@ -131,15 +136,15 @@ ComPtr<ID3D12RootSignature> Scene::CreateRootSignature()
 	CD3DX12_ROOT_PARAMETER rootParameters[4] = {};
 
 	rootParameters[0].InitAsConstantBufferView(0, 0);	// Parameter 1: Root descriptor that will holds the pass constants PassConstants
-	rootParameters[1].InitAsConstantBufferView(1, 0);	// Parameter 2: Root descriptor for mesh constants
+	rootParameters[1].InitAsShaderResourceView(0, 0);	// Parameter 2: Root descriptor for mesh constants
 
 	CD3DX12_DESCRIPTOR_RANGE descriptorRangesCBVSRV[3] = {};	// Parameter 3: Descriptor table with different ranges
 	// Descriptor range for materials
 	descriptorRangesCBVSRV[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, MATERIALS_N_DESCRIPTORS, 0, 1, 0);
 	// Descriptor range for textures
-	descriptorRangesCBVSRV[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, TEXTURES_N_DESCRIPTORS, 0, 0, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);		
+	descriptorRangesCBVSRV[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, TEXTURES_N_DESCRIPTORS, 0, 1, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);		
 	// Descriptor range for cubemap
-	descriptorRangesCBVSRV[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 6, 0, 1, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
+	descriptorRangesCBVSRV[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 6, 0, 2, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
 	rootParameters[2].InitAsDescriptorTable(3, descriptorRangesCBVSRV);
 
 	CD3DX12_DESCRIPTOR_RANGE descriptorRangeSamplers[1] = {};	// Parameter 4: Descriptor table for samplers
@@ -168,7 +173,7 @@ void Scene::SetRootSignature(ID3D12GraphicsCommandList* commandList, unsigned in
 	commandList->SetGraphicsRootConstantBufferView(0, m_frameConstantsBuffer->getResource()->GetGPUVirtualAddress());
 
 	// Set the mesh constants root parameter
-	commandList->SetGraphicsRootConstantBufferView(1, m_meshConstantsBuffer[meshId]->getResource()->GetGPUVirtualAddress());
+	commandList->SetGraphicsRootShaderResourceView(1, m_meshConstantsBuffer[meshId]->getResource()->GetGPUVirtualAddress());
 
 	// Set the descriptors table parameter for mesh constants, materials, textures
 	commandList->SetGraphicsRootDescriptorTable(2, m_CBVSRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
@@ -191,7 +196,14 @@ void Scene::SetMeshConstants(unsigned int meshId, MeshConstants meshConstants)
 	if (m_meshes.find(meshId) == m_meshes.end()) return;
 	XMStoreFloat4x4(&meshConstants.nodeTransformMtx, XMMatrixTranspose(XMLoadFloat4x4(&meshConstants.nodeTransformMtx)));	// Transpose the matrix due HLSL use a column-major memory layout by default
 	m_meshes[meshId].SetModelMtx(meshConstants.modelMtx);
-	m_meshConstantsBuffer[meshId]->copyData(0, meshConstants);
+
+	int i = 0;
+	for(MeshConstants meshConstants : m_meshInstances[meshId]) 
+	{
+		XMStoreFloat4x4(&meshConstants.nodeTransformMtx, XMMatrixTranspose(XMLoadFloat4x4(&meshConstants.nodeTransformMtx)));	// Transpose the matrix due HLSL use a column-major memory layout by default
+		m_meshConstantsBuffer[meshId]->copyData(i++, meshConstants);
+	}
+	
 }
 
 void Scene::SetLight(unsigned int lightId, Light light)
@@ -208,9 +220,29 @@ void Scene::UpdateConstants(FrameConstants frameConstants)
 
 void Scene::Draw(ID3D12GraphicsCommandList* commandList)
 {
+	m_meshInstances.clear();
 	if (m_isInitialized)
 	{
+		SetupNode(m_sceneRoot.get(), DXUtil::IdentityMtx());
 		DrawNode(m_sceneRoot.get(), commandList, DXUtil::IdentityMtx());
+	}
+}
+
+void Scene::SetupNode(SceneNode* node, DirectX::XMFLOAT4X4 parentMtx)
+{
+	DirectX::XMFLOAT4X4 M;
+	DirectX::XMStoreFloat4x4(&M, DirectX::XMMatrixMultiply(DirectX::XMLoadFloat4x4(&node->transformMtx), DirectX::XMLoadFloat4x4(&parentMtx)));
+
+	if (node->meshId != -1)
+	{
+		m_meshes[node->meshId].SetNodeMtx(M);
+		m_meshInstances[node->meshId].push_back(m_meshes[node->meshId].constants);
+		SetMeshConstants(node->meshId, m_meshes[node->meshId].constants);		
+	}
+
+	for (const std::unique_ptr<SceneNode>& child : node->children)
+	{
+		SetupNode(child.get(), M);
 	}
 }
 
@@ -221,7 +253,8 @@ void Scene::DrawNode(SceneNode* node, ID3D12GraphicsCommandList* commandList, Di
 
 	if(node->meshId != -1) 
 	{
-		m_meshes[node->meshId].SetNodeMtx(M);
+		//m_meshes[node->meshId].SetNodeMtx(M);
+		//m_meshInstances[node->meshId].push_back(m_meshes[node->meshId].constants);
 		SetMeshConstants(node->meshId, m_meshes[node->meshId].constants);
 		SetRootSignature(commandList, node->meshId);
 		DrawMesh(m_meshes[node->meshId], commandList);
@@ -235,6 +268,7 @@ void Scene::DrawNode(SceneNode* node, ID3D12GraphicsCommandList* commandList, Di
 
 void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList) 
 {
+	int nextIdBuf = 0;
 	for (SubMesh subMesh : mesh.m_subMeshes)
 	{
 		D3D12_VERTEX_BUFFER_VIEW vbView; // Vertices buffer view
@@ -242,7 +276,8 @@ void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList)
 		{
 			vbView.BufferLocation = m_buffersGPU[subMesh.verticesBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.verticesBufferView.byteOffset;
 			vbView.StrideInBytes = (subMesh.verticesBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT3) : subMesh.verticesBufferView.byteStride;
-			vbView.SizeInBytes = subMesh.verticesBufferView.byteLength;
+			vbView.SizeInBytes = static_cast<UINT>(subMesh.verticesBufferView.byteLength);
+			commandList->IASetVertexBuffers(nextIdBuf++, 1, &vbView);
 		}
 		
 		D3D12_VERTEX_BUFFER_VIEW nbView; // Normals buffer view
@@ -250,56 +285,57 @@ void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList)
 		{
 			nbView.BufferLocation = m_buffersGPU[subMesh.normalsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.normalsBufferView.byteOffset;
 			nbView.StrideInBytes = (subMesh.normalsBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT3) : subMesh.normalsBufferView.byteStride;
-			nbView.SizeInBytes = subMesh.verticesBufferView.byteLength;
+			nbView.SizeInBytes = static_cast<UINT>(subMesh.verticesBufferView.byteLength);
+			commandList->IASetVertexBuffers(nextIdBuf++, 1, &nbView);
 		}
-		else nbView = vbView;
+		//else nbView = vbView;
 
 		D3D12_VERTEX_BUFFER_VIEW tbView; // Tangents buffer view
 		if (subMesh.tangentsBufferView.bufferId != -1)
 		{
 			tbView.BufferLocation = m_buffersGPU[subMesh.tangentsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.tangentsBufferView.byteOffset;
 			tbView.StrideInBytes = (subMesh.tangentsBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT4) : subMesh.tangentsBufferView.byteStride;
-			tbView.SizeInBytes = subMesh.tangentsBufferView.byteLength;
+			tbView.SizeInBytes = static_cast<UINT>(subMesh.tangentsBufferView.byteLength);
+			commandList->IASetVertexBuffers(nextIdBuf++, 1, &tbView);
 		}
-		else tbView = vbView;
+		//else tbView = vbView;
 
 		D3D12_VERTEX_BUFFER_VIEW tc0bView; // Texture coordinates buffer view
 		if (subMesh.texCoord0BufferView.bufferId != -1)
 		{
 			tc0bView.BufferLocation = m_buffersGPU[subMesh.texCoord0BufferView.bufferId]->GetGPUVirtualAddress() + subMesh.texCoord0BufferView.byteOffset;
 			tc0bView.StrideInBytes = (subMesh.texCoord0BufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT2) : subMesh.texCoord0BufferView.byteStride;
-			tc0bView.SizeInBytes = subMesh.texCoord0BufferView.byteLength;
+			tc0bView.SizeInBytes = static_cast<UINT>(subMesh.texCoord0BufferView.byteLength);
+			commandList->IASetVertexBuffers(nextIdBuf++, 1, &tc0bView);
 		}
-		else tc0bView = vbView;
+		//else tc0bView = vbView;
 
 		D3D12_VERTEX_BUFFER_VIEW tc1bView; // Texture coordinates buffer view
 		if (subMesh.texCoord1BufferView.bufferId != -1)
 		{
 			tc1bView.BufferLocation = m_buffersGPU[subMesh.texCoord1BufferView.bufferId]->GetGPUVirtualAddress() + subMesh.texCoord0BufferView.byteOffset;
 			tc1bView.StrideInBytes = (subMesh.texCoord1BufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT2) : subMesh.texCoord1BufferView.byteStride;
-			tc1bView.SizeInBytes = subMesh.texCoord0BufferView.byteLength;
+			tc1bView.SizeInBytes = static_cast<UINT>(subMesh.texCoord0BufferView.byteLength);
+			commandList->IASetVertexBuffers(nextIdBuf++, 1, &tc1bView);
 		}
-		else tc1bView = vbView;
-
-		D3D12_VERTEX_BUFFER_VIEW vertexBuffers[5] = { vbView, nbView, tbView, tc0bView, tc1bView };
-		commandList->IASetVertexBuffers(0, 5, vertexBuffers);
+	
 		commandList->IASetPrimitiveTopology(subMesh.topology);
 
-		D3D12_INDEX_BUFFER_VIEW ibView; // Index buffer view
+		D3D12_INDEX_BUFFER_VIEW ibView;
 		if (subMesh.indicesBufferView.bufferId != -1)
 		{
 			ibView.BufferLocation = m_buffersGPU[subMesh.indicesBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.indicesBufferView.byteOffset;
 			ibView.Format = DXGI_FORMAT_R16_UINT;
-			ibView.SizeInBytes = subMesh.indicesBufferView.byteLength;
+			ibView.SizeInBytes = static_cast<UINT>(subMesh.indicesBufferView.byteLength);
 			D3D12_INDEX_BUFFER_VIEW indexBuffers[1] = { ibView };
 
 			commandList->IASetIndexBuffer(indexBuffers);
-			commandList->DrawIndexedInstanced(subMesh.indicesBufferView.count, 1, 0, 0, 0);
+			commandList->DrawIndexedInstanced(subMesh.indicesBufferView.count, m_meshInstances[mesh.GetId()].size(), 0, 0, 0);
 		}
 		else
 		{
 			// No indices, it's a vertices list
-			commandList->DrawInstanced(subMesh.verticesBufferView.count, 1, 0, 0);
+			commandList->DrawInstanced(subMesh.verticesBufferView.count, m_meshInstances[mesh.GetId()].size(), 0, 0);
 		}
 	}
 }

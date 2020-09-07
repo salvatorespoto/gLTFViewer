@@ -81,6 +81,8 @@ protected:
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_cubeMapTexture;
 
 	float m_mouseSensitivity = 0.25f;
+	float m_cameraStep = 0.05f;
+
 	int m_lastMousePosX;
 	int m_lastMousePosY;
 	UINT m_clientWidth;
