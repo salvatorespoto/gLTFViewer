@@ -285,7 +285,7 @@ void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList)
 		{
 			nbView.BufferLocation = m_buffersGPU[subMesh.normalsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.normalsBufferView.byteOffset;
 			nbView.StrideInBytes = (subMesh.normalsBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT3) : subMesh.normalsBufferView.byteStride;
-			nbView.SizeInBytes = static_cast<UINT>(subMesh.verticesBufferView.byteLength);
+			nbView.SizeInBytes = static_cast<UINT>(subMesh.normalsBufferView.byteLength);
 			commandList->IASetVertexBuffers(nextIdBuf++, 1, &nbView);
 		}
 		//else nbView = vbView;

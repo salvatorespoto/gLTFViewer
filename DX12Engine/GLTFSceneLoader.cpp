@@ -188,10 +188,6 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 				DirectX::XMFLOAT3* np = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + normalsBV.byteOffset);
 				for (int i = 0; i < sm.normalsBufferView.count; i++, np++) { np->z *= -1; }
 			}
-			else
-			{
-				// Compute normals
-			}
 
 			if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
 			{
@@ -302,16 +298,14 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 			}
 
 			// Compute normals if they are not specified into the file
-			if (primitive.attributes.find("NORMAL") == primitive.attributes.end())
+			if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
 			{
-				/*
 				sm.normalsBufferView.bufferId = m_model.buffers.size(); // A new GPU buffer will be created for normals
 				sm.normalsBufferView.byteOffset = 0;
 				sm.normalsBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;	// As many normals as vertices
-				sm.normalsBufferView.byteLength = sm.tangentsBufferView.count * sizeof(DirectX::XMFLOAT4);
-				sm.normalsBufferView.byteStride = 0;	// Tighly packed
+				sm.normalsBufferView.byteLength = sm.normalsBufferView.count * sizeof(DirectX::XMFLOAT3);
+				sm.normalsBufferView.byteStride = 0;
 				ComputeNormals(primitive, scene);
-				*/
 			}
 
 			// Compute tangents if they are not specified into the file
@@ -468,7 +462,50 @@ void GLTFSceneLoader::LoadSamplers(Scene* scene)
 
 void GLTFSceneLoader::ComputeNormals(tinygltf::Primitive primitive, Scene* scene) 
 {
-	// Not implemented yet
+	tinygltf::BufferView positionsBV = m_model.bufferViews[m_model.accessors[primitive.attributes["POSITION"]].bufferView];
+	DirectX::XMFLOAT3* vertices = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + positionsBV.byteOffset);
+	size_t verticesCount = m_model.accessors[primitive.attributes["POSITION"]].count;
+
+	tinygltf::BufferView indicesBV = m_model.bufferViews[m_model.accessors[primitive.indices].bufferView];
+	uint16_t* indexes = (uint16_t*)(m_model.buffers[0].data.data() + indicesBV.byteOffset);
+	size_t indexesCount = m_model.accessors[primitive.indices].count;
+
+	std::unique_ptr<DirectX::XMFLOAT3[]> normals(new DirectX::XMFLOAT3[verticesCount]);
+	ZeroMemory(normals.get(), verticesCount * sizeof(DirectX::XMFLOAT3));
+
+	int* idxAvgSize = new int[verticesCount];
+	for (size_t i = 0; i < indexesCount; i += 3)
+	{
+		long i1 = indexes[i];
+		long i2 = indexes[i + 1];
+		long i3 = indexes[i + 2];
+
+		DirectX::XMVECTOR v1 = XMLoadFloat3(&vertices[i1]);
+		DirectX::XMVECTOR v2 = XMLoadFloat3(&vertices[i2]);
+		DirectX::XMVECTOR v3 = XMLoadFloat3(&vertices[i3]);
+		
+		// Face normal
+		XMFLOAT3 faceNormal;
+		DirectX::XMStoreFloat3(&faceNormal, DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSubtract(v2, v1), DirectX::XMVectorSubtract(v3, v1))));
+		
+		// Average face normals to get vertex normal
+		normals[i1] = { normals[i1].x + faceNormal.x, normals[i1].y + faceNormal.y, normals[i1].z + faceNormal.z };
+		normals[i2] = { normals[i2].x + faceNormal.x, normals[i2].y + faceNormal.y, normals[i2].z + faceNormal.z };
+		normals[i3] = { normals[i3].x + faceNormal.x, normals[i3].y + faceNormal.y, normals[i3].z + faceNormal.z };
+		idxAvgSize[i1]++;
+		idxAvgSize[i2]++;
+		idxAvgSize[i3]++;
+	}
+
+	for (size_t i = 0; i < verticesCount; i += 3) 
+	{ 
+		normals[i].x /= static_cast<float>(idxAvgSize[i]); 
+		normals[i].y /= static_cast<float>(idxAvgSize[i]);
+		normals[i].z /= static_cast<float>(idxAvgSize[i]);
+	}
+
+	GPUHeapUploader gpuHeapUploader(m_device, m_commandQueue);
+	scene->AddGPUBuffer(gpuHeapUploader.Upload(normals.get(), verticesCount * sizeof(DirectX::XMFLOAT3)));
 }
 
 void GLTFSceneLoader::ComputeTangents(tinygltf::Primitive primitive, Scene* scene)
