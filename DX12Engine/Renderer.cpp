@@ -267,7 +267,6 @@ void Renderer::CreateConstantBuffer()
 
 bool Renderer::CompileShaders(std::wstring fileName, std::string& errorMsg)
 {
-
 #if defined(_DEBUG)
     UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #else
@@ -275,7 +274,7 @@ bool Renderer::CompileShaders(std::wstring fileName, std::string& errorMsg)
 #endif
     Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
     Microsoft::WRL::ComPtr<ID3DBlob> vertexShader;
-    if (FAILED(D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, "VSMain", "vs_5_1", compileFlags, 0, &vertexShader, &errorBlob)))
+    if (FAILED(D3DCompileFromFile(fileName.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &vertexShader, &errorBlob)))
     {
         errorMsg = DXUtil::GetErrorBlobMsg(errorBlob);
         DEBUG_LOG(errorMsg.c_str())
@@ -283,7 +282,7 @@ bool Renderer::CompileShaders(std::wstring fileName, std::string& errorMsg)
     }
 
     Microsoft::WRL::ComPtr<ID3DBlob> pixelShader;
-    if (FAILED(D3DCompileFromFile(fileName.c_str(), nullptr, nullptr, "PSMain", "ps_5_1", compileFlags, 0, &pixelShader, &errorBlob)))
+    if (FAILED(D3DCompileFromFile(fileName.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &pixelShader, &errorBlob)))
     {
         errorMsg = DXUtil::GetErrorBlobMsg(errorBlob);
         DEBUG_LOG(errorMsg.c_str())
@@ -293,6 +292,53 @@ bool Renderer::CompileShaders(std::wstring fileName, std::string& errorMsg)
     m_vertexShader = vertexShader;
     m_pixelShader = pixelShader;
     DEBUG_LOG("Compiled shaders")
+    return true;
+}
+
+bool Renderer::CompileVertexShader(std::wstring vsFileName, std::string& errorMsg)
+{
+#if defined(_DEBUG)
+    UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+    UINT compileFlags = 0;
+#endif
+    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
+    Microsoft::WRL::ComPtr<ID3DBlob> vertexShader;
+    if (FAILED(D3DCompileFromFile(vsFileName.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "VSMain", "vs_5_1", compileFlags, 0, &vertexShader, &errorBlob)))
+    {
+        errorMsg = DXUtil::GetErrorBlobMsg(errorBlob);
+        DEBUG_LOG(errorMsg.c_str())
+            return false;
+    }
+
+    m_vertexShader = vertexShader;
+    DEBUG_LOG("Compiled vertex shader")
+        return true;
+}
+
+bool Renderer::CompileGeometryShader(std::wstring vsFileName, std::string& errorMsg) 
+{
+    return true;
+}
+
+bool Renderer::CompilePixelShader(std::wstring psFileName, std::string& errorMsg)
+{
+#if defined(_DEBUG)
+    UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+    UINT compileFlags = 0;
+#endif
+    Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
+    Microsoft::WRL::ComPtr<ID3DBlob> pixelShader;
+    if (FAILED(D3DCompileFromFile(psFileName.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "PSMain", "ps_5_1", compileFlags, 0, &pixelShader, &errorBlob)))
+    {
+        errorMsg = DXUtil::GetErrorBlobMsg(errorBlob);
+        DEBUG_LOG(errorMsg.c_str())
+            return false;
+    }
+
+    m_pixelShader = pixelShader;
+    DEBUG_LOG("Compiled pixel shader")
     return true;
 }
 

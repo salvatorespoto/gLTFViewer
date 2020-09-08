@@ -1,19 +1,5 @@
 #include "mesh_common.hlsli"
 
-// The vertex shader 
-VertexOut VSMain(VertexIn vIn, uint instanceID : SV_InstanceID)
-{
-    VertexOut vOut;
-    float4x4 modelMtx = mul(meshConstants[instanceID].modelMtx, meshConstants[instanceID].nodeMtx);
-    vOut.shadingLocation = mul(float4(vIn.position, 1.0f), modelMtx).xyz;
-    vOut.normal = mul(float4(vIn.normal, 1.0f), modelMtx).xyz;
-    vOut.position = mul(float4(vIn.position, 1.0f), mul(modelMtx, frameConstants.viewProjMtx));
-    vOut.textCoord = float2(vIn.textCoord.x, vIn.textCoord.y);
-    vOut.tangent.xyz = mul(vIn.tangent.xyz, (float3x3)modelMtx);
-    vOut.tangent.w = vIn.tangent.w;
-    return vOut;
-}
-
 float3 diffuse(float3 albedo, float3 lightColor, float NdotL); // Lambertian diffuse
 float3 fresnel(float m, float3 lightColor, float3 F0, float NdotH, float NdotL, float LdotH); // Specular fresnel 
 

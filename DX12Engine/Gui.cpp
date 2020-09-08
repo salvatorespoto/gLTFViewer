@@ -1,15 +1,15 @@
 #include "Gui.h"
+
 #include "ViewerApp.h"
 #include "Mesh.h"
+#include <string>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+
 #include "imgui/imfilebrowser.h"
 
-using DXUtil::ThrowIfFailed;
-using DirectX::XMMATRIX;
-using DirectX::XMMatrixRotationAxis;
-using DirectX::XMMatrixMultiply;
+#include "using_directives.h"
 
 void Gui::Init(std::shared_ptr<Renderer> renderer, AppState* appState)
 {
@@ -19,16 +19,15 @@ void Gui::Init(std::shared_ptr<Renderer> renderer, AppState* appState)
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    m_io = ImGui::GetIO();
-    (void)m_io;
-
+    
     SetStyle();
 
     D3D12_DESCRIPTOR_HEAP_DESC dhDesc = {};
     dhDesc.NumDescriptors = 1;
     dhDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     dhDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    ThrowIfFailed(m_renderer->GetDevice()->CreateDescriptorHeap(&dhDesc, IID_PPV_ARGS(&m_srvDescriptorHeap)), "Cannot create SRV descriptor heap for ImGui");
+    ThrowIfFailed(m_renderer->GetDevice()->CreateDescriptorHeap(&dhDesc, IID_PPV_ARGS(&m_srvDescriptorHeap)), 
+        "Cannot create SRV descriptor heap for ImGui");
 
     ImGui_ImplWin32_Init(m_renderer->GetWindowHandle());
     ImGui_ImplDX12_Init(m_renderer->GetDevice().Get(), 1, DXGI_FORMAT_R8G8B8A8_UNORM, m_srvDescriptorHeap.Get(), m_srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
@@ -37,17 +36,13 @@ void Gui::Init(std::shared_ptr<Renderer> renderer, AppState* appState)
     ThrowIfFailed(m_renderer->GetDevice()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandListAlloc.Get(), nullptr, IID_PPV_ARGS(&m_commandList)), "Cannot create the command list");
     m_commandList->Close();
 
+    for (int i = 0; i < FRAME_RATE_SERIES_SIZE; i++) m_frameRateSeries[i] = ImGui::GetIO().Framerate;
+
     LoadShaderSource();
-
-    m_fileDialog.SetTitle("title");
-    m_fileDialog.SetTypeFilters({ ".glb", ".gltf" });
-
     m_isInitialized = true;
-
-
 }
 
-void Gui::Draw(AppState* appState)
+void Gui::Draw()
 {
     if (!m_isInitialized) throw std::exception("Cannot call GUI::Draw on uninitialized class.");
 
@@ -58,98 +53,11 @@ void Gui::Draw(AppState* appState)
     // Draw the GUI
     {
         //ImGui::ShowDemoWindow();
-
-        if (ImGui::BeginMainMenuBar())
-        {
-            FileMenu();
-            ImGui::EndMainMenuBar();
-        }
-
-        ImGui::Begin("Statistics");
-        ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        ImGui::End();
-
-        static const char* current_item = NULL;
-        ImGui::Begin("Controls");
-      
-        ImGui::Checkbox("Fullscreen", &appState->isAppFullscreen);
-        
-        std::vector<DXGI_MODE_DESC> displayModes = m_renderer->GetDisplayModes();
-        static int item_current_idx = 0;
-        std::string combo_label = (std::to_string(appState->currentScreenWidth) + "x" + std::to_string(appState->currentScreenHeight)).c_str();
-        ImGui::SameLine();
-        if (ImGui::BeginCombo("##combo_display_modes", combo_label.c_str(), 0))
-        {
-            std::string previousModeDescription = ""; // Used to show modes with the same resolution only once
-            for(DXGI_MODE_DESC mode : displayModes)
-            {
-                std::string modeDescription = std::to_string(mode.Width) + "x" + std::to_string(mode.Height);
-                if (modeDescription.compare(previousModeDescription) == 0) continue;
-                item_current_idx++;
-                const bool is_selected = (mode.Width == appState->currentScreenWidth && mode.Height == appState->currentScreenHeight);
-                if (ImGui::Selectable(modeDescription.c_str(), is_selected))
-                {
-                    ImGui::SetItemDefaultFocus();
-                    appState->currentScreenWidth = mode.Width;
-                    appState->currentScreenHeight = mode.Height;
-                }
-                //if (is_selected) ImGui::SetItemDefaultFocus();
-                previousModeDescription = modeDescription;
-            }
-            ImGui::EndCombo();
-        }
-        ImGui::End();
-
-        ImGui::Begin("Mesh");
-        float rotX = 0.0f, rotY = 0.0f, rotZ = 0.0f;
-        ImGui::SliderAngle("Rotation X", &appState->meshConstants[0].rotXYZ.x);
-        ImGui::SliderAngle("Rotation Y", &appState->meshConstants[0].rotXYZ.y);
-        ImGui::SliderAngle("Rotation Z", &appState->meshConstants[0].rotXYZ.z);
-        ImGui::End();
-
-        ImGui::Begin("Light");
-        ImGui::SliderFloat("Position X", &appState->lights[0].position.x, -10.0f, 10.0f, "x = %.3f");
-        ImGui::SliderFloat("Position Y", &appState->lights[0].position.y, -10.0f, 10.0f, "x = %.3f");
-        ImGui::SliderFloat("Position Z", &appState->lights[0].position.z, -10.0f, 10.0f, "x = %.3f");
-        ImGui::SliderFloat("R", &appState->lights[0].color.x, 0.0f, 1.0f, "x = %.3f");
-        ImGui::SliderFloat("G", &appState->lights[0].color.y, 0.0f, 1.0f, "x = %.3f");
-        ImGui::SliderFloat("B", &appState->lights[0].color.z, 0.0f, 1.0f, "x = %.3f");
-        ImGui::End();
-
-        //std::vector<DXGI_MODE_DESC> displayModes = m_renderer->GetDisplayModes();
-
-        ImGui::Begin("Shader source");
-        
-        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.5f, 1.0f));
-        if (ImGui::Button("Compile"))
-        {
-            SaveShaderSource();
-            m_compilationSuccess = m_renderer->CompileShaders(L"shaders.hlsl.tmp", m_errorMsg);
-        }
-        ImGui::PopStyleColor(1);
-
-        if(!m_compilationSuccess)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(1.0f, 0.5f, 1.0f));
-            ImGui::TextWrapped(m_errorMsg.c_str());
-            ImGui::PopStyleColor(1);
-            ImGui::Spacing();
-        }
-        else 
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.33f, 0.5f, 1.0f));
-            ImGui::TextWrapped("Compilation success");
-            ImGui::PopStyleColor(1);
-            ImGui::Spacing();
-        }
-
-        ImGui::SetNextItemWidth(ImGui::GetWindowWidth());
-        ImGui::SetNextItemWidth(ImGui::GetWindowHeight());
-
-        ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
-
-        ImGui::InputTextMultiline("##source", m_shaderText, 10000, ImVec2(-FLT_MIN, -FLT_MIN), flags);
-        ImGui::End();
+        DrawMenuBar();
+        DrawStatistics();
+        DrawControls();
+        DrawEditor();
+        DrawLogs();
     }
 
     ImGui::Render();
@@ -189,30 +97,208 @@ void Gui::ShutDown()
 void Gui::LoadShaderSource() 
 {
     std::ifstream inFile;
-    inFile.open("shaders.hlsl");
+    
+    inFile.open("vs_mesh.hlsl");
     std::string text((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
-    memcpy(m_shaderText, text.c_str(), text.length());
+    memcpy(m_vertexShaderText, text.c_str(), text.length());
+    inFile.close();
+
+    inFile.open("gs_mesh.hlsl");
+    text.assign((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
+    memcpy(m_geometryShaderText, text.c_str(), text.length());
+    inFile.close();
+
+    inFile.open("ps_mesh.hlsl");
+    text.assign((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
+    memcpy(m_pixelShaderText, text.c_str(), text.length());
+    inFile.close();
+
+    inFile.open("mesh_common.hlsli");
+    text.assign((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
+    memcpy(m_headerShaderText, text.c_str(), text.length());
+    inFile.close();
     
     return ;
 }
 
 void Gui::SaveShaderSource() 
 {
-    std::ofstream out("shaders.hlsl.tmp");
+    std::ofstream out("vs_mesh.hlsl.tmp");
     if (!out)
     {
         return;
     }
-    out.write((char*)m_shaderText, strlen(m_shaderText));
+    out.write((char*)m_vertexShaderText, strlen(m_vertexShaderText));
+    out.close();
+
+    out.open("gs_mesh.hlsl.tmp");
+    if (!out)
+    {
+        return;
+    }
+    out.write((char*)m_geometryShaderText, strlen(m_geometryShaderText));
+    out.close();
+
+    out.open("ps_mesh.hlsl.tmp");
+    if (!out)
+    {
+        return;
+    }
+    out.write((char*)m_pixelShaderText, strlen(m_pixelShaderText));
+    out.close();
+
+    out.open("mesh_common.hlsli.tmp");
+    if (!out)
+    {
+        return;
+    }
+    out.write((char*)m_headerShaderText, strlen(m_headerShaderText));
     out.close();
 }
 
-void Gui::FileMenu() 
+void Gui::DrawMenuBar() 
+{
+    if (ImGui::BeginMainMenuBar())
+    {
+        DrawBarFileMenu();
+        ImGui::EndMainMenuBar();
+    }
+}
+
+void Gui::DrawStatistics()
+{
+    ImGui::Begin("Statistics");
+    ImGui::PushItemWidth(ImGui::GetWindowWidth());
+    for(int i=1; i<FRAME_RATE_SERIES_SIZE; i++) m_frameRateSeries[i-1] = m_frameRateSeries[i];
+    m_frameRateSeries[FRAME_RATE_SERIES_SIZE-1] = ImGui::GetIO().Framerate;
+    
+    char overlay[50];
+    sprintf(overlay, "%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::PlotHistogram("", m_frameRateSeries, IM_ARRAYSIZE(m_frameRateSeries), 0, overlay, 0.0f, 100.0f, ImVec2(0, 80.0f));
+    ImGui::PopItemWidth();
+    ImGui::End();
+}
+
+void Gui::DrawControls()
+{
+    static const char* current_item = NULL;
+    static bool allItemOpen = true;
+
+    ImGui::Begin("Controls");
+
+    if (allItemOpen) ImGui::SetNextItemOpen(true);
+    if (ImGui::CollapsingHeader("Window settings"))
+    {
+        ImGui::Checkbox("Fullscreen", &m_appState->isAppFullscreen);
+        std::vector<DXGI_MODE_DESC> displayModes = m_renderer->GetDisplayModes();
+
+        static int item_current_idx = 0;
+        std::string combo_label = (std::to_string(m_appState->screenWidth) + "x" + std::to_string(m_appState->screenHeight)).c_str();
+        if (ImGui::BeginCombo("##combo_display_modes", combo_label.c_str(), 0))
+        {
+            std::string previousModeDescription = ""; // Used to show modes with the same resolution only once
+            for (DXGI_MODE_DESC mode : displayModes)
+            {
+                std::string modeDescription = std::to_string(mode.Width) + "x" + std::to_string(mode.Height);
+                if (modeDescription.compare(previousModeDescription) == 0) continue;
+                item_current_idx++;
+                const bool is_selected = (mode.Width == m_appState->screenWidth && mode.Height == m_appState->screenHeight);
+                if (ImGui::Selectable(modeDescription.c_str(), is_selected))
+                {
+                    ImGui::SetItemDefaultFocus();
+                    m_appState->screenWidth = mode.Width;
+                    m_appState->screenHeight = mode.Height;
+                }
+                //if (is_selected) ImGui::SetItemDefaultFocus();
+                previousModeDescription = modeDescription;
+            }
+            ImGui::EndCombo();
+        }
+    }
+
+    if (allItemOpen) ImGui::SetNextItemOpen(true);
+    if (ImGui::CollapsingHeader("Visualize"))
+    { 
+        static int selected = -1;
+        if (ImGui::Selectable("Rendering", selected == 0)) selected = 0;
+        if (ImGui::Selectable("Wireframe", selected == 1)) selected = 1;
+        if (ImGui::Selectable("Base Color", selected == 2)) selected = 2;
+        if (ImGui::Selectable("Normal map", selected == 3)) selected = 3;
+        if (ImGui::Selectable("Occlusion map", selected == 4)) selected = 4;
+        if (ImGui::Selectable("Emissive map", selected == 5)) selected = 5;
+    }
+
+    if (allItemOpen) ImGui::SetNextItemOpen(true);
+    if (ImGui::CollapsingHeader("SkyBox"))
+    {
+        // Load cubemap
+        // Visualize skybox
+    }
+
+    if (allItemOpen) ImGui::SetNextItemOpen(true);
+    if (ImGui::CollapsingHeader("GlTF Model"))
+    {
+        ImGui::BeginGroup();
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.80f);
+        ImGui::Text("Rot X"); ImGui::SameLine(); ImGui::SliderAngle("##x", &m_appState->modelConstants[0].rotXYZ.x);
+        ImGui::Text("Rot Y"); ImGui::SameLine(); ImGui::SliderAngle("##y", &m_appState->modelConstants[0].rotXYZ.y);
+        ImGui::Text("Rot Z"); ImGui::SameLine(); ImGui::SliderAngle("##z", &m_appState->modelConstants[0].rotXYZ.z);
+        ImGui::PopItemWidth();
+        ImGui::EndGroup();
+        ImGui::Separator();
+    }
+
+    if (allItemOpen) ImGui::SetNextItemOpen(true);
+    if (ImGui::CollapsingHeader("Ambient light"))
+    {
+        DrawColorPicker(m_appState->lights[0].color, ImGui::GetWindowWidth(), "##ambientlight");
+        ImGui::Separator();
+    }
+
+    if(allItemOpen) ImGui::SetNextItemOpen(true);
+    if (ImGui::CollapsingHeader("Point light 1"))
+    {
+        DrawColorPicker(m_appState->lights[1].color, 80, "##light1");
+        ImGui::BeginGroup();
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65f);
+        ImGui::SliderFloat("##PosXLight1", &m_appState->lights[1].position.x, -10.0f, 10.0f, "Pos X = %.3f");
+        ImGui::SliderFloat("##PosYLight1", &m_appState->lights[1].position.y, -10.0f, 10.0f, "Pos Y= %.3f");
+        ImGui::SliderFloat("##PosZLight1", &m_appState->lights[1].position.z, -10.0f, 10.0f, "Pos Z = %.3f");
+        ImGui::PopItemWidth();
+        ImGui::EndGroup();
+        ImGui::Separator();
+    }
+    
+    if (allItemOpen) ImGui::SetNextItemOpen(true);
+    if (ImGui::CollapsingHeader("Point light 2"))
+    {
+        DrawColorPicker(m_appState->lights[2].color, 80, "##light2");
+        ImGui::BeginGroup();
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65f);
+        ImGui::SliderFloat("##PosXLight2", &m_appState->lights[2].position.x, -10.0f, 10.0f, "Pos X = %.3f");
+        ImGui::SliderFloat("##PosYLight2", &m_appState->lights[2].position.y, -10.0f, 10.0f, "Pos Y= %.3f");
+        ImGui::SliderFloat("##PosZLight2", &m_appState->lights[2].position.z, -10.0f, 10.0f, "Pos Z = %.3f");
+        ImGui::PopItemWidth();
+        ImGui::EndGroup();
+        ImGui::Separator();
+    }
+
+    ImGui::End();
+    
+    allItemOpen = false;
+
+    //std::vector<DXGI_MODE_DESC> displayModes = m_renderer->GetDisplayModes();
+}
+
+void Gui::DrawBarFileMenu()
 {
     if (ImGui::BeginMenu("File"))
     {
+        m_fileDialog.SetTitle("title");
+        m_fileDialog.SetTypeFilters({ ".glb", ".gltf" });
         if (ImGui::Button("Open glTF ...")) { m_fileDialog.Open(); }
         m_fileDialog.Display();
+
         if (m_fileDialog.HasSelected())
         {
             std::cout << "Selected filename" << m_fileDialog.GetSelected().string() << std::endl;
@@ -229,6 +315,181 @@ void Gui::FileMenu()
         }
 
         ImGui::EndMenu();
+    }
+}
+
+void Gui::DrawEditor() 
+{
+    ImGui::Begin("Shader Editor");
+
+    std::string errorVertexMsg, errorGeometryMsg, errorPixelMsg;
+    static bool vsOk = true;
+    static bool gsOk = true;
+    static bool psOk = true;
+
+    if (ImGui::Button("Compile"))
+    {
+        SaveShaderSource();
+        vsOk = m_renderer->CompileVertexShader(L"vs_shader.hlsl.tmp", errorVertexMsg);
+        gsOk = m_renderer->CompileGeometryShader(L"gs_shader.hlsl.tmp", errorGeometryMsg);
+        psOk = m_renderer->CompilePixelShader(L"ps_shader.hlsl.tmp", errorPixelMsg);
+    }
+
+    if(!vsOk) 
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.6f));
+        ImGui::TextWrapped("VERTEX SHADER:");
+        ImGui::TextWrapped(errorVertexMsg.c_str());
+        ImGui::PopStyleColor(1);
+    }
+    else 
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.33f, 0.5f, 1.0f)); 
+        ImGui::TextWrapped("VERTEX SHADER OK");
+        ImGui::PopStyleColor(1);
+    }
+
+    if (!gsOk)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.6f));
+        ImGui::TextWrapped("GEOMETRY SHADER:");
+        ImGui::TextWrapped(errorGeometryMsg.c_str());
+        ImGui::PopStyleColor(1);
+    }
+    else
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.33f, 0.5f, 1.0f)); 
+        ImGui::TextWrapped("GEOMETRY SHADER OK");
+        ImGui::PopStyleColor(1);
+    }
+
+    if (!psOk)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(1.0f, 0.5f, 1.0f));
+        ImGui::TextWrapped("PIXEL SHADER:");
+        ImGui::TextWrapped(errorPixelMsg.c_str());
+        ImGui::PopStyleColor(1);
+    }
+    else
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.33f, 0.5f, 1.0f));
+        ImGui::TextWrapped("PIXEL SHADER OK");
+        ImGui::PopStyleColor(1);
+    }
+
+    ImGui::Spacing();
+    
+    char tabNames[4][20] = { "Vertex Shader", "Geometry Shader", "Pixel Shader", "Header" };
+    if (ImGui::BeginTabBar("Editor"))
+    {
+        for (int n = 0; n < 4; n++)
+        {
+            bool open = true;
+            if (ImGui::BeginTabItem(tabNames[n], &open, ImGuiTabItemFlags_None))
+            {
+                if (n == 0) DrawVertexShaderEditor();
+                if (n == 1) DrawGeometryShaderEditor();
+                if (n == 2) DrawPixelShaderEditor();
+                if (n == 3) DrawHeaderShaderEditor();
+                ImGui::EndTabItem();
+            }
+        }
+        ImGui::EndTabBar();
+    }
+
+    ImGui::End();
+
+}
+
+void Gui::DrawVertexShaderEditor() 
+{
+    ImGui::BeginChild("VertexEditor");
+    ImGui::Spacing();
+    ImGui::SetNextItemWidth(ImGui::GetWindowWidth());
+    ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
+    ImGui::InputTextMultiline("##sourceVertexShader", m_vertexShaderText, 50000, ImVec2(-FLT_MIN, -FLT_MIN), flags);
+    ImGui::EndChild();
+}
+
+void Gui::DrawGeometryShaderEditor() 
+{
+    ImGui::BeginChild("GeometryEditor");
+    ImGui::Spacing();
+    ImGui::SetNextItemWidth(ImGui::GetWindowWidth());
+    ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
+    ImGui::InputTextMultiline("##sourceGeometryShader", m_geometryShaderText, 50000, ImVec2(-FLT_MIN, -FLT_MIN), flags);
+    ImGui::EndChild();
+}
+
+void Gui::DrawPixelShaderEditor() 
+{
+    ImGui::BeginChild("PixelEditor");
+    ImGui::Spacing();
+    ImGui::SetNextItemWidth(ImGui::GetWindowWidth());
+    ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
+    ImGui::InputTextMultiline("##sourcePixelShader", m_pixelShaderText, 50000, ImVec2(-FLT_MIN, -FLT_MIN), flags);
+    ImGui::EndChild();
+}
+
+void Gui::DrawHeaderShaderEditor() 
+{
+    ImGui::BeginChild("HeaderEditor");
+    ImGui::Spacing();
+    ImGui::SetNextItemWidth(ImGui::GetWindowWidth());
+    ImGuiInputTextFlags flags = ImGuiInputTextFlags_AllowTabInput;
+    ImGui::InputTextMultiline("##sourceHeaderShader", m_headerShaderText, 50000, ImVec2(-FLT_MIN, -FLT_MIN), flags);
+    ImGui::EndChild();
+}
+
+void Gui::DrawLogs() 
+{   
+    ImGui::Begin("Logs");
+    ImGui::BeginChild("Log");
+    ImGui::TextUnformatted(DXUtil::gLogs.begin(), DXUtil::gLogs.end()); 
+    ImGui::EndChild();
+    ImGui::End();
+}
+
+void Gui::DrawColorPicker(DirectX::XMFLOAT4& color, int width, std::string id) 
+{
+    static int pickerId = 0; 
+
+    ImVec4 c = ImVec4(color.x, color.y, color.z, color.w);
+    ImVec4 backup_color;
+
+    ImGuiColorEditFlags misc_flags = ImGuiColorEditFlags__OptionsDefault;
+    bool open_popup = ImGui::ColorButton(id.append("Color##3c").c_str(), *(ImVec4*)&color, misc_flags | (1 ? ImGuiColorEditFlags_NoBorder : 0), ImVec2(width, 80));
+    
+    ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+    
+    if (open_popup)
+    {
+        ImGui::OpenPopup(id.append("ColorPicker").c_str());
+        backup_color = c;
+    }
+    
+    if (ImGui::BeginPopup(id.append("ColorPicker").c_str()))
+    {
+        pickerId++;
+        ImGui::Text("Color");
+        ImGui::Separator();
+        ImGui::ColorPicker4(id.append("Picker").c_str(), (float*)&c, misc_flags | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoSmallPreview);
+        ImGui::SameLine();
+
+        ImGui::BeginGroup();
+        ImGui::Text("Current");
+        ImGui::ColorButton(id.append("Current").c_str(), c, ImGuiColorEditFlags_NoPicker, ImVec2(60, 40));
+        ImGui::Text("Previous");
+        if (ImGui::ColorButton(id.append("Previous").c_str(), backup_color, ImGuiColorEditFlags_NoPicker, ImVec2(60, 40))) c = backup_color;
+        ImGui::Separator();
+       
+        ImGui::EndGroup();
+        ImGui::EndPopup();
+
+        color.x = c.x;
+        color.y = c.y;
+        color.z = c.z;
+        color.w = c.w;
     }
 }
 
@@ -284,5 +545,5 @@ void Gui::SetStyle()
     style->TabRounding = 0.0f;
     style->WindowRounding = 4.0f;
    
-    m_io.Fonts->AddFontFromFileTTF("imgui/Fonts/Ruda-Bold.ttf", 14);
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("imgui/Fonts/Ruda-Bold.ttf", 14);
 }

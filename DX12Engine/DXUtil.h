@@ -40,6 +40,10 @@
 #endif
 
 #include "glTF/tiny_gltf.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_win32.h"
+#include "imgui/imgui_impl_dx12.h"
+#include "imgui/imfilebrowser.h"
 
 
 // Define virtual key codes
@@ -50,12 +54,20 @@
 
 namespace DXUtil
 {
+    extern ImGuiTextBuffer gLogs;
 
-    // Error and exception handling 
+    /* Transform any std string or string view into any of the 4 the std string types */
+    template<typename T, typename F> inline T
+    transform_to(F str) noexcept
+    {
+        if (str.empty()) return {};
+        return { std::begin(str), std::end(str) };
+    };
 
     /** Log debug message to the Visual Studio output window */
-    #define DEBUG_LOG(msg) { std::wstringstream wss; wss << msg << std::endl; OutputDebugString(wss.str().c_str()); }
-
+    #define DEBUG_LOG(msg) { std::wstringstream wss; wss << msg << std::endl; \
+        OutputDebugString(wss.str().c_str()); DXUtil::gLogs.append(DXUtil::transform_to<std::string>(wss.str()).c_str()); }
+    
     /** Throw exception on failure with a given message */
     inline void ThrowIfFailed(HRESULT hr, std::string errorMsg)
     {

@@ -3,7 +3,7 @@
 #include "Camera.h"
 #include "SkyBox.h"
 
-#include "UsingDirectives.h"
+#include "using_directives.h"
 
 Scene::~Scene() {}
 

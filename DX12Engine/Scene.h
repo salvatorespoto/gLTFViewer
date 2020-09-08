@@ -53,11 +53,11 @@ protected:
 	void SetRootSignature(ID3D12GraphicsCommandList* commandList, unsigned int meshId);
 	void UpdateConstants(FrameConstants frameConstants);
 
-	const unsigned int MESH_CONSTANTS_N_DESCRIPTORS = 15;	// Mesh constants descriptors goes from 0 to 15 in the CBV_SRV_UAV descriptor heap (maximum 15 mesh)
-	const unsigned int MATERIALS_N_DESCRIPTORS = 15;		// Materials descriptors goes from 15 to 29 in the CBV_SRV_UAV descriptor heap (maximum 15 materials)
-	const unsigned int TEXTURES_N_DESCRIPTORS = 15;			// Texture resource view descriptors go from 30 to 44 in the CBV_SRV_UAV descriptor heap (maximum 15 textures)
-	const unsigned int SAMPLERS_N_DESCRIPTORS = 15;			// Number of samplers descriptors in the samplers descriptor heap
-	static constexpr unsigned int MAX_MESH_INSTANCES = 10;  // Maximum number of allowed instanced for a mesh
+	const unsigned int MESH_CONSTANTS_N_DESCRIPTORS = 100;	// Mesh constants descriptors goes from 0 to 15 in the CBV_SRV_UAV descriptor heap (maximum 15 mesh)
+	const unsigned int MATERIALS_N_DESCRIPTORS = 100;		// Materials descriptors goes from 15 to 29 in the CBV_SRV_UAV descriptor heap (maximum 15 materials)
+	const unsigned int TEXTURES_N_DESCRIPTORS = 100;		// Texture resource view descriptors go from 30 to 44 in the CBV_SRV_UAV descriptor heap (maximum 15 textures)
+	const unsigned int SAMPLERS_N_DESCRIPTORS = 100;		// Number of samplers descriptors in the samplers descriptor heap
+	static constexpr unsigned int MAX_MESH_INSTANCES = 100;	// Maximum number of allowed instanced for a mesh
 
 	Microsoft::WRL::ComPtr<ID3D12Device> m_device;	
 	UINT m_CBVSRVDescriptorSize = 0;

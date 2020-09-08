@@ -4,6 +4,7 @@
 
 using Microsoft::WRL::ComPtr;
 using DXUtil::ThrowIfFailed;
+using std::string;
 
 // DirectX data types and functions
 using 

@@ -9,6 +9,8 @@ using Microsoft::WRL::ComPtr;	// Using Com smart pointers
 
 namespace DXUtil
 {
+	ImGuiTextBuffer gLogs;
+
 	std::vector<ComPtr<IDXGIAdapter1>> enumerateAdapters()
 	{
 		UINT i = 0;

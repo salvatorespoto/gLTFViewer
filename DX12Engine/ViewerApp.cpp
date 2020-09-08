@@ -1,15 +1,16 @@
 #include "ViewerApp.h"
+
+#include "Buffers.h"
+#include "Texture.h"
 #include "Renderer.h"
+#include "Camera.h"
 #include "Mesh.h"
 #include "Scene.h"
-#include "GLTFSceneLoader.h"
-#include "Camera.h"
-#include "Buffers.h"
-#include "GUI.h"
 #include "SkyBox.h"
-#include "Texture.h"
+#include "GUI.h"
+#include "GLTFSceneLoader.h"
 
-#include "UsingDirectives.h"
+#include "using_directives.h"
 
 
 LRESULT CALLBACK wndMsgCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -20,7 +21,7 @@ LRESULT CALLBACK wndMsgCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
-ViewerApp::ViewerApp(HINSTANCE hInstance) : m_hInstance(hInstance), m_hWnd(NULL), m_clientWidth(1280), m_clientHeight(1024)
+ViewerApp::ViewerApp(const HINSTANCE& hInstance) : m_hInstance(hInstance), m_hWnd(NULL), m_clientWidth(1280), m_clientHeight(1024)
 {
     DEBUG_LOG("Initializing Viewer application");
     InitWindow();
@@ -255,13 +256,13 @@ void ViewerApp::OnAppMinimized()
 
 void ViewerApp::OnResize(UINT width, UINT height)
 {
-    float scaleGUI = static_cast<float>(m_appState.currentScreenWidth) / static_cast<float>(m_clientWidth);
+    float scaleGUI = static_cast<float>(m_appState.screenWidth) / static_cast<float>(m_clientWidth);
 
     m_clientWidth = width;
     m_clientHeight = height;
     m_appState.isAppMinimized = false;
-    m_appState.currentScreenWidth = width;
-    m_appState.currentScreenHeight = height;
+    m_appState.screenWidth = width;
+    m_appState.screenHeight = height;
     if (m_appState.isAppPaused || m_appState.isResizingWindow) return;
     
     ImGui_ImplDX12_InvalidateDeviceObjects();
@@ -287,8 +288,8 @@ void ViewerApp::OnMouseMove(WPARAM btnState, int x, int y)
     if (btnState == MK_RBUTTON)
     {
         // Rotate mesh
-        m_appState.meshConstants[0].rotXYZ.z += m_mouseSensitivity * XMConvertToRadians(static_cast<float>(x - m_lastMousePosX));
-        m_appState.meshConstants[0].rotXYZ.x += XMConvertToRadians(static_cast<float>(y - m_lastMousePosY));
+        m_appState.modelConstants[0].rotXYZ.z += m_mouseSensitivity * XMConvertToRadians(static_cast<float>(x - m_lastMousePosX));
+        m_appState.modelConstants[0].rotXYZ.x += XMConvertToRadians(static_cast<float>(y - m_lastMousePosY));
     }
  
     // Update cached mouse position
@@ -321,23 +322,23 @@ void ViewerApp::UpdateScene()
     for (auto light : m_appState.lights) { m_scene->SetLight(light.first, light.second); }
 
     // Update mesh constants
-    float rotX = m_appState.meshConstants[0].rotXYZ.x;
-    float rotY = m_appState.meshConstants[0].rotXYZ.y;
-    float rotZ = m_appState.meshConstants[0].rotXYZ.z;
+    float rotX = m_appState.modelConstants[0].rotXYZ.x;
+    float rotY = m_appState.modelConstants[0].rotXYZ.y;
+    float rotZ = m_appState.modelConstants[0].rotXYZ.z;
     XMMATRIX meshRotation = XMMatrixMultiply(XMMatrixMultiply(XMMatrixRotationAxis({ 1.0f, 0.0f, 0.0f }, rotX), XMMatrixRotationAxis({ 0.0f, 1.0f, 0.0f }, rotY)), XMMatrixRotationAxis({ 0.0f, 0.0f, 1.0f }, rotZ));
-    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[0].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[1].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[2].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[3].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[4].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[5].modelMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[0].modelMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[1].modelMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[2].modelMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[3].modelMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[4].modelMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[5].modelMtx, meshRotation);
     
-    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[0].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[1].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[2].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[3].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[4].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.meshConstants[5].nodeTransformMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[0].nodeTransformMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[1].nodeTransformMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[2].nodeTransformMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[3].nodeTransformMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[4].nodeTransformMtx, meshRotation);
+    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[5].nodeTransformMtx, meshRotation);
 
     //m_appState.meshConstants[0].nodeTransformMtx = DXUtil::IdentityMtx();
     //m_appState.meshConstants[1].nodeTransformMtx = DXUtil::IdentityMtx();
@@ -345,7 +346,7 @@ void ViewerApp::UpdateScene()
     //m_appState.meshConstants[3].nodeTransformMtx = DXUtil::IdentityMtx();
     //m_appState.meshConstants[4].nodeTransformMtx = DXUtil::IdentityMtx();
     //m_appState.meshConstants[5].nodeTransformMtx = DXUtil::IdentityMtx();
-    for (auto meshConstants : m_appState.meshConstants) { m_scene->SetMeshConstants(meshConstants.first, meshConstants.second); }
+    for (auto meshConstants : m_appState.modelConstants) { m_scene->SetMeshConstants(meshConstants.first, meshConstants.second); }
 
     // Update SkyBox
     m_skyBox->SetCamera(*m_camera);
@@ -371,10 +372,10 @@ void ViewerApp::OnUpdate()
     }
 
     // Check if a new display mode has been specified
-    if(m_appState.currentScreenWidth != m_clientWidth && m_appState.currentScreenHeight != m_clientHeight && !m_appState.isResizingWindow)
+    if(m_appState.screenWidth != m_clientWidth && m_appState.screenHeight != m_clientHeight && !m_appState.isResizingWindow)
     {
         if(!m_appState.isAppFullscreen)
-            ::SetWindowPos(m_hWnd, 0, 0, 0, m_appState.currentScreenWidth, m_appState.currentScreenHeight, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
+            ::SetWindowPos(m_hWnd, 0, 0, 0, m_appState.screenWidth, m_appState.screenHeight, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER);
         //else OnResize(m_appState.currentScreenWidth, m_appState.currentScreenHeight);
     }
 
@@ -397,7 +398,7 @@ void ViewerApp::OnDraw()
     m_renderer->BeginDraw();
     m_renderer->Draw(*m_skyBox);
     m_renderer->Draw(*m_scene);
-    m_gui->Draw(&m_appState);
+    m_gui->Draw();
     m_renderer->EndDraw();
 }
 

@@ -8,7 +8,7 @@
 #include <Pathcch.h>
 #include <atlstr.h>
 
-#include "UsingDirectives.h"
+#include "using_directives.h"
 
 GLTFSceneLoader::GLTFSceneLoader(Microsoft::WRL::ComPtr<ID3D12Device> device, Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue)
 {
@@ -298,7 +298,7 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 			}
 
 			// Compute normals if they are not specified into the file
-			if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
+			if (primitive.attributes.find("NORMAL") == primitive.attributes.end())
 			{
 				sm.normalsBufferView.bufferId = m_model.buffers.size(); // A new GPU buffer will be created for normals
 				sm.normalsBufferView.byteOffset = 0;

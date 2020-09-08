@@ -55,6 +55,10 @@ public:
 
     std::vector<DXGI_MODE_DESC> GetDisplayModes();
     bool CompileShaders(std::wstring fileName, std::string& errorMsg);
+    bool CompileVertexShader(std::wstring vsFileName, std::string& errorMsg);
+    bool CompileGeometryShader(std::wstring vsFileName, std::string& errorMsg);
+    bool CompilePixelShader(std::wstring vsFileName, std::string& errorMsg);
+
     void CreatePipelineState(SkyBox* skyBox);
     void CreatePipelineState(Scene* scene);
 

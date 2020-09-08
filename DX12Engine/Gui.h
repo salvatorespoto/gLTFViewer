@@ -23,28 +23,43 @@ public:
 	~Gui() = default;
 
     void Init(std::shared_ptr<Renderer> renderer, AppState* appState);
-    void Draw(AppState* state);
+    void Draw();
     void ReSize(unsigned int widht, unsigned int height);
     bool WantCaptureMouse();
     bool WantCaptureKeyboard();
     void ShutDown();
 
 private:
+    static constexpr int FRAME_RATE_SERIES_SIZE = 15;
     void SetStyle();
     void LoadShaderSource();
     void SaveShaderSource();
-    void FileMenu();
+    void DrawMenuBar();
+    void DrawBarFileMenu();
+    void DrawStatistics();
+    void DrawControls();
+    void DrawColorPicker(DirectX::XMFLOAT4& color, int width, std::string id);
+    void DrawEditor();
+    void DrawVertexShaderEditor();
+    void DrawGeometryShaderEditor();
+    void DrawPixelShaderEditor();
+    void DrawHeaderShaderEditor();
+    void DrawLogs();
 
     bool m_isInitialized = false;
     std::shared_ptr<Renderer> m_renderer;
-    AppState* m_appState;   // AppState holds main app state infos
+    AppState* m_appState;   // AppState holds the window app state infos
 
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandListAlloc;
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> m_commandList;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_srvDescriptorHeap;
     
-    ImGuiIO m_io;
-    char m_shaderText[10000];
+    char m_vertexShaderText[50000];
+    char m_geometryShaderText[50000];
+    char m_pixelShaderText[50000];
+    char m_headerShaderText[50000];
+    
+    float m_frameRateSeries[FRAME_RATE_SERIES_SIZE];
     bool m_compilationSuccess = true;
     std::string m_errorMsg;
     // create a file browser instance

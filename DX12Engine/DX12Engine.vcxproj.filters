@@ -167,7 +167,7 @@
     <ClInclude Include="shaders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UsingDirectives.h">
+    <ClInclude Include="using_directives.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -179,8 +179,12 @@
   <ItemGroup>
     <FxCompile Include="shaders.hlsl" />
     <FxCompile Include="shaders\skybox.hlsl" />
+    <FxCompile Include="vs_mesh.hlsl" />
+    <FxCompile Include="ps_mesh.hlsl" />
+    <FxCompile Include="gs_mesh.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="mesh_common.hlsli" />
   </ItemGroup>
 </Project>
