@@ -7,6 +7,7 @@
 #include "Mesh.h"
 #include "Scene.h"
 #include "SkyBox.h"
+#include "Grid.h"
 #include "GUI.h"
 #include "GLTFSceneLoader.h"
 
@@ -110,9 +111,10 @@ void ViewerApp::InitScene()
     m_skyBox->Init(m_renderer->GetDevice(), m_renderer->GetCommandQueue());
     m_skyBox->SetCubeMapTexture(m_cubeMapTexture);
     
+    m_grid = std::make_unique<Grid>();
+    m_grid->Init(m_renderer->GetDevice(), m_renderer->GetCommandQueue(), 10.0f);
+
     DEBUG_LOG("Scene initalized");
-
-
 }
 
 void ViewerApp::InitGui()
@@ -351,6 +353,10 @@ void ViewerApp::UpdateScene()
     // Update SkyBox
     m_skyBox->SetCamera(*m_camera);
     m_skyBox->SetSkyBoxConstants({ DXUtil::IdentityMtx() });
+
+    // Update Grid
+    m_grid->SetCamera(*m_camera);
+    m_grid->SetGridConstants({ DXUtil::IdentityMtx() });
 }
 
 void ViewerApp::OnUpdate()
@@ -396,7 +402,8 @@ void ViewerApp::OnUpdate()
 void ViewerApp::OnDraw()
 {
     m_renderer->BeginDraw();
-    m_renderer->Draw(*m_skyBox);
+    if(m_appState.showSkyBox) m_renderer->Draw(*m_skyBox);
+    m_renderer->Draw(*m_grid);
     m_renderer->Draw(*m_scene);
     m_gui->Draw();
     m_renderer->EndDraw();

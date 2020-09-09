@@ -21,6 +21,7 @@ struct FrameConstants
 };
 
 class Scene;
+class Grid;
 class SkyBox;
 
 class Renderer
@@ -51,6 +52,7 @@ public:
     void BeginDraw();
     void Draw(Scene& scene);
     void Draw(SkyBox& skyBox);
+    void Draw(Grid& grid);
     void EndDraw();
 
     std::vector<DXGI_MODE_DESC> GetDisplayModes();
@@ -60,6 +62,7 @@ public:
     bool CompilePixelShader(std::wstring vsFileName, std::string& errorMsg);
 
     void CreatePipelineState(SkyBox* skyBox);
+    void CreatePipelineState(Grid* grid);
     void CreatePipelineState(Scene* scene);
 
 private:
@@ -106,6 +109,7 @@ private:
     Microsoft::WRL::ComPtr<ID3DBlob> m_vertexShader;
     Microsoft::WRL::ComPtr<ID3DBlob> m_pixelShader;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineStateSky;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineStateGrid;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineStateScene;
 };
 

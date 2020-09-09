@@ -3,7 +3,7 @@
 #include "Buffers.h"
 #include "Mesh.h"
 #include "SkyBox.h"
-
+#include "Grid.h"
 
 using Microsoft::WRL::ComPtr;
 using DXUtil::ThrowIfFailed;
@@ -371,6 +371,29 @@ void Renderer::CreateRootSignature()
 }
 */
 
+void Renderer::CreatePipelineState(Grid* grid)
+{
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+    psoDesc.InputLayout = { skyBoxVertexElementsDesc, 3 };
+    psoDesc.pRootSignature = grid->GetRootSignature().Get();
+    psoDesc.VS = { reinterpret_cast<UINT8*>(grid->GetVertexShader()->GetBufferPointer()), grid->GetVertexShader()->GetBufferSize() };
+    psoDesc.PS = { reinterpret_cast<UINT8*>(grid->GetPixelShader()->GetBufferPointer()), grid->GetPixelShader()->GetBufferSize() };
+    D3D12_RASTERIZER_DESC rasterDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    rasterDesc.FillMode = D3D12_FILL_MODE_SOLID;
+    psoDesc.RasterizerState = rasterDesc;
+    psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+    psoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    psoDesc.SampleMask = UINT_MAX;
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+    psoDesc.SampleDesc.Count = 1;
+    ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateGrid)), "Cannot create the pipeline state");
+}
+
 void Renderer::CreatePipelineState(SkyBox* skyBox)
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
@@ -471,6 +494,15 @@ void Renderer::ResetCommandList()
 {
     ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
     ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
+}
+
+void Renderer::Draw(Grid& grid)
+{
+    CreatePipelineState(&grid);
+    m_commandList->SetPipelineState(m_pipelineStateGrid.Get());
+    m_commandList->RSSetViewports(1, &m_viewPort);
+    m_commandList->RSSetScissorRects(1, &m_scissorRect);
+    grid.Draw(m_commandList.Get());
 }
 
 void Renderer::Draw(SkyBox& skyBox)

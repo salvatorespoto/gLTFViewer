@@ -9,6 +9,7 @@ class Gui;
 class Camera;
 class Scene;
 class SkyBox;
+class Grid;
 class Renderer;
 class GLTFSceneLoader;
 struct Light;
@@ -30,6 +31,7 @@ struct AppState
 	bool isAppMinimized = false;
 	bool isExitTriggered = false;
 	bool isOpenGLTFPressed = false;
+	bool showSkyBox = true;
 	bool doRecompileShader = false;
 	int currentDisplayMode = 0;
 
@@ -78,6 +80,7 @@ protected:
 	std::unique_ptr<Camera> m_camera;
 	std::shared_ptr<Scene> m_scene;
 	std::unique_ptr<SkyBox> m_skyBox;
+	std::unique_ptr<Grid> m_grid;
 	std::shared_ptr<Renderer> m_renderer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_cubeMapTexture;
 

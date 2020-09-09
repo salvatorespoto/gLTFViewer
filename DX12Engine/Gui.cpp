@@ -231,6 +231,8 @@ void Gui::DrawControls()
     if (allItemOpen) ImGui::SetNextItemOpen(true);
     if (ImGui::CollapsingHeader("SkyBox"))
     {
+        ImGui::Checkbox("Show sky box", &m_appState->showSkyBox);
+
         // Load cubemap
         // Visualize skybox
     }

@@ -81,6 +81,9 @@
     <ClCompile Include="shaders.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Grid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ImGUI\imgui.h">
@@ -170,6 +173,9 @@
     <ClInclude Include="using_directives.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Grid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DX12Engine.rc">
@@ -182,6 +188,7 @@
     <FxCompile Include="vs_mesh.hlsl" />
     <FxCompile Include="ps_mesh.hlsl" />
     <FxCompile Include="gs_mesh.hlsl" />
+    <FxCompile Include="shaders\grid.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
