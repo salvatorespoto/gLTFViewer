@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DrawableAsset.h"
 #include "DXUtil.h"
 #include "Renderer.h"
 #include "Material.h"
@@ -22,13 +23,19 @@ struct SceneNode
 	DirectX::XMFLOAT4X4 transformMtx = DXUtil::IdentityMtx();	// Node tranformation relative to its parent
 };
 
-class Scene
+class Scene : public DrawableAsset
 {
 public:
 	Scene(Microsoft::WRL::ComPtr<ID3D12Device> device);
 	~Scene();
 
-	void AddGPUBuffer(Microsoft::WRL::ComPtr<ID3D12Resource> buffer);
+	virtual void AddGPUBuffer(Microsoft::WRL::ComPtr<ID3D12Resource> buffer);
+	virtual Microsoft::WRL::ComPtr<ID3DBlob> GetVertexShader();
+	virtual Microsoft::WRL::ComPtr<ID3DBlob> GetPixelShader();
+	bool CompileVertexShader(const std::wstring& fileName, std::string& errorMsg);
+	bool CompileGeometryShader(const std::wstring& fileName, std::string& errorMsg);
+	bool CompilePixelShader(const std::wstring& fileName, std::string& errorMsg);
+	virtual Microsoft::WRL::ComPtr<ID3D12RootSignature> GetRootSignature();
 	void AddMaterial(unsigned int materialId, RoughMetallicMaterial material);
 	void AddTexture(unsigned int textureId, Microsoft::WRL::ComPtr<ID3D12Resource> texture);
 	void AddSampler(unsigned int samplerId, D3D12_SAMPLER_DESC samplerDesc);
@@ -37,6 +44,7 @@ public:
 	
 	void SetCamera(const Camera& camera);
 	void SetMeshConstants(unsigned int meshId, MeshConstants meshConstant);
+	void SetRenderMode(int renderMode);
 	void SetLight(unsigned int lightId, Light light);
 	void SetCubeMapTexture(Microsoft::WRL::ComPtr<ID3D12Resource> cubeMapTexture);
 	
@@ -49,6 +57,8 @@ public:
 	void DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList);
 
 protected:
+	virtual void SetUpRootSignature(ID3D12GraphicsCommandList* commandList);
+
 	void AddFrameConstantsBuffer();
 	void SetRootSignature(ID3D12GraphicsCommandList* commandList, unsigned int meshId);
 	void UpdateConstants(FrameConstants frameConstants);

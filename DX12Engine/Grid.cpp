@@ -121,7 +121,7 @@ void Grid::GenerateGrid(float halfSide)
     float step = halfSide / 5.0f;
 
     std::vector<DirectX::XMFLOAT3> vertices;
-    for (int i = -5; i < 5; i++)
+    for (int i = -25; i < 25; i++)
     {
         vertices.push_back({ i * step, 0.0f, -halfSide});
         vertices.push_back({ i * step, 0.0f, halfSide });

@@ -1,5 +1,5 @@
 #include "Gui.h"
-
+#include "shaders.h"
 #include "ViewerApp.h"
 #include "Mesh.h"
 #include <string>
@@ -67,6 +67,21 @@ void Gui::Draw()
     ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_renderer->GetCommandList().Get());
 }
 
+void Gui::SetVsCompileErrorMsg(std::string errorMsg)
+{
+    m_vsCompileErrorMsg = errorMsg;
+}
+
+void Gui::SetGsCompileErrorMsg(std::string errorMsg)
+{
+    m_gsCompileErrorMsg = errorMsg;
+}
+
+void Gui::SetPsCompileErrorMsg(std::string errorMsg)
+{
+    m_psCompileErrorMsg = errorMsg;
+}
+
 void Gui::ReSize(unsigned int width, unsigned int height)
 {
     if (!m_isInitialized) return;
@@ -98,22 +113,22 @@ void Gui::LoadShaderSource()
 {
     std::ifstream inFile;
     
-    inFile.open("vs_mesh.hlsl");
+    inFile.open("shaders/vs_mesh.hlsl");
     std::string text((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
     memcpy(m_vertexShaderText, text.c_str(), text.length());
     inFile.close();
 
-    inFile.open("gs_mesh.hlsl");
+    inFile.open("shaders/gs_mesh.hlsl");
     text.assign((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
     memcpy(m_geometryShaderText, text.c_str(), text.length());
     inFile.close();
 
-    inFile.open("ps_mesh.hlsl");
+    inFile.open("shaders/ps_mesh.hlsl");
     text.assign((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
     memcpy(m_pixelShaderText, text.c_str(), text.length());
     inFile.close();
 
-    inFile.open("mesh_common.hlsli");
+    inFile.open("shaders/mesh_common.hlsli");
     text.assign((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
     memcpy(m_headerShaderText, text.c_str(), text.length());
     inFile.close();
@@ -123,7 +138,7 @@ void Gui::LoadShaderSource()
 
 void Gui::SaveShaderSource() 
 {
-    std::ofstream out("vs_mesh.hlsl.tmp");
+    std::ofstream out("shaders/vs_mesh.hlsl.tmp");
     if (!out)
     {
         return;
@@ -131,7 +146,7 @@ void Gui::SaveShaderSource()
     out.write((char*)m_vertexShaderText, strlen(m_vertexShaderText));
     out.close();
 
-    out.open("gs_mesh.hlsl.tmp");
+    out.open("shaders/gs_mesh.hlsl.tmp");
     if (!out)
     {
         return;
@@ -139,7 +154,7 @@ void Gui::SaveShaderSource()
     out.write((char*)m_geometryShaderText, strlen(m_geometryShaderText));
     out.close();
 
-    out.open("ps_mesh.hlsl.tmp");
+    out.open("shaders/ps_mesh.hlsl.tmp");
     if (!out)
     {
         return;
@@ -147,7 +162,7 @@ void Gui::SaveShaderSource()
     out.write((char*)m_pixelShaderText, strlen(m_pixelShaderText));
     out.close();
 
-    out.open("mesh_common.hlsli.tmp");
+    out.open("shaders/mesh_common.hlsli.tmp");
     if (!out)
     {
         return;
@@ -218,14 +233,15 @@ void Gui::DrawControls()
 
     if (allItemOpen) ImGui::SetNextItemOpen(true);
     if (ImGui::CollapsingHeader("Visualize"))
-    { 
-        static int selected = -1;
-        if (ImGui::Selectable("Rendering", selected == 0)) selected = 0;
-        if (ImGui::Selectable("Wireframe", selected == 1)) selected = 1;
-        if (ImGui::Selectable("Base Color", selected == 2)) selected = 2;
-        if (ImGui::Selectable("Normal map", selected == 3)) selected = 3;
-        if (ImGui::Selectable("Occlusion map", selected == 4)) selected = 4;
-        if (ImGui::Selectable("Emissive map", selected == 5)) selected = 5;
+    {
+        static int selected = 0;
+        if (ImGui::Selectable("Rendering",     selected == 0)) { selected = 0; m_appState->currentRenderModeMask = 0x0; }
+        if (ImGui::Selectable("Wireframe",     selected == 1)) { selected = 1; m_appState->currentRenderModeMask = 0x1 << 0; }
+        if (ImGui::Selectable("Base Color",    selected == 2)) { selected = 2; m_appState->currentRenderModeMask = 0x1 << 1; }
+        if (ImGui::Selectable("Normal map",    selected == 3)) { selected = 3; m_appState->currentRenderModeMask = 0x1 << 2; }
+        if (ImGui::Selectable("Roughness map", selected == 4)) { selected = 4; m_appState->currentRenderModeMask = 0x1 << 3; }
+        if (ImGui::Selectable("Occlusion map", selected == 5)) { selected = 5; m_appState->currentRenderModeMask = 0x1 << 4; }
+        if (ImGui::Selectable("Emissive map",  selected == 6)) { selected = 6; m_appState->currentRenderModeMask = 0x1 << 5; }
     }
 
     if (allItemOpen) ImGui::SetNextItemOpen(true);
@@ -332,30 +348,28 @@ void Gui::DrawEditor()
     if (ImGui::Button("Compile"))
     {
         SaveShaderSource();
-        vsOk = m_renderer->CompileVertexShader(L"vs_shader.hlsl.tmp", errorVertexMsg);
-        gsOk = m_renderer->CompileGeometryShader(L"gs_shader.hlsl.tmp", errorGeometryMsg);
-        psOk = m_renderer->CompilePixelShader(L"ps_shader.hlsl.tmp", errorPixelMsg);
+        m_appState->doRecompileShader = true;
     }
 
-    if(!vsOk) 
+    if(!m_vsCompileErrorMsg.empty()) 
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.6f));
-        ImGui::TextWrapped("VERTEX SHADER:");
-        ImGui::TextWrapped(errorVertexMsg.c_str());
+        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(1.0f, 0.5f, 1.0f));
+        ImGui::TextWrapped("VERTEX SHADER ERRORS:");
+        ImGui::TextWrapped(m_vsCompileErrorMsg.c_str());
         ImGui::PopStyleColor(1);
     }
-    else 
+    else
     {
         ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(0.33f, 0.5f, 1.0f)); 
         ImGui::TextWrapped("VERTEX SHADER OK");
         ImGui::PopStyleColor(1);
     }
 
-    if (!gsOk)
+    if (!m_gsCompileErrorMsg.empty())
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.6f));
-        ImGui::TextWrapped("GEOMETRY SHADER:");
-        ImGui::TextWrapped(errorGeometryMsg.c_str());
+        ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(1.0f, 0.5f, 1.0f));
+        ImGui::TextWrapped("GEOMETRY SHADER ERRORS:");
+        ImGui::TextWrapped(m_gsCompileErrorMsg.c_str());
         ImGui::PopStyleColor(1);
     }
     else
@@ -365,11 +379,11 @@ void Gui::DrawEditor()
         ImGui::PopStyleColor(1);
     }
 
-    if (!psOk)
+    if (!m_psCompileErrorMsg.empty()) 
     {
         ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor::HSV(1.0f, 0.5f, 1.0f));
-        ImGui::TextWrapped("PIXEL SHADER:");
-        ImGui::TextWrapped(errorPixelMsg.c_str());
+        ImGui::TextWrapped("PIXEL SHADER ERRORS:");
+        ImGui::TextWrapped(m_psCompileErrorMsg.c_str());
         ImGui::PopStyleColor(1);
     }
     else

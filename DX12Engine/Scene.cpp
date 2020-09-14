@@ -1,4 +1,5 @@
 #include "Scene.h"
+#include "Shaders.h"
 #include "Mesh.h"
 #include "Camera.h"
 #include "SkyBox.h"
@@ -7,12 +8,16 @@
 
 Scene::~Scene() {}
 
-Scene::Scene(Microsoft::WRL::ComPtr<ID3D12Device> device)
+Scene::Scene(ComPtr<ID3D12Device> device)
 {
 	DEBUG_LOG("Initializing Scene object")
 	m_device = device;
 	m_CBVSRVDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	m_samplersDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
+	std::string errorMsg;
+	CompileVertexShader(L"shaders/vs_mesh.hlsl", errorMsg);
+	CompilePixelShader(L"shaders/ps_mesh.hlsl", errorMsg);
 
 	// Create CBV_SRV_UAV descriptor heap
 	D3D12_DESCRIPTOR_HEAP_DESC CBVSRVHeapDesc = {};
@@ -42,9 +47,50 @@ void Scene::AddFrameConstantsBuffer()
 	m_frameConstantsBuffer = std::make_unique<UploadBuffer<FrameConstants>>(m_device.Get(), 1, true);
 }
 
-void Scene::AddGPUBuffer(Microsoft::WRL::ComPtr<ID3D12Resource> buffer)
+void Scene::AddGPUBuffer(ComPtr<ID3D12Resource> buffer)
 {
 	m_buffersGPU.push_back(buffer);
+}
+
+ComPtr<ID3DBlob> Scene::GetVertexShader()
+{
+	return m_vertexShader;
+}
+
+ComPtr<ID3DBlob> Scene::GetPixelShader()
+{
+	return m_pixelShader;
+}
+
+bool Scene::CompileVertexShader(const std::wstring& fileName, std::string& errorMsg)
+{
+	ComPtr<ID3DBlob> vertexShader;
+	if (::CompileVertexShader(fileName, errorMsg, vertexShader))
+	{
+		m_vertexShader = vertexShader;
+		return true;
+	}
+	else return false;
+}
+
+bool Scene::CompileGeometryShader(const std::wstring& fileName, std::string& errorMsg)
+{
+	return true;
+}
+
+bool Scene::CompilePixelShader(const std::wstring& fileName, std::string& errorMsg)
+{
+	ComPtr<ID3DBlob> pixelShader;
+	if (::CompilePixelShader(fileName, errorMsg, pixelShader))
+	{
+		m_pixelShader = pixelShader;
+		return true;
+	}
+	else return false;
+}
+ComPtr<ID3D12RootSignature> Scene::GetRootSignature()
+{
+	return CreateRootSignature();
 }
 
 void Scene::AddMaterial(unsigned int materialId, RoughMetallicMaterial material)
@@ -182,6 +228,11 @@ void Scene::SetRootSignature(ID3D12GraphicsCommandList* commandList, unsigned in
 	commandList->SetGraphicsRootDescriptorTable(3, m_samplersDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 }
 
+void Scene::SetUpRootSignature(ID3D12GraphicsCommandList* commandList) 
+{
+	return;
+}
+
 void Scene::SetCamera(const Camera& camera) 
 {
 	m_frameConstants.projMtx = camera.getProjMtx();
@@ -203,7 +254,11 @@ void Scene::SetMeshConstants(unsigned int meshId, MeshConstants meshConstants)
 		XMStoreFloat4x4(&meshConstants.nodeTransformMtx, XMMatrixTranspose(XMLoadFloat4x4(&meshConstants.nodeTransformMtx)));	// Transpose the matrix due HLSL use a column-major memory layout by default
 		m_meshConstantsBuffer[meshId]->copyData(i++, meshConstants);
 	}
-	
+}
+
+void Scene::SetRenderMode(int renderMode)
+{
+	m_frameConstants.renderMode = renderMode;
 }
 
 void Scene::SetLight(unsigned int lightId, Light light)

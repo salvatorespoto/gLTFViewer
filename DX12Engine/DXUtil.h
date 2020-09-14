@@ -45,12 +45,13 @@
 #include "imgui/imgui_impl_dx12.h"
 #include "imgui/imfilebrowser.h"
 
-
 // Define virtual key codes
-#define VK_KEY_W 0x57
 #define VK_KEY_A 0x41
-#define VK_KEY_S 0x53
 #define VK_KEY_D 0x44
+#define VK_KEY_E 0x45
+#define VK_KEY_Q 0x51
+#define VK_KEY_S 0x53
+#define VK_KEY_W 0x57
 
 namespace DXUtil
 {

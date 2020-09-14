@@ -189,9 +189,13 @@
     <FxCompile Include="ps_mesh.hlsl" />
     <FxCompile Include="gs_mesh.hlsl" />
     <FxCompile Include="shaders\grid.hlsl" />
+    <FxCompile Include="shaders\gs_mesh.hlsl" />
+    <FxCompile Include="shaders\ps_mesh.hlsl" />
+    <FxCompile Include="shaders\vs_mesh.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="mesh_common.hlsli" />
+    <None Include="shaders\mesh_common.hlsli" />
   </ItemGroup>
 </Project>

@@ -24,7 +24,7 @@ void Renderer::Init(HWND hWnd, unsigned int width, unsigned int height)
     CreateDepthStencilBuffer();
     CreateConstantBuffer();
     std::string errorMsg;
-    CompileShaders(L"shaders.hlsl", errorMsg);
+    //CompileShaders(L"shaders.hlsl", errorMsg);
     //CreateRootSignature();
     //CreatePipelineState();
 }
@@ -417,8 +417,7 @@ void Renderer::CreatePipelineState(SkyBox* skyBox)
     ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateSky)), "Cannot create the pipeline state");
 }
 
-
-void Renderer::CreatePipelineState(Scene* scene)
+void Renderer::CreatePipelineState(Scene* scene, bool wireFrame)
 {
     D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
     inputLayoutDesc.pInputElementDescs = vertexElementsDesc;
@@ -427,14 +426,10 @@ void Renderer::CreatePipelineState(Scene* scene)
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
     psoDesc.InputLayout = { vertexElementsDesc, 4 };
     psoDesc.pRootSignature = scene->CreateRootSignature().Get();
-    psoDesc.VS = { reinterpret_cast<UINT8*>(m_vertexShader->GetBufferPointer()), m_vertexShader->GetBufferSize() };
-    psoDesc.PS = { reinterpret_cast<UINT8*>(m_pixelShader->GetBufferPointer()), m_pixelShader->GetBufferSize() };
-    D3D12_RASTERIZER_DESC rasterDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    rasterDesc.FillMode = D3D12_FILL_MODE_SOLID;
-    psoDesc.RasterizerState = rasterDesc;
-    //psoDesc.RasterizerState.FrontCounterClockwise = true;
+    psoDesc.VS = { reinterpret_cast<UINT8*>(scene->GetVertexShader()->GetBufferPointer()), scene->GetVertexShader()->GetBufferSize() };
+    psoDesc.PS = { reinterpret_cast<UINT8*>(scene->GetPixelShader()->GetBufferPointer()), scene->GetPixelShader()->GetBufferSize() };
+    psoDesc.RasterizerState.FillMode = (wireFrame) ? D3D12_FILL_MODE_WIREFRAME : D3D12_FILL_MODE_SOLID;
     psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-
     psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
     psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
     psoDesc.SampleMask = UINT_MAX;
@@ -527,11 +522,11 @@ void Renderer::Draw(SkyBox& skyBox)
     //m_swapChain.Present();
 }
 
-void Renderer::Draw(Scene& scene) 
+void Renderer::Draw(Scene& scene, bool wireFrame) 
 {
     //ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
     //ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");
-    CreatePipelineState(&scene);
+    CreatePipelineState(&scene, wireFrame);
     m_commandList->SetPipelineState(m_pipelineStateScene.Get());
     //m_commandList->RSSetViewports(1, &m_viewPort);
     //m_commandList->RSSetScissorRects(1, &m_scissorRect);

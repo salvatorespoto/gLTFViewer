@@ -22,11 +22,7 @@ struct FrameConstants
     float4x4 projMtx;
     float4x4 viewProjMtx;
     float4 eyePosition;
-    bool renderOnlyBaseColor; float3 _pad0;
-    bool renderOnlyRoughnessMap; float3 _pad1;
-    bool renderOnlyOcclusionMap; float3 _pad2;
-    bool renderOnlyEmissiveMap; float3 _pad3;
-    bool renderOnlyNormalMap; float3 _pad4;
+    int renderMode; // Bitmask that store the current render mode: 0 rendering, 1 wireframe, 2 base color, 3 rough map, 4 occlusion map, 5 emissive map
     Light lights[MAX_LIGHT_NUMBER];
 };
 
@@ -61,8 +57,6 @@ ConstantBuffer<RoughMetallicMaterial> materials[MATERIALS_N_DESCRIPTORS]  : regi
 Texture2D textures[TEXTURES_N_DESCRIPTORS] : register(t0, space1);
 TextureCube cubeMap : register(t0, space2);
 SamplerState samplers[SAMPLERS_N_DESCRIPTORS] : register(s0);
-
-//StructuredBuffer<InstanceData> gInstanceData : register(t0, space2);
 
 struct VertexIn
 {

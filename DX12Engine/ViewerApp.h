@@ -33,6 +33,7 @@ struct AppState
 	bool isOpenGLTFPressed = false;
 	bool showSkyBox = true;
 	bool doRecompileShader = false;
+	int currentRenderModeMask = 0; // Render modes: 0 render, 1 wireframe, 2 base color, 3 rough map, 4 occlusion map, 5 emissive map 
 	int currentDisplayMode = 0;
 
 	std::string gltfFileLoaded;
@@ -84,15 +85,15 @@ protected:
 	std::shared_ptr<Renderer> m_renderer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_cubeMapTexture;
 
-	float m_mouseSensitivity = 0.25f;
-	float m_cameraStep = 0.05f;
-	int m_lastMousePosX;
-	int m_lastMousePosY;
 	UINT m_clientWidth;
 	UINT m_clientHeight;
 	DXGI_MODE_DESC m_fullScreenMode;
 	std::unique_ptr<GLTFSceneLoader> m_gltfLoader;
 	AppState m_appState;
+	float m_mouseSensitivity = 0.25f;
+	float m_cameraStep = 0.05f;
+	int m_lastMousePosX;
+	int m_lastMousePosY;
 
 private:
 	HINSTANCE m_hInstance;		

@@ -4,5 +4,6 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR lpCmdL
 {
     ViewerApp viewer(hInstance);
     viewer.Run();
+    DEBUG_LOG("Exiting application");
     return 0;
 }

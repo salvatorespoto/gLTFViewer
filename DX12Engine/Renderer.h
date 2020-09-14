@@ -17,6 +17,7 @@ struct FrameConstants
     DirectX::XMFLOAT4X4 projMtx;
     DirectX::XMFLOAT4X4 projViewMtx;
     DirectX::XMFLOAT4 eyePosition;
+    int32_t renderMode;
     Light lights[MAX_LIGHT_NUMBER];
 };
 
@@ -50,7 +51,7 @@ public:
     void FlushCommandQueue();
     
     void BeginDraw();
-    void Draw(Scene& scene);
+    void Draw(Scene& scene, bool wireFrame);
     void Draw(SkyBox& skyBox);
     void Draw(Grid& grid);
     void EndDraw();
@@ -63,7 +64,7 @@ public:
 
     void CreatePipelineState(SkyBox* skyBox);
     void CreatePipelineState(Grid* grid);
-    void CreatePipelineState(Scene* scene);
+    void CreatePipelineState(Scene* scene, bool wireFrame);
 
 private:
     void EnableDebugLayer();
@@ -73,9 +74,7 @@ private:
     void CreateFence();
     void CreateDepthStencilBuffer();
     void CreateConstantBuffer();
-    //void CreateRootSignature();
     void SetPipelineState(ID3D12GraphicsCommandList* commandList);
-    //void SetRootSignature(ID3D12GraphicsCommandList* commandList);
     
     HWND m_hWnd;
     unsigned int m_width, m_height;
@@ -92,20 +91,12 @@ private:
     BOOL m_isFullScreen = false;
     std::vector<DXGI_MODE_DESC> m_displayModes;
 
-    
     UINT m_currentFenceValue = 0;
     Microsoft::WRL::ComPtr<ID3D12Fence> m_fence;
     
     UINT m_DSV_DescriptorSize = 0;
     Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DSV_DescriptorHeap;
     Microsoft::WRL::ComPtr<ID3D12Resource> m_depthStencilBuffer;
-
-    //std::unique_ptr<UploadBuffer<PassConstants>> m_passConstantBuffer;
-    //std::unique_ptr<UploadBuffer<DirectX::XMFLOAT4X4>> m_meshConstantBuffer;
-    //std::unique_ptr<UploadBuffer<RoughMetallicMaterial>> m_materialConstantBuffer;
-    
-    //UINT m_CBV_SRV_DescriptorSize = 0;
-
     Microsoft::WRL::ComPtr<ID3DBlob> m_vertexShader;
     Microsoft::WRL::ComPtr<ID3DBlob> m_pixelShader;
     Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineStateSky;

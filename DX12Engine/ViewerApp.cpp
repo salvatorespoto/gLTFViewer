@@ -80,7 +80,6 @@ void ViewerApp::InitWindow()
     SetWindowLongPtr(m_hWnd, GWLP_USERDATA, (LONG_PTR)this);
 
     m_appState.isAppWindowed = true;
-
     DEBUG_LOG("Main window initialized");
 }
 
@@ -112,8 +111,7 @@ void ViewerApp::InitScene()
     m_skyBox->SetCubeMapTexture(m_cubeMapTexture);
     
     m_grid = std::make_unique<Grid>();
-    m_grid->Init(m_renderer->GetDevice(), m_renderer->GetCommandQueue(), 10.0f);
-
+    m_grid->Init(m_renderer->GetDevice(), m_renderer->GetCommandQueue(), 100.0f);
     DEBUG_LOG("Scene initalized");
 }
 
@@ -221,10 +219,8 @@ LRESULT ViewerApp::WndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 void ViewerApp::InitWIC() 
 {
-    HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-    if (FAILED(hr))
-        return;
-        // TODO error
+    DXUtil::ThrowIfFailed(CoInitializeEx(nullptr, COINIT_MULTITHREADED), "Cannot initialize WIC");
+    DEBUG_LOG("WIC initialized");
 }
 
 void ViewerApp::SetFullScreen(bool fullScreen)
@@ -237,7 +233,6 @@ float ViewerApp::GetScreenAspectRatio()
     return static_cast<float>(m_clientWidth) / static_cast<float>(m_clientHeight);
 }
 
-//// Event handlers
 void ViewerApp::OnEnterSizeMove() 
 {
     m_appState.isAppPaused = true;
@@ -267,14 +262,11 @@ void ViewerApp::OnResize(UINT width, UINT height)
     m_appState.screenHeight = height;
     if (m_appState.isAppPaused || m_appState.isResizingWindow) return;
     
-    ImGui_ImplDX12_InvalidateDeviceObjects();
+    //ImGui_ImplDX12_InvalidateDeviceObjects();
     m_renderer->SetSize(width, height);
     m_camera->setLens(DirectX::XM_PIDIV4, static_cast<float>(m_clientWidth) / static_cast<float>(m_clientHeight), 0.1f, 1000.f);
-    
-    
     //ImGui_ImplDX12_CreateDeviceObjects();
     //m_gui.RecreateDeviceObjects();
-
 };
 
 void ViewerApp::OnMouseMove(WPARAM btnState, int x, int y)
@@ -342,14 +334,9 @@ void ViewerApp::UpdateScene()
     DirectX::XMStoreFloat4x4(&m_appState.modelConstants[4].nodeTransformMtx, meshRotation);
     DirectX::XMStoreFloat4x4(&m_appState.modelConstants[5].nodeTransformMtx, meshRotation);
 
-    //m_appState.meshConstants[0].nodeTransformMtx = DXUtil::IdentityMtx();
-    //m_appState.meshConstants[1].nodeTransformMtx = DXUtil::IdentityMtx();
-    //m_appState.meshConstants[2].nodeTransformMtx = DXUtil::IdentityMtx();
-    //m_appState.meshConstants[3].nodeTransformMtx = DXUtil::IdentityMtx();
-    //m_appState.meshConstants[4].nodeTransformMtx = DXUtil::IdentityMtx();
-    //m_appState.meshConstants[5].nodeTransformMtx = DXUtil::IdentityMtx();
     for (auto meshConstants : m_appState.modelConstants) { m_scene->SetMeshConstants(meshConstants.first, meshConstants.second); }
-
+    m_scene->SetRenderMode(m_appState.currentRenderModeMask);
+    
     // Update SkyBox
     m_skyBox->SetCamera(*m_camera);
     m_skyBox->SetSkyBoxConstants({ DXUtil::IdentityMtx() });
@@ -362,6 +349,15 @@ void ViewerApp::UpdateScene()
 void ViewerApp::OnUpdate()
 {
     if (m_appState.isExitTriggered) { DestroyWindow(m_hWnd); }
+    
+    if(m_appState.doRecompileShader) 
+    {
+        std::string errorMsg;
+        m_scene->CompileVertexShader(L"shaders/vs_mesh.hlsl.tmp", errorMsg); m_gui->SetVsCompileErrorMsg(errorMsg); errorMsg.clear();
+        m_scene->CompileGeometryShader(L"shaders/gs_mesh.hlsl.tmp", errorMsg); m_gui->SetGsCompileErrorMsg(errorMsg); errorMsg.clear();
+        m_scene->CompilePixelShader(L"shaders/ps_mesh.hlsl.tmp", errorMsg); m_gui->SetPsCompileErrorMsg(errorMsg);
+        m_appState.doRecompileShader = false;
+    }
     
     // Transition from fullscreen to widow 
     if (m_appState.isAppFullscreen && m_appState.isAppWindowed)
@@ -392,7 +388,8 @@ void ViewerApp::OnUpdate()
         m_gltfLoader->Load(m_appState.gltfFileLoaded);
         m_gltfLoader->GetScene(0, m_scene);
         m_scene->SetCubeMapTexture(m_cubeMapTexture);
-        m_camera->setPosition({ 0.0f, 0.0f, -m_scene->GetSceneRadius() * 1.5f });
+        m_camera->setPosition({ -m_scene->GetSceneRadius() * 1.5f , -m_scene->GetSceneRadius() * 1.5f , -m_scene->GetSceneRadius() * 1.5f });
+        m_camera->lookAt(XMFLOAT3( m_scene->GetSceneRadius() * 1.5f , m_scene->GetSceneRadius() * 1.5f , -m_scene->GetSceneRadius() * 1.5f ), { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
         m_cameraStep = m_scene->GetSceneRadius() / 10.0f;
         m_appState.isOpenGLTFPressed = false;
     }
@@ -402,15 +399,17 @@ void ViewerApp::OnUpdate()
 void ViewerApp::OnDraw()
 {
     m_renderer->BeginDraw();
-    if(m_appState.showSkyBox) m_renderer->Draw(*m_skyBox);
-    m_renderer->Draw(*m_grid);
-    m_renderer->Draw(*m_scene);
+    //if(m_appState.showSkyBox) m_renderer->Draw(*m_skyBox);
+    //m_renderer->Draw(*m_grid);
+    m_renderer->Draw(*m_scene, m_appState.currentRenderModeMask == 1);
     m_gui->Draw();
     m_renderer->EndDraw();
 }
 
 void ViewerApp::OnDestroy()
 {
+    DEBUG_LOG("Clearing application resources ...");
+
     m_renderer->FlushCommandQueue();    
     m_gui->ShutDown();
 

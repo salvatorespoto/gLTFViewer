@@ -28,6 +28,9 @@ public:
     bool WantCaptureMouse();
     bool WantCaptureKeyboard();
     void ShutDown();
+    void SetVsCompileErrorMsg(std::string errorMsg);
+    void SetGsCompileErrorMsg(std::string errorMsg);
+    void SetPsCompileErrorMsg(std::string errorMsg);
 
 private:
     static constexpr int FRAME_RATE_SERIES_SIZE = 15;
@@ -59,6 +62,10 @@ private:
     char m_pixelShaderText[50000];
     char m_headerShaderText[50000];
     
+    std::string m_vsCompileErrorMsg;
+    std::string m_gsCompileErrorMsg;
+    std::string m_psCompileErrorMsg;
+
     float m_frameRateSeries[FRAME_RATE_SERIES_SIZE];
     bool m_compilationSuccess = true;
     std::string m_errorMsg;
