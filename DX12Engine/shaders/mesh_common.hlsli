@@ -12,8 +12,8 @@ static const float3 black = { 0.0f, 0.0f, 0.0f };
 
 struct Light
 {
-    float4 position;
     float4 color;
+    float4 position;
 };
 
 struct FrameConstants

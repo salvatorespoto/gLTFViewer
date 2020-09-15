@@ -274,7 +274,7 @@ void Gui::DrawControls()
     }
 
     if(allItemOpen) ImGui::SetNextItemOpen(true);
-    if (ImGui::CollapsingHeader("Point light 1"))
+    if (ImGui::CollapsingHeader("Point light"))
     {
         DrawColorPicker(m_appState->lights[1].color, 80, "##light1");
         ImGui::BeginGroup();
@@ -282,20 +282,6 @@ void Gui::DrawControls()
         ImGui::SliderFloat("##PosXLight1", &m_appState->lights[1].position.x, -10.0f, 10.0f, "Pos X = %.3f");
         ImGui::SliderFloat("##PosYLight1", &m_appState->lights[1].position.y, -10.0f, 10.0f, "Pos Y= %.3f");
         ImGui::SliderFloat("##PosZLight1", &m_appState->lights[1].position.z, -10.0f, 10.0f, "Pos Z = %.3f");
-        ImGui::PopItemWidth();
-        ImGui::EndGroup();
-        ImGui::Separator();
-    }
-    
-    if (allItemOpen) ImGui::SetNextItemOpen(true);
-    if (ImGui::CollapsingHeader("Point light 2"))
-    {
-        DrawColorPicker(m_appState->lights[2].color, 80, "##light2");
-        ImGui::BeginGroup();
-        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65f);
-        ImGui::SliderFloat("##PosXLight2", &m_appState->lights[2].position.x, -10.0f, 10.0f, "Pos X = %.3f");
-        ImGui::SliderFloat("##PosYLight2", &m_appState->lights[2].position.y, -10.0f, 10.0f, "Pos Y= %.3f");
-        ImGui::SliderFloat("##PosZLight2", &m_appState->lights[2].position.z, -10.0f, 10.0f, "Pos Z = %.3f");
         ImGui::PopItemWidth();
         ImGui::EndGroup();
         ImGui::Separator();

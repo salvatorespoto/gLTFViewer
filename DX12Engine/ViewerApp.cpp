@@ -399,8 +399,8 @@ void ViewerApp::OnUpdate()
 void ViewerApp::OnDraw()
 {
     m_renderer->BeginDraw();
-    //if(m_appState.showSkyBox) m_renderer->Draw(*m_skyBox);
-    //m_renderer->Draw(*m_grid);
+    if(m_appState.showSkyBox) m_renderer->Draw(*m_skyBox);
+    m_renderer->Draw(*m_grid);
     m_renderer->Draw(*m_scene, m_appState.currentRenderModeMask == 1);
     m_gui->Draw();
     m_renderer->EndDraw();

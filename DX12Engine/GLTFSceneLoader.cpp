@@ -342,12 +342,18 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 void GLTFSceneLoader::LoadLights(Scene* scene)
 {
 	int lightId = 0;
-	for (tinygltf::Light light : m_model.lights) {}
-	if (m_model.lights.size() == 0)
-	{
-		Light light = { { 0.0f, 3.0f, 0.0f, 0.1f }, { 0.5f, 0.5f, 0.5f, 0.1f } };
-		scene->AddLight(0, light);
+	for (tinygltf::Light light : m_model.lights) 
+	{ 
+		// Load GLTF lights is unsupported 
 	}
+
+	// Default ambient light
+	Light light = { { 0.0f, 3.0f, 0.0f, 0.1f }, { 0.5f, 0.5f, 0.5f, 0.1f } };
+	scene->AddLight(0, light);
+
+	// Default point light
+	light = { { 0.0f, 3.0f, 0.0f, 0.1f }, { 0.5f, 0.5f, 0.5f, 0.1f } };
+	scene->AddLight(1, light);
 }
 
 void GLTFSceneLoader::LoadMaterials(Scene* scene)

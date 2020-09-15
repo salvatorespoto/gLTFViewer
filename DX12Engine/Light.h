@@ -4,6 +4,6 @@
 
 struct Light
 {
-	DirectX::XMFLOAT4 position;
 	DirectX::XMFLOAT4 color;
+	DirectX::XMFLOAT4 position;
 };

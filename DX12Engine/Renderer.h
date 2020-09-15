@@ -17,7 +17,7 @@ struct FrameConstants
     DirectX::XMFLOAT4X4 projMtx;
     DirectX::XMFLOAT4X4 projViewMtx;
     DirectX::XMFLOAT4 eyePosition;
-    int32_t renderMode;
+    int32_t renderMode; DirectX::XMFLOAT3 _pad0;
     Light lights[MAX_LIGHT_NUMBER];
 };
 
