@@ -6,11 +6,11 @@ float3 fresnel(float m, float3 lightColor, float3 F0, float NdotH, float NdotL, 
 // Pixel shader entry point
 float4 PSMain(VertexOut vIn) : SV_Target // SV_Target means that the output should match the rendering target format
 {
-    float4 baseColor        = { 0.0f, 0.0f, 0.0f, 1.0f };
-    float4 normal           = { 0.0f, 0.0f, 0.0f, 1.0f };
-    float4 roughMetallic    = { 0.0f, 0.0f, 0.0f, 1.0f };
-    float4 occlusion        = { 0.0f, 0.0f, 0.0f, 1.0f };
-    float4 emissive         = { 0.0f, 0.0f, 0.0f, 1.0f };
+    float4 baseColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+    float4 normal = { 0.0f, 0.0f, 0.0f, 1.0f };
+    float4 roughMetallic = { 0.0f, 0.0f, 0.0f, 1.0f };
+    float4 occlusion = { 1.0f, 1.0f, 1.0f, 1.0f };
+    float4 emissive = { 0.0f, 0.0f, 0.0f, 1.0f };
 
     if (materials[0].baseColorTA.textureId != -1)          baseColor = textures[materials[0].baseColorTA.textureId].Sample(samplers[0], vIn.textCoord);
     if (materials[0].normalTA.textureId != -1)		       normal = textures[materials[0].normalTA.textureId].Sample(samplers[0], vIn.textCoord);
@@ -56,11 +56,11 @@ float4 PSMain(VertexOut vIn) : SV_Target // SV_Target means that the output shou
     float3 C_diff = lerp(baseColor.rgb * (1.0f - dielectricSpecular.r), black, metallic);
     float3 F0 = lerp(dieletricSpecular, baseColor.rgb, metallic);
 
-    float3 C_ambient = ambientLight * albedo * occlusion.xyz;
+    float3 C_ambient = ambientLight * albedo * occlusion.x;
     float3 C_diffuse = diffuse(C_diff, pointLight.color.xyz, NdotL);
 
     float m = metallic * 256.0f;	// Exponent in the model for the roughness. Higher the value, more the material is shine.
-    float3 C_specular = fresnel(m, cubeMapSample.xyz , F0, NdotH, NdotL, LdotH);
+    float3 C_specular = fresnel(m, pointLight.color.xyz , F0, NdotH, NdotL, LdotH);
     float3 f = C_ambient + C_diffuse + C_specular + emissive.xyz + cubeMapSample.xyz;
 
     return float4(f.xyz, 1.0f);
