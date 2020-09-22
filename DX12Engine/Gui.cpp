@@ -67,22 +67,22 @@ void Gui::Draw()
     ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_renderer->GetCommandList().Get());
 }
 
-void Gui::SetVsCompileErrorMsg(std::string errorMsg)
+void Gui::SetVsCompileErrorMsg(const std::string& errorMsg) noexcept
 {
     m_vsCompileErrorMsg = errorMsg;
 }
 
-void Gui::SetGsCompileErrorMsg(std::string errorMsg)
+void Gui::SetGsCompileErrorMsg(const std::string& errorMsg) noexcept
 {
     m_gsCompileErrorMsg = errorMsg;
 }
 
-void Gui::SetPsCompileErrorMsg(std::string errorMsg)
+void Gui::SetPsCompileErrorMsg(const std::string& errorMsg) noexcept
 {
     m_psCompileErrorMsg = errorMsg;
 }
 
-void Gui::ReSize(unsigned int width, unsigned int height)
+void Gui::ReSize(const unsigned int width, const unsigned int height)
 {
     if (!m_isInitialized) return;
     //ImGui_ImplDX12_InvalidateDeviceObjects();

@@ -27,7 +27,7 @@ Microsoft::WRL::ComPtr<ID3D12Resource> createDefaultHeapBuffer(
 	ID3D12Device* device,
 	ID3D12GraphicsCommandList* cmdList,
 	const void* initData,
-	UINT64 byteSize,
+	const UINT64 byteSize,
 	Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer);
 
 /** Helper class to upload data to GPU DEFAULT HEAP synchronously */
@@ -35,7 +35,7 @@ class GPUHeapUploader
 {
 public:
 	GPUHeapUploader(Microsoft::WRL::ComPtr<ID3D12Device> device, Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue);
-	Microsoft::WRL::ComPtr<ID3D12Resource> Upload(const void* initData, UINT64 byteSize);
+	Microsoft::WRL::ComPtr<ID3D12Resource> Upload(const void* initData, const UINT64 byteSize);
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_commandListAlloc;
@@ -54,17 +54,17 @@ template <class T>
 class UploadBuffer
 {
 public:
-	UploadBuffer(ID3D12Device* device, UINT count, bool isConstant);
+	UploadBuffer(ID3D12Device* device, const UINT count, const bool isConstant);
 	UploadBuffer(const UploadBuffer&) = delete;
 	UploadBuffer& operator=(const UploadBuffer&) = delete;
 	~UploadBuffer();
 
 	ID3D12Resource* getResource() const;
 	void release();
-	void copyData(int index, const T& data);
+	void copyData(const int index, const T& data);
 
 protected:
-	virtual void createBuffer(ID3D12Device* device, UINT count, bool isConstant);
+	virtual void createBuffer(ID3D12Device* device, const UINT count, const bool isConstant);
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> m_buffer;	/*< Com pointer to the buffer */
 	std::size_t m_elementByteSize;						/*< The byte size of an element in the buffer */
@@ -72,7 +72,7 @@ protected:
 };
 
 template <class T>
-UploadBuffer<T>::UploadBuffer(ID3D12Device* device, UINT count, bool isConstant)
+UploadBuffer<T>::UploadBuffer(ID3D12Device* device, const UINT count, const bool isConstant)
 {
 	createBuffer(device, count, isConstant);
 }
@@ -97,7 +97,7 @@ void UploadBuffer<T>::release()
 }
 
 template <class T>
-void UploadBuffer<T>::createBuffer(ID3D12Device* device, UINT count, bool isConstant)
+void UploadBuffer<T>::createBuffer(ID3D12Device* device, const UINT count, const bool isConstant)
 {
 	if (isConstant)
 	{
@@ -124,7 +124,7 @@ ID3D12Resource* UploadBuffer<T>::getResource() const
 }
 
 template <class T>
-void UploadBuffer<T>::copyData(int index, const T& data)
+void UploadBuffer<T>::copyData(const int index, const T& data)
 {
 	memcpy(&m_data[index * m_elementByteSize], &data, sizeof(T));
 }

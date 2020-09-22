@@ -19,13 +19,13 @@ public:
 	~SkyBox();
 	void Init(Microsoft::WRL::ComPtr<ID3D12Device> device, Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue);
 	void SetCubeMapTexture(Microsoft::WRL::ComPtr<ID3D12Resource> cubeMapTexture);
-	Microsoft::WRL::ComPtr<ID3DBlob> GetVertexShader();
-	Microsoft::WRL::ComPtr<ID3DBlob> GetPixelShader();
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> GetRootSignature();
+	Microsoft::WRL::ComPtr<ID3DBlob> GetVertexShader() const override;
+	Microsoft::WRL::ComPtr<ID3DBlob> GetPixelShader() const override;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> GetRootSignature() override;
 	void SetCamera(const Camera& camera);
 	void SetFrameConstants(FrameConstants frameConstants);
 	void SetSkyBoxConstants(SkyBoxConstants meshConstants);
-	void Draw(ID3D12GraphicsCommandList* commandList);
+	void Draw(ID3D12GraphicsCommandList* commandList) override;
 
 protected:
 	const unsigned int SKYBOX_SPHERE_SUBDIVISION = 1; // Number of subdivision to generate the skybox sphere

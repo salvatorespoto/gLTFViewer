@@ -48,7 +48,7 @@ public:
 	ViewerApp(const HINSTANCE& m_hInstance);
 	~ViewerApp();
 	int Run();
-	void SetFullScreen(bool fullScreen);
+	void SetFullScreen(const bool fullScreen);
 	
 	/** Message procedure called from the window callback */
 	virtual LRESULT WndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -66,11 +66,11 @@ protected:
 	virtual void OnEnterSizeMove();
 	virtual void OnExitSizeMove();
 	virtual void OnAppMinimized();
-	virtual void OnResize(UINT width, UINT height);
-	virtual void OnMouseMove(WPARAM btnState, int x, int y);
-	virtual void OnMouseDown(WPARAM btnState, int x, int y);
-	virtual void OnMouseUp(WPARAM btnState, int x, int y);
-	virtual void OnKeyDown(WPARAM btnState);
+	virtual void OnResize(const UINT width, const UINT height);
+	virtual void OnMouseMove(const WPARAM btnState, const int x, const int y);
+	virtual void OnMouseDown(const WPARAM btnState, const int x, const int y);
+	virtual void OnMouseUp(const WPARAM btnState, const int x, const int y);
+	virtual void OnKeyDown(const WPARAM btnState);
 	virtual void OnDestroy();
 	virtual void OnUpdate();
 	virtual void OnDraw();

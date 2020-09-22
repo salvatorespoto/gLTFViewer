@@ -40,7 +40,7 @@ double Timer::tick()
 	return m_deltaTime;
 }
 
-double Timer::total()
+double Timer::total() const 
 {
 	return (m_totalTime - m_stopTime) * m_secondsForCount;
 }

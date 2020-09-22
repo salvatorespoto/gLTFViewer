@@ -24,13 +24,13 @@ public:
 
     void Init(std::shared_ptr<Renderer> renderer, AppState* appState);
     void Draw();
-    void ReSize(unsigned int widht, unsigned int height);
+    void ReSize(const unsigned int widht, const unsigned int height);
     bool WantCaptureMouse();
     bool WantCaptureKeyboard();
     void ShutDown();
-    void SetVsCompileErrorMsg(std::string errorMsg);
-    void SetGsCompileErrorMsg(std::string errorMsg);
-    void SetPsCompileErrorMsg(std::string errorMsg);
+    void SetVsCompileErrorMsg(const std::string& errorMsg) noexcept;
+    void SetGsCompileErrorMsg(const std::string& errorMsg) noexcept;
+    void SetPsCompileErrorMsg(const std::string& errorMsg) noexcept;
 
 private:
     static constexpr int FRAME_RATE_SERIES_SIZE = 15;

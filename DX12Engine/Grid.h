@@ -17,17 +17,17 @@ class Grid : public DrawableAsset
 {
 public:
 	~Grid();
-	void Init(Microsoft::WRL::ComPtr<ID3D12Device> device, Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue, float halfSize);
-	Microsoft::WRL::ComPtr<ID3DBlob> GetVertexShader();
-	Microsoft::WRL::ComPtr<ID3DBlob> GetPixelShader();
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> GetRootSignature();
+	void Init(Microsoft::WRL::ComPtr<ID3D12Device> device, Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue, const float halfSize);
+	Microsoft::WRL::ComPtr<ID3DBlob> GetVertexShader() const override;
+	Microsoft::WRL::ComPtr<ID3DBlob> GetPixelShader() const override;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> GetRootSignature() override;
 	void SetCamera(const Camera& camera);
-	void SetFrameConstants(FrameConstants frameConstants);
-	void SetGridConstants(GridConstants meshConstants);
-	void Draw(ID3D12GraphicsCommandList* commandList);
+	void SetFrameConstants(const FrameConstants& frameConstants);
+	void SetGridConstants(const GridConstants& meshConstants);
+	void Draw(ID3D12GraphicsCommandList* commandList) override;
 
 protected:
-	void GenerateGrid(float side);
+	void GenerateGrid(const float side);
 	void SetUpRootSignature(ID3D12GraphicsCommandList* commandList);
 
 	BufferView m_verticesBufferView;

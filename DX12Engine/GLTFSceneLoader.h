@@ -15,7 +15,7 @@ public:
 	 * Loads the model information from the glTF file filename, to load a scene from the model call GetScene
 	 * @param fileName the .gltf or .glb file to load
 	 */
-	void Load(std::string fileName);
+	void Load(const std::string& fileName);
 	
 	/** 
 	  * Load a scene from the glTF file into the Scene object 

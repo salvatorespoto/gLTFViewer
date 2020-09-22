@@ -8,7 +8,7 @@
 using Microsoft::WRL::ComPtr;
 using DXUtil::ThrowIfFailed;
 
-void Renderer::Init(HWND hWnd, unsigned int width, unsigned int height)
+void Renderer::Init(HWND hWnd, const unsigned int width, const unsigned int height)
 {
     DEBUG_LOG("Initializing Renderer object")
     m_hWnd = hWnd;
@@ -29,7 +29,7 @@ void Renderer::Init(HWND hWnd, unsigned int width, unsigned int height)
     //CreatePipelineState();
 }
 
-void Renderer::SetSize(unsigned int width, unsigned int height)
+void Renderer::SetSize(const unsigned int width, const unsigned int height)
 {
     FlushCommandQueue();
     m_width = width;
@@ -40,17 +40,17 @@ void Renderer::SetSize(unsigned int width, unsigned int height)
     CreateDepthStencilBuffer();
 }
 
-void Renderer::SetViewport(D3D12_VIEWPORT viewPort)
+void Renderer::SetViewport(const D3D12_VIEWPORT viewPort)
 {
     m_viewPort = viewPort;
 }
 
-void Renderer::SetScissorRect(D3D12_RECT scissorRect)
+void Renderer::SetScissorRect(const D3D12_RECT scissorRect)
 {
     m_scissorRect = scissorRect;
 }
 
-void Renderer::SetFullScreen(bool fullScreen)
+void Renderer::SetFullScreen(const bool fullScreen)
 {
     m_swapChain.SetFullScreen(fullScreen);
 }
@@ -265,7 +265,7 @@ void Renderer::CreateConstantBuffer()
         */
 }
 
-bool Renderer::CompileShaders(std::wstring fileName, std::string& errorMsg)
+bool Renderer::CompileShaders(const std::wstring& fileName, std::string& errorMsg)
 {
 #if defined(_DEBUG)
     UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -295,7 +295,7 @@ bool Renderer::CompileShaders(std::wstring fileName, std::string& errorMsg)
     return true;
 }
 
-bool Renderer::CompileVertexShader(std::wstring vsFileName, std::string& errorMsg)
+bool Renderer::CompileVertexShader(const std::wstring& vsFileName, std::string& errorMsg)
 {
 #if defined(_DEBUG)
     UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -316,12 +316,12 @@ bool Renderer::CompileVertexShader(std::wstring vsFileName, std::string& errorMs
         return true;
 }
 
-bool Renderer::CompileGeometryShader(std::wstring vsFileName, std::string& errorMsg) 
+bool Renderer::CompileGeometryShader(const std::wstring& vsFileName, std::string& errorMsg) 
 {
     return true;
 }
 
-bool Renderer::CompilePixelShader(std::wstring psFileName, std::string& errorMsg)
+bool Renderer::CompilePixelShader(const std::wstring& psFileName, std::string& errorMsg)
 {
 #if defined(_DEBUG)
     UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -417,7 +417,7 @@ void Renderer::CreatePipelineState(SkyBox* skyBox)
     ThrowIfFailed(m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pipelineStateSky)), "Cannot create the pipeline state");
 }
 
-void Renderer::CreatePipelineState(Scene* scene, bool wireFrame)
+void Renderer::CreatePipelineState(Scene* scene, const bool wireFrame)
 {
     D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
     inputLayoutDesc.pInputElementDescs = vertexElementsDesc;

@@ -5,7 +5,7 @@ using DirectX::XMFLOAT4X4;
 using DirectX::XMVECTOR;
 using DirectX::XMMATRIX;
 
-Camera::Camera(UINT32 width, UINT32 height, float fovY, float nearZ, float farZ) :
+Camera::Camera(const UINT32 width, const UINT32 height, const float fovY, const float nearZ, const float farZ) :
 	m_width(width), m_height(height), m_dirty(false)
 {
 	m_position = { 0.0f, 0.0f, 0.0f };
@@ -25,7 +25,7 @@ Camera::Camera(UINT32 width, UINT32 height, float fovY, float nearZ, float farZ)
 Camera::~Camera()
 {}
 
-void Camera::setLens(float fovY, float aspectRatio, float nearZ, float farZ)
+void Camera::setLens(const float fovY, const float aspectRatio, const float nearZ, const float farZ)
 {
 	m_fovY = fovY;
 	m_aspectRatio = aspectRatio;
@@ -52,7 +52,7 @@ DirectX::XMFLOAT3 Camera::GetPosition()  const
 	return m_position;
 }
 
-void Camera::moveForward(float distance)
+void Camera::moveForward(const float distance)
 {
 	XMVECTOR forward = XMLoadFloat3(&m_forward);
 	XMVECTOR position = XMLoadFloat3(&m_position);
@@ -60,7 +60,7 @@ void Camera::moveForward(float distance)
 	m_dirty = true;
 }
 
-void Camera::strafe(float distance)
+void Camera::strafe(const float distance)
 {
 	XMVECTOR right = XMLoadFloat3(&m_right);
 	XMVECTOR position = XMLoadFloat3(&m_position);
@@ -68,7 +68,7 @@ void Camera::strafe(float distance)
 	m_dirty = true;
 }
 
-void Camera::rotate(float pitch, float worldUpAngle)
+void Camera::rotate(const float pitch, const float worldUpAngle)
 {
 	XMMATRIX pitchRotMtx = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&m_right), pitch);
 	XMStoreFloat3(&m_up, DirectX::XMVector3TransformNormal(XMLoadFloat3(&m_up), pitchRotMtx));

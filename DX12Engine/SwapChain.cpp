@@ -25,7 +25,7 @@ void SwapChain::Create(Microsoft::WRL::ComPtr<ID3D12Device> device, DXGI_SWAP_CH
     ThrowIfFailed(device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_rtvDescriptorHeap)), "Cannot create RTV descriptor heap");
 }
 
-void SwapChain::Resize(UINT width, UINT height)
+void SwapChain::Resize(const UINT width, const UINT height)
 {
     m_swapChainDesc.Width = width;
     m_swapChainDesc.Height = height;
@@ -34,7 +34,7 @@ void SwapChain::Resize(UINT width, UINT height)
     CreateRenderTargetViews();
 }
 
-void SwapChain::SetFullScreen(bool fullScreen)
+void SwapChain::SetFullScreen(const bool fullScreen)
 {
     if (m_isFullScreen == fullScreen) return;
     m_isFullScreen = fullScreen;

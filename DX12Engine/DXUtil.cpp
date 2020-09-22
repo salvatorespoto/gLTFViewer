@@ -42,7 +42,7 @@ namespace DXUtil
 		return outputList;
 	}
 
-	std::vector<DXGI_MODE_DESC> enumerateAdapterOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format)
+	std::vector<DXGI_MODE_DESC> enumerateAdapterOutputDisplayModes(IDXGIOutput* output, const DXGI_FORMAT format)
 	{
 		UINT count = 0;
 		UINT flags = 0;		// This flag specifies modes to include in the list, 0 = 
@@ -79,7 +79,7 @@ namespace DXUtil
 	}
 
 
-	UINT PadByteSizeTo256Mul(UINT byteSize)
+	UINT PadByteSizeTo256Mul(const UINT byteSize)
 	{
 		return (byteSize + 255) & ~255;
 	}

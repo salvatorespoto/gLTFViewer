@@ -13,7 +13,7 @@ D3D12_INPUT_ELEMENT_DESC gridVertexElementsDesc[] =
 
 Grid::~Grid() {}
 
-void Grid::Init(ComPtr<ID3D12Device> device, ComPtr<ID3D12CommandQueue> commandQueue, float halfSize)
+void Grid::Init(ComPtr<ID3D12Device> device, ComPtr<ID3D12CommandQueue> commandQueue, const float halfSize)
 {
     m_device = device;
     m_commandQueue = commandQueue;
@@ -37,12 +37,12 @@ void Grid::Init(ComPtr<ID3D12Device> device, ComPtr<ID3D12CommandQueue> commandQ
         "Cannot create CBV SRV UAV descriptor heap");
 }
 
-ComPtr<ID3DBlob> Grid::GetVertexShader()
+ComPtr<ID3DBlob> Grid::GetVertexShader() const
 {
     return m_vertexShader;
 }
 
-ComPtr<ID3DBlob> Grid::GetPixelShader()
+ComPtr<ID3DBlob> Grid::GetPixelShader() const
 {
     return m_pixelShader;
 }
@@ -77,13 +77,13 @@ void Grid::SetCamera(const Camera& camera)
     m_frameConstantsBuffer->copyData(0, m_frameConstants);
 }
 
-void Grid::SetFrameConstants(FrameConstants frameConstants)
+void Grid::SetFrameConstants(const FrameConstants& frameConstants)
 {
     m_frameConstants = frameConstants;
     m_frameConstantsBuffer->copyData(0, frameConstants);
 }
 
-void Grid::SetGridConstants(GridConstants gridConstants)
+void Grid::SetGridConstants(const GridConstants& gridConstants)
 {
     m_gridConstants = gridConstants;
     m_gridConstantsBuffer->copyData(0, gridConstants);
@@ -116,7 +116,7 @@ void Grid::Draw(ID3D12GraphicsCommandList* commandList)
     commandList->DrawInstanced(m_verticesBufferView.count, 1, 0, 0);
 }
 
-void Grid::GenerateGrid(float halfSide)
+void Grid::GenerateGrid(const float halfSide)
 {
     float step = halfSide / 5.0f;
 

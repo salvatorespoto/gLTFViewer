@@ -17,25 +17,25 @@ class Camera
 public:
 
 	/** Constructor */
-	Camera(UINT32 width, UINT32 height, float fovY, float nearZ, float farZ);
+	Camera(const UINT32 width, const UINT32 height, const float fovY, const float nearZ, const float farZ);
 
 	/** Destructor */
 	~Camera();
 
 	/** Set camera lens */
-	void setLens(float fovY, float aspect, float nearZ, float farZ);
+	void setLens(const float fovY, const float aspect, const float nearZ, const float farZ);
 
 	/** Set camera position */
 	void setPosition(DirectX::XMFLOAT3 position);
 
 	/** Move the camera in the forward direction */
-	void moveForward(float distance);
+	void moveForward(const float distance);
 	
 	/** Strafe: move the camera in the camera right direction */
-	void strafe(float distance);
+	void strafe(const float distance);
 	
 	/** Rotate the camera around the right camera vector (pitch) or the world up axis. Angles are in radians */
-	void rotate(float pitch, float worldUpAngle);
+	void rotate(const float pitch, const float worldUpAngle);
 
 	/** Set up camera position and direction */
 	void lookAt(const DirectX::XMFLOAT3& position, const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& worldUp);

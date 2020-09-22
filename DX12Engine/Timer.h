@@ -26,7 +26,7 @@ public:
 	void start();
 
 	/** Return the seconds elapsed from the call to the constructor or the last call to reset() */
-	double total();
+	double total() const;
 
 private:
 	__int64  m_countsForSecond;	// Timer frequency: how many counts per seconds

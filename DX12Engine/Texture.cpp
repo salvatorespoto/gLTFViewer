@@ -3,7 +3,7 @@
 #include <DDSTextureLoader.h>
 #include <WICTextureLoader.h>
 
-void CreateTextureFromMemory(ID3D12Device* device, ID3D12CommandQueue* commandQueue, const uint8_t* textureData, size_t textureDataSize, ID3D12Resource** texture)
+void CreateTextureFromMemory(ID3D12Device* device, ID3D12CommandQueue* commandQueue, const uint8_t* textureData, const size_t textureDataSize, ID3D12Resource** texture)
 {
 	DirectX::ResourceUploadBatch resourceUploadBatch(device);
 	resourceUploadBatch.Begin();
@@ -14,7 +14,7 @@ void CreateTextureFromMemory(ID3D12Device* device, ID3D12CommandQueue* commandQu
 	//auto desc = (*texture)->GetDesc();
 }
 
-void CreateTextureFromFile(ID3D12Device* device, ID3D12CommandQueue* commandQueue, std::string fileName, ID3D12Resource** texture)
+void CreateTextureFromFile(ID3D12Device* device, ID3D12CommandQueue* commandQueue, const std::string& fileName, ID3D12Resource** texture)
 {
 	DirectX::ResourceUploadBatch resourceUploadBatch(device);
 	resourceUploadBatch.Begin();
@@ -25,7 +25,7 @@ void CreateTextureFromFile(ID3D12Device* device, ID3D12CommandQueue* commandQueu
 	//auto desc = (*texture)->GetDesc();
 }
 
-void CreateTextureFromDDSFile(ID3D12Device* device, ID3D12CommandQueue* commandQueue, std::string fileName, ID3D12Resource** texture)
+void CreateTextureFromDDSFile(ID3D12Device* device, ID3D12CommandQueue* commandQueue, const std::string& fileName, ID3D12Resource** texture)
 {
 	DirectX::ResourceUploadBatch resourceUploadBatch(device);
 	resourceUploadBatch.Begin();
