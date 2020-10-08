@@ -19,7 +19,7 @@ glTF Viewer is an ongoing project actually under development.
 * Materials: textures, images, samples, additional maps (normal, occlusion, emission)
 * Shading model
 
-### Unsuppoted (yet) features
+### Unsupported (yet) features
 * Sparse accessors 
 * Animations 
 * Skinning
