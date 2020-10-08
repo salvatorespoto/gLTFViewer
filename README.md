@@ -10,7 +10,7 @@ This project aims to realize a software that can load and render files written a
 
 The viewer is also able to edit the vertex, geometry and fragment shaders on the fly, to see how the shader code affects the model.
 
-glTF Viewer is an ongoing project actually under development. 
+glTF Viewer is an ongoing project actually under development. Check out the [project roadmap](https://github.com/salvatorespoto/GLTFViewer/projects/1)
 
 ### Current supported features are:
 
