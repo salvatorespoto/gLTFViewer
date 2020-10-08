@@ -223,7 +223,7 @@ void ViewerApp::InitWIC()
     DEBUG_LOG("WIC initialized");
 }
 
-void ViewerApp::SetFullScreen(bool fullScreen)
+void ViewerApp::SetFullScreen(const bool fullScreen)
 {
     m_renderer->SetFullScreen(fullScreen);
 }
@@ -251,7 +251,7 @@ void ViewerApp::OnAppMinimized()
     m_appState.isAppMinimized = true;
 }
 
-void ViewerApp::OnResize(UINT width, UINT height)
+void ViewerApp::OnResize(const UINT width, const UINT height)
 {
     float scaleGUI = static_cast<float>(m_appState.screenWidth) / static_cast<float>(m_clientWidth);
 
@@ -269,7 +269,7 @@ void ViewerApp::OnResize(UINT width, UINT height)
     //m_gui.RecreateDeviceObjects();
 };
 
-void ViewerApp::OnMouseMove(WPARAM btnState, int x, int y)
+void ViewerApp::OnMouseMove(const WPARAM btnState, const int x, const int y)
 {
     if (btnState == MK_LBUTTON) 
     {
@@ -291,13 +291,13 @@ void ViewerApp::OnMouseMove(WPARAM btnState, int x, int y)
     m_lastMousePosY = y;
 }; 
 
-void ViewerApp::OnMouseDown(WPARAM btnState, int x, int y)
+void ViewerApp::OnMouseDown(const WPARAM btnState, const int x, const int y)
 {};
 
-void ViewerApp::OnMouseUp(WPARAM btnState, int x, int y)
+void ViewerApp::OnMouseUp(const WPARAM btnState, const int x, const int y)
 {};
 
-void ViewerApp::OnKeyDown(WPARAM wParam)
+void ViewerApp::OnKeyDown(const WPARAM wParam)
 {    
     // Handle camera movements
     if (wParam == VK_KEY_W) m_camera->moveForward(m_cameraStep);

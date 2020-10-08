@@ -102,13 +102,13 @@ namespace DXUtil
     std::vector<Microsoft::WRL::ComPtr<IDXGIOutput>>  enumerateAdaptersOutputs(IDXGIAdapter* adapter);
 
     /** Enumerate all the display modes supported from an output device */
-    std::vector<DXGI_MODE_DESC> enumerateAdapterOutputDisplayModes(IDXGIOutput* output, DXGI_FORMAT format);
+    std::vector<DXGI_MODE_DESC> enumerateAdapterOutputDisplayModes(IDXGIOutput* output, const DXGI_FORMAT format);
 
     /** Print out adapter info */
     void printAdaptersInfo();
 
     /** Compute the byte size of a buffer after padding it to a 256 byte multiple */
-    UINT PadByteSizeTo256Mul(UINT byteSize);
+    UINT PadByteSizeTo256Mul(const UINT byteSize);
 
     /* Store an indentity matmrix in a XMFLOAT4X4 */
     DirectX::XMFLOAT4X4 IdentityMtx();

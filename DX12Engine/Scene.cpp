@@ -47,17 +47,17 @@ void Scene::AddFrameConstantsBuffer()
 	m_frameConstantsBuffer = std::make_unique<UploadBuffer<FrameConstants>>(m_device.Get(), 1, true);
 }
 
-void Scene::AddGPUBuffer(ComPtr<ID3D12Resource> buffer)
+void Scene::AddGPUBuffer(const ComPtr<ID3D12Resource>& buffer)
 {
 	m_buffersGPU.push_back(buffer);
 }
 
-ComPtr<ID3DBlob> Scene::GetVertexShader()
+ComPtr<ID3DBlob> Scene::GetVertexShader() const
 {
 	return m_vertexShader;
 }
 
-ComPtr<ID3DBlob> Scene::GetPixelShader()
+ComPtr<ID3DBlob> Scene::GetPixelShader() const
 {
 	return m_pixelShader;
 }
@@ -88,12 +88,12 @@ bool Scene::CompilePixelShader(const std::wstring& fileName, std::string& errorM
 	}
 	else return false;
 }
-ComPtr<ID3D12RootSignature> Scene::GetRootSignature()
-{
+ComPtr<ID3D12RootSignature> Scene::GetRootSignature()								// Get methods should not modify the object, conceptually
+{																					// Maybe refactor so that a setup function creates RootSignature and caches it, while Get returns it?
 	return CreateRootSignature();
 }
 
-void Scene::AddMaterial(unsigned int materialId, RoughMetallicMaterial material)
+void Scene::AddMaterial(const unsigned int materialId, const RoughMetallicMaterial&& material)
 {
 	m_materials[materialId] = material;
 	m_materialsBuffer[materialId] = std::make_unique<UploadBuffer<RoughMetallicMaterial>>(m_device.Get(), 1, true);
@@ -108,7 +108,7 @@ void Scene::AddMaterial(unsigned int materialId, RoughMetallicMaterial material)
 	m_device->CreateConstantBufferView(&materialViewDesc, hDescriptor); 
 }
 
-void Scene::AddTexture(unsigned int textureId, Microsoft::WRL::ComPtr<ID3D12Resource> texture)
+void Scene::AddTexture(const unsigned int textureId, Microsoft::WRL::ComPtr<ID3D12Resource> texture)
 {
 	m_textures[textureId] = texture;
 
@@ -125,19 +125,19 @@ void Scene::AddTexture(unsigned int textureId, Microsoft::WRL::ComPtr<ID3D12Reso
 	m_device->CreateShaderResourceView(texture.Get(), &srvDesc, hDescriptor);
 }
 
-void Scene::AddSampler(unsigned int samplerId, D3D12_SAMPLER_DESC samplerDesc)
+void Scene::AddSampler(const unsigned int samplerId, D3D12_SAMPLER_DESC samplerDesc)
 {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_samplersDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	hDescriptor.Offset(samplerId, m_samplersDescriptorSize);
 	m_device->CreateSampler(&samplerDesc, m_samplersDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
-void Scene::AddLight(unsigned int lightId, Light light)
+void Scene::AddLight(const unsigned int lightId, const Light&& light)
 {
 	m_lights[lightId] = light;
 }
 
-void Scene::AddMesh(Mesh mesh)
+void Scene::AddMesh(const Mesh&& mesh)
 {
 	unsigned int meshId = mesh.GetId();
 	m_meshes[meshId] = mesh;
@@ -170,7 +170,7 @@ void Scene::SetCubeMapTexture(Microsoft::WRL::ComPtr<ID3D12Resource> cubeMapText
 	m_device->CreateShaderResourceView(m_cubeMapTexture.Get(), &srvDesc, hDescriptor);
 }
 
-float Scene::GetSceneRadius()
+float Scene::GetSceneRadius() const
 {
 	return sqrt(m_sceneRadius.x*m_sceneRadius.x + m_sceneRadius.y * m_sceneRadius.y + m_sceneRadius.z * m_sceneRadius.z);
 }
@@ -208,7 +208,7 @@ ComPtr<ID3D12RootSignature> Scene::CreateRootSignature()
 	return m_rootSignature;
 }
 
-void Scene::SetRootSignature(ID3D12GraphicsCommandList* commandList, unsigned int meshId)
+void Scene::SetRootSignature(ID3D12GraphicsCommandList* commandList, const unsigned int meshId)
 {
 	ID3D12DescriptorHeap* descriptorHeaps[] = { m_CBVSRVDescriptorHeap.Get(), m_samplersDescriptorHeap.Get() };
 	commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
@@ -242,7 +242,7 @@ void Scene::SetCamera(const Camera& camera)
 	m_frameConstantsBuffer->copyData(0, m_frameConstants);
 }
 
-void Scene::SetMeshConstants(unsigned int meshId, MeshConstants meshConstants)
+void Scene::SetMeshConstants(const unsigned int meshId, MeshConstants meshConstants)
 {
 	if (m_meshes.find(meshId) == m_meshes.end()) return;
 	XMStoreFloat4x4(&meshConstants.nodeTransformMtx, XMMatrixTranspose(XMLoadFloat4x4(&meshConstants.nodeTransformMtx)));	// Transpose the matrix due HLSL use a column-major memory layout by default
@@ -256,12 +256,12 @@ void Scene::SetMeshConstants(unsigned int meshId, MeshConstants meshConstants)
 	}
 }
 
-void Scene::SetRenderMode(int renderMode)
+void Scene::SetRenderMode(const int renderMode)
 {
 	m_frameConstants.renderMode = renderMode;
 }
 
-void Scene::SetLight(unsigned int lightId, Light light)
+void Scene::SetLight(const unsigned int lightId, Light light)
 {
 	if (m_lights.find(lightId) == m_lights.end()) return;
 	m_lights[lightId] = light;
@@ -275,10 +275,10 @@ void Scene::UpdateConstants(FrameConstants frameConstants)
 
 void Scene::Draw(ID3D12GraphicsCommandList* commandList)
 {
-	m_meshInstances.clear();
-	if (m_isInitialized)
-	{
-		SetupNode(m_sceneRoot.get(), DXUtil::IdentityMtx());
+	m_meshInstances.clear();												//Maybe refactor this out, and deal with it differently
+	if (m_isInitialized)													 
+	{																		
+		SetupNode(m_sceneRoot.get(), DXUtil::IdentityMtx());				//Setup may be refactored out of Draw method, conceptually
 		DrawNode(m_sceneRoot.get(), commandList, DXUtil::IdentityMtx());
 	}
 }
@@ -324,7 +324,7 @@ void Scene::DrawNode(SceneNode* node, ID3D12GraphicsCommandList* commandList, Di
 void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList) 
 {
 	int nextIdBuf = 0;
-	for (SubMesh subMesh : mesh.m_subMeshes)
+	for (auto& subMesh : mesh.m_subMeshes)
 	{
 		D3D12_VERTEX_BUFFER_VIEW vbView; // Vertices buffer view
 		if(subMesh.verticesBufferView.bufferId != -1) 

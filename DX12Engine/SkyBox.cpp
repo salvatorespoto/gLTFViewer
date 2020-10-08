@@ -73,12 +73,12 @@ void SkyBox::SetCubeMapTexture(Microsoft::WRL::ComPtr<ID3D12Resource> cubeMapTex
     m_device->CreateShaderResourceView(m_cubeMapTexture.Get(), &srvDesc, m_CBVSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
-ComPtr<ID3DBlob> SkyBox::GetVertexShader()
+ComPtr<ID3DBlob> SkyBox::GetVertexShader() const
 {
     return m_vertexShader;
 }
 
-ComPtr<ID3DBlob> SkyBox::GetPixelShader()
+ComPtr<ID3DBlob> SkyBox::GetPixelShader() const
 {
     return m_pixelShader;
 }

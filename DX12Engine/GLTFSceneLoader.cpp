@@ -16,7 +16,7 @@ GLTFSceneLoader::GLTFSceneLoader(Microsoft::WRL::ComPtr<ID3D12Device> device, Mi
 	m_commandQueue = commandQueue;
 }
 
-void GLTFSceneLoader::Load(std::string fileName)
+void GLTFSceneLoader::Load(const std::string& fileName)
 {
 	// Save the gltf file resources path
 	_tcscpy_s(m_gltfFilePath, CA2T(fileName.c_str()));		
@@ -112,7 +112,7 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 	GPUHeapUploader gpuHeapUploader(m_device.Get(), m_commandQueue.Get());
 	
 	int meshId = 0;
-	for (tinygltf::Mesh mesh : m_model.meshes)
+	for (tinygltf::Mesh& mesh : m_model.meshes)
 	{
 		Mesh m;
 		m.SetId(meshId++);
@@ -333,27 +333,25 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 			if (primitive.mode == TINYGLTF_MODE_TRIANGLE_STRIP) sm.topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
 			//if (primitive.mode == TINYGLTF_MODE_TRIANGLE_FAN) sm.topology = ; UNSUPPORTED
 
-			m.AddSubMesh(sm);
+			m.AddSubMesh(std::move(sm));
 		}
-		scene->AddMesh(m);
+		scene->AddMesh(std::move(m));
 	}
 }
 
 void GLTFSceneLoader::LoadLights(Scene* scene)
 {
 	int lightId = 0;
-	for (tinygltf::Light light : m_model.lights) 
+	for (tinygltf::Light& light : m_model.lights) 
 	{ 
 		// Load GLTF lights is unsupported 
 	}
 
-	// Default ambient light
-	Light light = { { 0.0f, 3.0f, 0.0f, 0.1f }, { 0.5f, 0.5f, 0.5f, 0.1f } };
-	scene->AddLight(0, light);
-
-	// Default point light
-	light = { { 0.0f, 3.0f, 0.0f, 0.1f }, { 0.5f, 0.5f, 0.5f, 0.1f } };
-	scene->AddLight(1, light);
+	// Default lights
+	Light ambient_light = { { 0.0f, 3.0f, 0.0f, 0.1f }, { 0.5f, 0.5f, 0.5f, 0.1f } };
+	scene->AddLight(0, std::move(ambient_light));
+	Light point_light = { { 0.0f, 3.0f, 0.0f, 0.1f }, { 0.5f, 0.5f, 0.5f, 0.1f } };
+	scene->AddLight(1, std::move(point_light));
 }
 
 void GLTFSceneLoader::LoadMaterials(Scene* scene)
@@ -367,7 +365,7 @@ void GLTFSceneLoader::LoadMaterials(Scene* scene)
 	}
 	else
 	{
-		for (tinygltf::Material material : m_model.materials)
+		for (tinygltf::Material& material : m_model.materials)
 		{
 			RoughMetallicMaterial rmMaterial;
 			rmMaterial.baseColorFactor =
@@ -389,7 +387,7 @@ void GLTFSceneLoader::LoadMaterials(Scene* scene)
 			rmMaterial.occlusionTA.texCoordId = material.occlusionTexture.texCoord;
 			rmMaterial.emissiveTA.textureId = material.emissiveTexture.index;
 			rmMaterial.emissiveTA.texCoordId = material.emissiveTexture.texCoord;
-			scene->AddMaterial(materialId++, rmMaterial);
+			scene->AddMaterial(materialId++, std::move(rmMaterial));
 		}
 	}
 }
@@ -397,7 +395,7 @@ void GLTFSceneLoader::LoadMaterials(Scene* scene)
 void GLTFSceneLoader::LoadTextures(Scene* scene)
 {
 	int textureId = 0;
-	for (tinygltf::Texture texture : m_model.textures)
+	for (tinygltf::Texture& texture : m_model.textures)
 	{
 		tinygltf::Image image = m_model.images[texture.source];
 		if (image.bufferView != -1)

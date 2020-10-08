@@ -7,7 +7,7 @@ ComPtr<ID3D12Resource> createDefaultHeapBuffer(
 	ID3D12Device* device,
 	ID3D12GraphicsCommandList* cmdList,
 	const void* initData,
-	UINT64 byteSize,
+	const UINT64 byteSize,
 	ComPtr<ID3D12Resource>& uploadBuffer)
 {
 	// Create the default heap buffer
@@ -64,7 +64,7 @@ GPUHeapUploader::GPUHeapUploader(ComPtr<ID3D12Device> device, ComPtr<ID3D12Comma
 	ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)), "Cannot create fence");
 }
 
-ComPtr<ID3D12Resource> GPUHeapUploader::Upload(const void* initData, UINT64 byteSize)
+ComPtr<ID3D12Resource> GPUHeapUploader::Upload(const void* initData, const UINT64 byteSize)
 {
 	ThrowIfFailed(m_commandListAlloc->Reset(), "Cannot reset allocator");
 	ThrowIfFailed(m_commandList->Reset(m_commandListAlloc.Get(), nullptr), "Cannot reset command list");

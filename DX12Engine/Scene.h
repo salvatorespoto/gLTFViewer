@@ -29,29 +29,29 @@ public:
 	Scene(Microsoft::WRL::ComPtr<ID3D12Device> device);
 	~Scene();
 
-	virtual void AddGPUBuffer(Microsoft::WRL::ComPtr<ID3D12Resource> buffer);
-	virtual Microsoft::WRL::ComPtr<ID3DBlob> GetVertexShader();
-	virtual Microsoft::WRL::ComPtr<ID3DBlob> GetPixelShader();
+	virtual void AddGPUBuffer(const Microsoft::WRL::ComPtr<ID3D12Resource>& buffer) override;
+	virtual Microsoft::WRL::ComPtr<ID3DBlob> GetVertexShader() const override;
+	virtual Microsoft::WRL::ComPtr<ID3DBlob> GetPixelShader() const override;
+	virtual Microsoft::WRL::ComPtr<ID3D12RootSignature> GetRootSignature() override;			//Should be const conceptually; see notes in .cpp
 	bool CompileVertexShader(const std::wstring& fileName, std::string& errorMsg);
 	bool CompileGeometryShader(const std::wstring& fileName, std::string& errorMsg);
 	bool CompilePixelShader(const std::wstring& fileName, std::string& errorMsg);
-	virtual Microsoft::WRL::ComPtr<ID3D12RootSignature> GetRootSignature();
-	void AddMaterial(unsigned int materialId, RoughMetallicMaterial material);
-	void AddTexture(unsigned int textureId, Microsoft::WRL::ComPtr<ID3D12Resource> texture);
-	void AddSampler(unsigned int samplerId, D3D12_SAMPLER_DESC samplerDesc);
-	void AddLight(unsigned int lightId, Light light);
-	void AddMesh(Mesh mesh);
+	void AddMaterial(const unsigned int materialId, const RoughMetallicMaterial&& material);
+	void AddTexture(const unsigned int textureId, Microsoft::WRL::ComPtr<ID3D12Resource> texture);
+	void AddSampler(const unsigned int samplerId, D3D12_SAMPLER_DESC samplerDesc);
+	void AddLight(const unsigned int lightId, const Light&& light);
+	void AddMesh(const Mesh&& mesh);
 	
 	void SetCamera(const Camera& camera);
-	void SetMeshConstants(unsigned int meshId, MeshConstants meshConstant);
-	void SetRenderMode(int renderMode);
-	void SetLight(unsigned int lightId, Light light);
+	void SetMeshConstants(const unsigned int meshId, MeshConstants meshConstant);
+	void SetRenderMode(const int renderMode);
+	void SetLight(const unsigned int lightId, Light light);
 	void SetCubeMapTexture(Microsoft::WRL::ComPtr<ID3D12Resource> cubeMapTexture);
 	
-	float GetSceneRadius();
+	float GetSceneRadius() const;
 
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> CreateRootSignature();
-	void Draw(ID3D12GraphicsCommandList* commandList);
+	void Draw(ID3D12GraphicsCommandList* commandList) override;									//Should be const conceptually; see notes in .cpp
 	void SetupNode(SceneNode* node, DirectX::XMFLOAT4X4 parentMtx);
 	void DrawNode(SceneNode* node, ID3D12GraphicsCommandList* commandList, DirectX::XMFLOAT4X4 parentMtx);
 	void DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList);
@@ -60,7 +60,7 @@ protected:
 	virtual void SetUpRootSignature(ID3D12GraphicsCommandList* commandList);
 
 	void AddFrameConstantsBuffer();
-	void SetRootSignature(ID3D12GraphicsCommandList* commandList, unsigned int meshId);
+	void SetRootSignature(ID3D12GraphicsCommandList* commandList, const unsigned int meshId);
 	void UpdateConstants(FrameConstants frameConstants);
 
 	const unsigned int MESH_CONSTANTS_N_DESCRIPTORS = 100;	// Mesh constants descriptors goes from 0 to 15 in the CBV_SRV_UAV descriptor heap (maximum 15 mesh)

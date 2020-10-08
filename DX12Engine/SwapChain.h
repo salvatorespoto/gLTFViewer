@@ -13,8 +13,8 @@ public:
     ~SwapChain() = default;
 
     void Create(Microsoft::WRL::ComPtr<ID3D12Device> device, DXGI_SWAP_CHAIN_DESC1 swapChainDesc, DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullScreenDesc, HWND hWnd, Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue);
-    void Resize(UINT width, UINT height);
-    void SetFullScreen(bool fullScreen);
+    void Resize(const UINT width, const UINT height);
+    void SetFullScreen(const bool fullScreen);
 
     ID3D12Resource* GetCurrentBackBuffer() const;
     D3D12_CPU_DESCRIPTOR_HANDLE GetCurrentBackBufferView() const;

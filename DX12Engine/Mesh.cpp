@@ -22,7 +22,7 @@ Mesh::Mesh()
 	constants.modelMtx = DXUtil::IdentityMtx();
 }
 
-void Mesh::SetId(unsigned int id)
+void Mesh::SetId(const unsigned int id)
 {
 	m_id = id;
 }
@@ -42,7 +42,7 @@ void Mesh::SetNodeMtx(const DirectX::XMFLOAT4X4& nodeMtx)
 	constants.nodeTransformMtx = nodeMtx;
 }
 
-void Mesh::AddSubMesh(const SubMesh& subMesh)
+void Mesh::AddSubMesh(const SubMesh&& subMesh)
 {
 	m_subMeshes.push_back(subMesh);
 }

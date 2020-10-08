@@ -38,11 +38,11 @@ public:
 	Mesh(const Mesh& mesh) = default;
 	Mesh& operator=(const Mesh& mesh) = default;
 	
-	void SetId(unsigned int id);
+	void SetId(const unsigned int id);
 	unsigned int GetId() const;
 	void SetModelMtx(const DirectX::XMFLOAT4X4& modelMtx);
 	void SetNodeMtx(const DirectX::XMFLOAT4X4& nodeMtx); // A model transformation defined as the default position of the mesh in the world
-	void AddSubMesh(const SubMesh& subMesh);
+	void AddSubMesh(const SubMesh&& subMesh);
 
 	friend void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList);
 	MeshConstants constants;

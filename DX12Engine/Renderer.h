@@ -35,11 +35,11 @@ public:
     Renderer operator=(const Renderer&) = delete;
     Renderer operator=(const Renderer&&) = delete;
 
-    void Init(HWND hWnd, unsigned int width, unsigned int height);
-    void SetSize(unsigned int width, unsigned int height);
-    void SetViewport(D3D12_VIEWPORT viewPort);
-    void SetScissorRect(D3D12_RECT scissorRect);
-    void SetFullScreen(bool fullScreen);
+    void Init(HWND hWnd, const unsigned int width, const unsigned int height);
+    void SetSize(const unsigned int width, const unsigned int height);
+    void SetViewport(const D3D12_VIEWPORT viewPort);
+    void SetScissorRect(const D3D12_RECT scissorRect);
+    void SetFullScreen(const bool fullScreen);
     HWND GetWindowHandle();
     Microsoft::WRL::ComPtr<ID3D12Device> GetDevice();
     Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> GetCommandList();
@@ -57,14 +57,14 @@ public:
     void EndDraw();
 
     std::vector<DXGI_MODE_DESC> GetDisplayModes();
-    bool CompileShaders(std::wstring fileName, std::string& errorMsg);
-    bool CompileVertexShader(std::wstring vsFileName, std::string& errorMsg);
-    bool CompileGeometryShader(std::wstring vsFileName, std::string& errorMsg);
-    bool CompilePixelShader(std::wstring vsFileName, std::string& errorMsg);
+    bool CompileShaders(const std::wstring& fileName, std::string& errorMsg);
+    bool CompileVertexShader(const std::wstring& vsFileName, std::string& errorMsg);
+    bool CompileGeometryShader(const std::wstring& vsFileName, std::string& errorMsg);
+    bool CompilePixelShader(const std::wstring& vsFileName, std::string& errorMsg);
 
     void CreatePipelineState(SkyBox* skyBox);
     void CreatePipelineState(Grid* grid);
-    void CreatePipelineState(Scene* scene, bool wireFrame);
+    void CreatePipelineState(Scene* scene, const bool wireFrame);
 
 private:
     void EnableDebugLayer();

@@ -4,7 +4,7 @@
 
 #include "using_directives.h"
 
-bool CompileShaders(std::wstring fileName, std::string& errorMsg, Microsoft::WRL::ComPtr<ID3DBlob>& vertexShader, Microsoft::WRL::ComPtr<ID3DBlob>& pixelShader)
+bool CompileShaders(const std::wstring fileName, std::string& errorMsg, Microsoft::WRL::ComPtr<ID3DBlob>& vertexShader, Microsoft::WRL::ComPtr<ID3DBlob>& pixelShader)
 {
 
 #if defined(_DEBUG)
@@ -32,7 +32,7 @@ bool CompileShaders(std::wstring fileName, std::string& errorMsg, Microsoft::WRL
         return true;
 }
 
-bool CompileVertexShader(std::wstring vsFileName, std::string& errorMsg, ComPtr<ID3DBlob>& vertexShader)
+bool CompileVertexShader(const std::wstring vsFileName, std::string& errorMsg, ComPtr<ID3DBlob>& vertexShader)
 {
 #if defined(_DEBUG)
     UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -62,12 +62,12 @@ bool CompileVertexShader(std::wstring vsFileName, std::string& errorMsg, ComPtr<
     return true;
 }
 
-bool CompileGeometryShader(std::wstring vsFileName, std::string& errorMsg, ComPtr<ID3DBlob>& geometryShader)
+bool CompileGeometryShader(const std::wstring vsFileName, std::string& errorMsg, ComPtr<ID3DBlob>& geometryShader)
 {
     return true;
 }
 
-bool CompilePixelShader(std::wstring psFileName, std::string& errorMsg, ComPtr<ID3DBlob>& pixelShader)
+bool CompilePixelShader(const std::wstring psFileName, std::string& errorMsg, ComPtr<ID3DBlob>& pixelShader)
 {
 #if defined(_DEBUG)
     UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;

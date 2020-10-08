@@ -6,11 +6,11 @@
 class DrawableAsset
 {
 public:
-	virtual void AddGPUBuffer(Microsoft::WRL::ComPtr<ID3D12Resource> buffer);
-	virtual Microsoft::WRL::ComPtr<ID3DBlob> GetVertexShader() = 0;
-	virtual Microsoft::WRL::ComPtr<ID3DBlob> GetPixelShader() = 0;
-	virtual	Microsoft::WRL::ComPtr<ID3D12RootSignature> GetRootSignature() = 0;
-	virtual void Draw(ID3D12GraphicsCommandList* commandList) = 0;
+	virtual void AddGPUBuffer(const Microsoft::WRL::ComPtr<ID3D12Resource>& buffer);
+	virtual Microsoft::WRL::ComPtr<ID3DBlob> GetVertexShader() const = 0;
+	virtual Microsoft::WRL::ComPtr<ID3DBlob> GetPixelShader() const = 0;
+	virtual	Microsoft::WRL::ComPtr<ID3D12RootSignature> GetRootSignature() = 0;		//Should be const conceptually
+	virtual void Draw(ID3D12GraphicsCommandList* commandList) = 0;					//Should be const conceptually
 
 protected:
 	virtual void SetUpRootSignature(ID3D12GraphicsCommandList* commandList) = 0;
