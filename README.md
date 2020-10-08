@@ -3,7 +3,7 @@
 
 The aim of this project is to realize a program that can load and render files written accorting to the [glTF](https://github.com/KhronosGroup/glTF/tree/master/specification/2.0) specification. The software is implemented in C++, DirectX 12 and HLSL.
 
-[glTF](https://github.com/KhronosGroup/glTF/tree/master/specification/2.0) is a specification from KhronosGroup that that describes a file format that is able to describe:
+[glTF](https://github.com/KhronosGroup/glTF/tree/master/specification/2.0) is a specification from KhronosGroup for a file format that is able to describe:
 * 3D geometry
 * materials, described according a [shading model](https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#implementation) defined in the gltf specification
 * animations
