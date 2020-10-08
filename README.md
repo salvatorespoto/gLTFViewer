@@ -22,6 +22,10 @@ glTF Viewer is an ongoing project actually under development.
 ### Unsuppoted (yet) features
 * Sparse accessors 
 * Animations 
+* Skinning
+* Morphing
+* Cameras
+* Interpolation
 
 ### Click on the image will show a short video of the application.
 
