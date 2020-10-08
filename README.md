@@ -1,5 +1,5 @@
 # glTF Viewer DX
-## A viewer of the glTF file format, implemented in DirectX 12 
+### A viewer of the glTF file format, implemented in DirectX 12 
 
 The aim of this project is to realize a program that can load and render files written accorting to the [glTF](https://github.com/KhronosGroup/glTF/tree/master/specification/2.0) specification. The software is implemented in C++, DirectX 12 and HLSL.
 
@@ -12,14 +12,14 @@ The viewer is also able to edit the vertex, geometry and fragment shaders on the
 
 This is an ongoing project actually under development. 
 
-## Current supported feature are:
+### Current supported feature are:
 
 * Scenes: scene, nodes hierarchy, node transformation
 * Meshes: geometry, all the attributes are supported (position, normal, tangent, textcoord_0, etc.), instantiation
 * Materials: textures, images, samples, additional maps (normal, occlusion, emission)
 * Shading model
 
-## Unsuppoted (yet) features
+### Unsuppoted (yet) features
 * Sparse accessors 
 * Animations 
 
