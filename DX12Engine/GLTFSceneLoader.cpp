@@ -34,7 +34,7 @@ void GLTFSceneLoader::Load(const std::string& fileName)
 		GetCurrentDirectory(MAX_PATH_SIZE, currentPath);
 		SetCurrentDirectory(m_gltfFilePath);	// Change director to the one that contains the glTF resources
 		ret = m_glTFLoader.LoadASCIIFromFile(&m_model, &err, &warn, fileName.c_str());
-		SetCurrentDirectory(currentPath);		// Ripristinate the previous working directory
+		SetCurrentDirectory(currentPath);		// Change back to the previous working directory
 	}
 
 	if (!warn.empty()) { DEBUG_LOG(warn.c_str()) }
@@ -58,6 +58,7 @@ bool GLTFSceneLoader::CheckMajorMinorVersion() const
 void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 {	
 	if (sceneId >= m_model.scenes.size()) { DXUtil::ThrowException("Scene index out of range"); }
+
 	scene = std::make_shared<Scene>(m_device);
 	GPUHeapUploader gpuHeapUploader(m_device.Get(), m_commandQueue.Get());
 
@@ -72,10 +73,10 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 	LoadMaterials(scene.get());
 	LoadTextures(scene.get());
 	LoadSamplers(scene.get());
-
-	// Ripristinate the previous working directory
-	SetCurrentDirectory(currentPath);
 	scene->m_isInitialized = true;
+	
+	// Change back to the previous working directory
+	SetCurrentDirectory(currentPath);
 }
 
 void GLTFSceneLoader::ParseSceneGraph(const int sceneId, Scene* scene)
@@ -159,7 +160,6 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 				DirectX::XMFLOAT3* vp = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + positionsBV.byteOffset);
 				for (int i = 0; i < sm.verticesBufferView.count; i++, vp++) 
 				{ 
-					vp->z *= -1;	// Flip the z-coordinate becouse we are converting from right handed to left handed
 					// Compute the radius of the scene
 					if (abs(vp->x) > scene->m_sceneRadius.x) scene->m_sceneRadius.x = abs(vp->x);
 					if (abs(vp->y) > scene->m_sceneRadius.y) scene->m_sceneRadius.y = abs(vp->y);
@@ -195,11 +195,6 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 				sm.normalsBufferView.count = normalAccessor.count;
 				sm.normalsBufferView.elemType = BUFFER_ELEM_VEC3;
 				sm.normalsBufferView.componentType = BUFFER_ELEM_TYPE_FLOAT;
-
-				DirectX::XMFLOAT3* normals = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + normalsBV.byteOffset);
-				// Flip the z-coordinate becouse we are converting from right handed to left handed
-				DirectX::XMFLOAT3* np = (DirectX::XMFLOAT3*)(m_model.buffers[0].data.data() + normalsBV.byteOffset);
-				for (int i = 0; i < sm.normalsBufferView.count; i++, np++) { np->z *= -1; }
 			}
 
 			if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
@@ -247,15 +242,6 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 				{
 					sm.indicesBufferView.componentType = BUFFER_ELEM_TYPE_UNSIGNED_CHAR;
 					uint8_t* indexes = (uint8_t*)(m_model.buffers[0].data.data() + indicesBV.byteOffset);
-					
-					// Switch first and third vertex in a triangle to handle the right handed to left handed coordinate change
-					size_t indexesCount = m_model.accessors[primitive.indices].count;
-					for (int i = 0; i < indexesCount; i += 3)
-					{
-						int tmp = indexes[i];
-						indexes[i] = indexes[i + 2];
-						indexes[i + 2] = tmp;
-					}
 				}
 
 				if (indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
@@ -296,12 +282,6 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 				sm.tangentsBufferView.byteLength = tangentsBV.byteLength;
 				sm.tangentsBufferView.byteStride = tangentsBV.byteStride;
 				sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["TANGENT"]].count;
-
-				DirectX::XMFLOAT4* tp = (DirectX::XMFLOAT4*)(m_model.buffers[0].data.data() + tangentsBV.byteOffset);
-				for (int i = 0; i < sm.tangentsBufferView.count; i++, tp++)
-				{
-					tp->z *= -1;
-				}
 			}
 
 			// Load all buffers to the GPU

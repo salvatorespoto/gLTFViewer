@@ -1,5 +1,7 @@
 #include "Camera.h"
 
+#include <DirectXMath.h>
+
 using DirectX::XMFLOAT3;
 using DirectX::XMFLOAT4X4;
 using DirectX::XMVECTOR;
@@ -11,9 +13,9 @@ Camera::Camera(const UINT32 width, const UINT32 height, const float fovY, const 
 	m_position = { 0.0f, 0.0f, 0.0f };
 	
 	// The camera reference basis in world coordinate
-	m_right = { 1.0f, 0.0f, 0.0f };	
+	m_right = { -1.0f, 0.0f, 0.0f };	
 	m_up = { 0.0f, 1.0f, 0.0f };		
-	m_forward = { 0.0f, 0.0f, 1.0f };
+	m_forward = { 0.0f, 0.0f, -1.0f };
 	
 	m_aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
 	setLens(fovY, m_aspectRatio, nearZ, farZ);
@@ -37,7 +39,7 @@ void Camera::setLens(const float fovY, const float aspectRatio, const float near
 	m_farPlaneWindowHeight = 2.0f * m_farZ * tanf(0.5f * m_fovY);
 
 	// Generate the World -> View transform matrix
-	XMMATRIX projMtx = DirectX::XMMatrixPerspectiveFovLH(m_fovY, m_aspectRatio, m_nearZ, m_farZ);
+	XMMATRIX projMtx = DirectX::XMMatrixPerspectiveFovRH(m_fovY, m_aspectRatio, m_nearZ, m_farZ);
 	XMStoreFloat4x4(&m_projMtx, projMtx);
 }
 
@@ -56,7 +58,7 @@ void Camera::moveForward(const float distance)
 {
 	XMVECTOR forward = XMLoadFloat3(&m_forward);
 	XMVECTOR position = XMLoadFloat3(&m_position);
-	XMStoreFloat3(&m_position, DirectX::XMVectorAdd(DirectX::XMVectorScale(forward, distance), position));
+	XMStoreFloat3(&m_position, DirectX::XMVectorAdd(DirectX::XMVectorScale(forward, -1.0f * distance), position));
 	m_dirty = true;
 }
 
@@ -87,8 +89,8 @@ void Camera::lookAt(const XMFLOAT3& position, const XMFLOAT3& target, const XMFL
 }
 
 void Camera::lookAt(const XMVECTOR& position, const XMVECTOR& target, const XMVECTOR& worldUp)
-{
-	XMVECTOR forward = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(target, position));
+{	
+	XMVECTOR forward = DirectX::XMVector3Normalize(DirectX::XMVectorSubtract(position, target));
 	XMVECTOR right = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(worldUp, forward));
 	XMVECTOR up = DirectX::XMVector3Cross(forward, right);
 

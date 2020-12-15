@@ -276,7 +276,7 @@ void ViewerApp::OnMouseMove(const WPARAM btnState, const int x, const int y)
         // Rotate camera
         float rotWorldUp= m_mouseSensitivity * XMConvertToRadians(static_cast<float>(x - m_lastMousePosX));
         float  pitch = m_mouseSensitivity* XMConvertToRadians(static_cast<float>(y - m_lastMousePosY));
-        m_camera->rotate(pitch, rotWorldUp);
+        m_camera->rotate(-pitch, -rotWorldUp);
     }
 
     if (btnState == MK_RBUTTON)
@@ -388,8 +388,7 @@ void ViewerApp::OnUpdate()
         m_gltfLoader->Load(m_appState.gltfFileLoaded);
         m_gltfLoader->GetScene(0, m_scene);
         m_scene->SetCubeMapTexture(m_cubeMapTexture);
-        m_camera->setPosition({ -m_scene->GetSceneRadius() * 1.5f , -m_scene->GetSceneRadius() * 1.5f , -m_scene->GetSceneRadius() * 1.5f });
-        m_camera->lookAt(XMFLOAT3( m_scene->GetSceneRadius() * 1.5f , m_scene->GetSceneRadius() * 1.5f , -m_scene->GetSceneRadius() * 1.5f ), { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
+        m_camera->lookAt(XMFLOAT3( m_scene->GetSceneRadius() * 1.5f , m_scene->GetSceneRadius() * 1.5f , m_scene->GetSceneRadius() * 1.5f ), { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
         m_cameraStep = m_scene->GetSceneRadius() / 10.0f;
         m_appState.isOpenGLTFPressed = false;
     }

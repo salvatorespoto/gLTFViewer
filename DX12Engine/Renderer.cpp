@@ -429,7 +429,7 @@ void Renderer::CreatePipelineState(Scene* scene, const bool wireFrame)
     psoDesc.VS = { reinterpret_cast<UINT8*>(scene->GetVertexShader()->GetBufferPointer()), scene->GetVertexShader()->GetBufferSize() };
     psoDesc.PS = { reinterpret_cast<UINT8*>(scene->GetPixelShader()->GetBufferPointer()), scene->GetPixelShader()->GetBufferSize() };
     psoDesc.RasterizerState.FillMode = (wireFrame) ? D3D12_FILL_MODE_WIREFRAME : D3D12_FILL_MODE_SOLID;
-    psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+    psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
     psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
     psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
     psoDesc.SampleMask = UINT_MAX;
