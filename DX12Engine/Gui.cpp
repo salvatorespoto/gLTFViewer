@@ -20,6 +20,9 @@ void Gui::Init(std::shared_ptr<Renderer> renderer, AppState* appState)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     
+    m_fileDialog.SetTitle("title");
+    m_fileDialog.SetTypeFilters({ ".glb", ".gltf" });
+
     SetStyle();
 
     D3D12_DESCRIPTOR_HEAP_DESC dhDesc = {};
@@ -298,8 +301,6 @@ void Gui::DrawBarFileMenu()
 {
     if (ImGui::BeginMenu("File"))
     {
-        m_fileDialog.SetTitle("title");
-        m_fileDialog.SetTypeFilters({ ".glb", ".gltf" });
         if (ImGui::Button("Open glTF ...")) { m_fileDialog.Open(); }
         m_fileDialog.Display();
 
