@@ -40,6 +40,19 @@ void GLTFSceneLoader::Load(const std::string& fileName)
 	if (!warn.empty()) { DEBUG_LOG(warn.c_str()) }
 	if (!err.empty()) { DXUtil::ThrowException(err); }
 	if (!ret) { DXUtil::ThrowException("Failed to load glTF file"); }
+	if (!CheckMajorMinorVersion()) { DXUtil::ThrowException("Failed to load glTF file: version not supported"); }
+}
+
+bool GLTFSceneLoader::CheckMajorMinorVersion() const
+{
+	const int version = std::stoi(m_model.asset.version);
+	const int minVersion = (m_model.asset.minVersion.empty()) ? 0 : std::stoi(m_model.asset.version);
+	
+	if((MAJOR_VERSION_SUPPORTED <  version) || (MAJOR_VERSION_SUPPORTED == version) && MINOR_VERSION_SUPPORTED <= minVersion)
+    {
+		return true;
+    }
+	return false;
 }
 
 void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "DXUtil.h"
 
 class Scene;
@@ -25,6 +27,10 @@ public:
 	void GetScene(const int sceneId, std::shared_ptr<Scene>& scene);
 
 protected:
+	
+	/** Check that the major minor version of the loaded mesh is superior to the supported one */ 
+	bool CheckMajorMinorVersion() const;
+	
 	std::unique_ptr<SceneNode> ParseSceneNode(const int nodeId);
 	void ParseSceneGraph(const int sceneId, Scene* scene);
 	void LoadMeshes(Scene* scene);
@@ -43,4 +49,10 @@ protected:
 		
 	Microsoft::WRL::ComPtr<ID3D12Device> m_device; 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> m_commandQueue;
+
+	/** Major version supported */
+	const int MAJOR_VERSION_SUPPORTED = 2;
+
+	/** Minor version supported */
+	const int MINOR_VERSION_SUPPORTED = 0;
 };
