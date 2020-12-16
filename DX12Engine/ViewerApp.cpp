@@ -317,26 +317,14 @@ void ViewerApp::UpdateScene()
     // Update lights
     for (auto light : m_appState.lights) { m_scene->SetLight(light.first, light.second); }
 
-    // Update mesh constants
+    // Set the root (whole scene) transform
     float rotX = m_appState.modelConstants[0].rotXYZ.x;
     float rotY = m_appState.modelConstants[0].rotXYZ.y;
     float rotZ = m_appState.modelConstants[0].rotXYZ.z;
-    XMMATRIX meshRotation = XMMatrixMultiply(XMMatrixMultiply(XMMatrixRotationAxis({ 1.0f, 0.0f, 0.0f }, rotX), XMMatrixRotationAxis({ 0.0f, 1.0f, 0.0f }, rotY)), XMMatrixRotationAxis({ 0.0f, 0.0f, 1.0f }, rotZ));
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[0].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[1].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[2].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[3].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[4].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[5].modelMtx, meshRotation);
-    
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[0].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[1].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[2].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[3].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[4].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[5].nodeTransformMtx, meshRotation);
-
-    for (auto meshConstants : m_appState.modelConstants) { m_scene->SetMeshConstants(meshConstants.first, meshConstants.second); }
+    XMFLOAT4X4 rootTransform;
+    const XMMATRIX meshRotation = XMMatrixMultiply(XMMatrixMultiply(XMMatrixRotationAxis({ 1.0f, 0.0f, 0.0f }, rotX), XMMatrixRotationAxis({ 0.0f, 1.0f, 0.0f }, rotY)), XMMatrixRotationAxis({ 0.0f, 0.0f, 1.0f }, rotZ));
+    DirectX::XMStoreFloat4x4(&rootTransform, meshRotation);
+    m_scene->SetRootTransform(rootTransform);
     m_scene->SetRenderMode(m_appState.currentRenderModeMask);
     
     // Update SkyBox

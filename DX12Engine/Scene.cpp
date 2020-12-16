@@ -256,6 +256,11 @@ void Scene::SetMeshConstants(const unsigned int meshId, MeshConstants meshConsta
 	}
 }
 
+void Scene::SetRootTransform(DirectX::XMFLOAT4X4 sceneTransform)
+{
+	m_sceneTransform = sceneTransform;
+}
+
 void Scene::SetRenderMode(const int renderMode)
 {
 	m_frameConstants.renderMode = renderMode;
@@ -277,9 +282,14 @@ void Scene::Draw(ID3D12GraphicsCommandList* commandList)
 {
 	m_meshInstances.clear();												//Maybe refactor this out, and deal with it differently
 	if (m_isInitialized)													 
-	{																		
-		SetupNode(m_sceneRoot.get(), DXUtil::IdentityMtx());				//Setup may be refactored out of Draw method, conceptually
-		DrawNode(m_sceneRoot.get(), commandList, DXUtil::IdentityMtx());
+	{
+		// glTF is a disjoint union of strict trees
+		for(std::shared_ptr<SceneNode> node : m_sceneTree)
+		{
+			// Apply the whole scene (root) transformation m_sceneTransform  
+			SetupNode(node.get(), m_sceneTransform); 						//Setup may be refactored out of Draw method, conceptually
+			DrawNode(node.get(), commandList, m_sceneTransform);
+		}
 	}
 }
 

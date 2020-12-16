@@ -44,6 +44,10 @@ public:
 	
 	void SetCamera(const Camera& camera);
 	void SetMeshConstants(const unsigned int meshId, MeshConstants meshConstant);
+
+	/** Set the root transformation for this scene, used to rotate/translate the whole scene (model) */
+	void SetRootTransform(DirectX::XMFLOAT4X4 sceneTransform);
+	
 	void SetRenderMode(const int renderMode);
 	void SetLight(const unsigned int lightId, Light light);
 	void SetCubeMapTexture(Microsoft::WRL::ComPtr<ID3D12Resource> cubeMapTexture);
@@ -89,10 +93,21 @@ protected:
 	std::map<unsigned int, std::unique_ptr<UploadBuffer<Light>>> m_lightsConstantsBuffer;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignature;
 
-	std::unique_ptr<SceneNode> m_sceneRoot;
-	DirectX::XMFLOAT3 m_sceneRadius;	// The radius of the scene, used to position the camera initially
+	/** The root transform for this scene, used to rotate/transform the whole scene (model)*/
+	DirectX::XMFLOAT4X4 m_sceneTransform;
+
+	/** The scene tree, glTF scene is a is disjoint union of strict trees */
+	std::vector<std::shared_ptr<SceneNode>> m_sceneTree;
+
+	/** The radius of the whole scene */
+	DirectX::XMFLOAT3 m_sceneRadius;
+
+	/** True after initialization */
 	bool m_isInitialized = false;
 
+	
 private:
+
+	/** Scene loader helper object */
 	friend class GLTFSceneLoader;
 };

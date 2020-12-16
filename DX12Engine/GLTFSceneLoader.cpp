@@ -81,10 +81,7 @@ void GLTFSceneLoader::GetScene(const int sceneId, std::shared_ptr<Scene>& scene)
 
 void GLTFSceneLoader::ParseSceneGraph(const int sceneId, Scene* scene)
 {
-	scene->m_sceneRoot = std::make_unique<SceneNode>();
-	scene->m_sceneRoot->meshId = -1;
-	scene->m_sceneRoot->transformMtx = DXUtil::IdentityMtx();
-	for (int childId : m_model.scenes[sceneId].nodes) { scene->m_sceneRoot->children.push_back(ParseSceneNode(childId)); }
+	for (int childId : m_model.scenes[sceneId].nodes) { scene->m_sceneTree.push_back(ParseSceneNode(childId)); }
 };
 
 std::unique_ptr<SceneNode> GLTFSceneLoader::ParseSceneNode(const int nodeId)
@@ -101,12 +98,14 @@ std::unique_ptr<SceneNode> GLTFSceneLoader::ParseSceneNode(const int nodeId)
 	std::vector<double> t = currentNode.translation;
 	std::vector<double> r = currentNode.rotation;
 	std::vector<double> s = currentNode.scale;
-	
+
+	// Compute the composed transform: Scale, then Rotate, than Translate
 	if (!t.empty()) { T = XMMatrixTranslation(static_cast<float>(t[0]), static_cast<float>(t[1]), static_cast<float>(t[2])); }
 	if (!r.empty()) { R = XMMatrixRotationQuaternion(XMLoadFloat4(&XMFLOAT4(static_cast<float>(r[0]), static_cast<float>(r[1]), static_cast<float>(r[2]), static_cast<float>(r[3])))); }
 	if (!s.empty()) { S = XMMatrixScaling(static_cast<float>(s[0]), static_cast<float>(s[1]), static_cast<float>(s[2])); }
 	M = XMMatrixMultiply(S, XMMatrixMultiply(R, T));
-	
+
+	// Check if the transform is already specified with one matrix
 	if (!currentNode.matrix.empty())
 	{
 		DirectX::XMFLOAT4X4 m;
