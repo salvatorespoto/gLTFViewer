@@ -70,6 +70,14 @@ void Camera::strafe(const float distance)
 	m_dirty = true;
 }
 
+void Camera::lift(const float distance)
+{
+	XMVECTOR up = XMLoadFloat3(&m_up);
+	XMVECTOR position = XMLoadFloat3(&m_position);
+	XMStoreFloat3(&m_position, DirectX::XMVectorAdd(DirectX::XMVectorScale(up, distance), position));
+	m_dirty = true;
+}
+	
 void Camera::rotate(const float pitch, const float worldUpAngle)
 {
 	XMMATRIX pitchRotMtx = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&m_right), pitch);

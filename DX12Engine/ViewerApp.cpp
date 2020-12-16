@@ -304,6 +304,8 @@ void ViewerApp::OnKeyDown(const WPARAM wParam)
     if (wParam == VK_KEY_S) m_camera->moveForward(-m_cameraStep);
     if (wParam == VK_KEY_A) m_camera->strafe(-m_cameraStep);
     if (wParam == VK_KEY_D) m_camera->strafe(m_cameraStep);
+    if (wParam == VK_KEY_Q) m_camera->lift(-m_cameraStep);
+    if (wParam == VK_KEY_E) m_camera->lift(m_cameraStep);
 }
 
 void ViewerApp::UpdateScene()

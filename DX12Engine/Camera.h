@@ -31,9 +31,12 @@ public:
 	/** Move the camera in the forward direction */
 	void moveForward(const float distance);
 	
-	/** Strafe: move the camera in the camera right direction */
+	/** Strafe: move the camera in the camera right/left directions */
 	void strafe(const float distance);
-	
+
+	/** Lift: move the camera in the camera up/down directions */
+	void lift(float distance);
+
 	/** Rotate the camera around the right camera vector (pitch) or the world up axis. Angles are in radians */
 	void rotate(const float pitch, const float worldUpAngle);
 
