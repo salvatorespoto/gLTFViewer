@@ -18,7 +18,7 @@ class SkyBox;
 /* A SceneNode is a node in the scene graph */
 struct SceneNode 
 {
-	int meshId;													// Id of the scene mesh associated with this node, -1 for no mesh
+	int meshId = -1;											// Id of the scene mesh associated with this node, -1 for no mesh
 	std::vector<std::unique_ptr<SceneNode>> children;			// Children of this node
 	DirectX::XMFLOAT4X4 transformMtx = DXUtil::IdentityMtx();	// Node tranformation relative to its parent
 };

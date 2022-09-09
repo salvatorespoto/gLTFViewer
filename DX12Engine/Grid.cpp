@@ -108,12 +108,12 @@ void Grid::Draw(ID3D12GraphicsCommandList* commandList)
     D3D12_VERTEX_BUFFER_VIEW vbView; // Vertices buffer view
     vbView.BufferLocation = m_buffersGPU[m_verticesBufferView.bufferId]->GetGPUVirtualAddress() + m_verticesBufferView.byteOffset;
     vbView.StrideInBytes = sizeof(DirectX::XMFLOAT3);
-    vbView.SizeInBytes = m_verticesBufferView.byteLength;
+    vbView.SizeInBytes = static_cast<UINT>(m_verticesBufferView.byteLength);
 
     D3D12_VERTEX_BUFFER_VIEW vertexBuffers[1] = { vbView };
     commandList->IASetVertexBuffers(0, 1, vertexBuffers);
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
-    commandList->DrawInstanced(m_verticesBufferView.count, 1, 0, 0);
+    commandList->DrawInstanced(static_cast<UINT>(m_verticesBufferView.count), 1, 0, 0);
 }
 
 void Grid::GenerateGrid(const float halfSide)

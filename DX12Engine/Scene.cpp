@@ -334,13 +334,13 @@ void Scene::DrawNode(SceneNode* node, ID3D12GraphicsCommandList* commandList, Di
 void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList) 
 {
 	int nextIdBuf = 0;
-	for (auto& subMesh : mesh.m_subMeshes)
+	for (const SubMesh& subMesh : mesh.m_subMeshes)
 	{
 		D3D12_VERTEX_BUFFER_VIEW vbView; // Vertices buffer view
 		if(subMesh.verticesBufferView.bufferId != -1) 
 		{
 			vbView.BufferLocation = m_buffersGPU[subMesh.verticesBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.verticesBufferView.byteOffset;
-			vbView.StrideInBytes = (subMesh.verticesBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT3) : subMesh.verticesBufferView.byteStride;
+			vbView.StrideInBytes = static_cast<UINT>((subMesh.verticesBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT3) : subMesh.verticesBufferView.byteStride);
 			vbView.SizeInBytes = static_cast<UINT>(subMesh.verticesBufferView.byteLength);
 			commandList->IASetVertexBuffers(nextIdBuf++, 1, &vbView);
 		}
@@ -349,7 +349,7 @@ void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList)
 		if (subMesh.normalsBufferView.bufferId != -1)
 		{
 			nbView.BufferLocation = m_buffersGPU[subMesh.normalsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.normalsBufferView.byteOffset;
-			nbView.StrideInBytes = (subMesh.normalsBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT3) : subMesh.normalsBufferView.byteStride;
+			nbView.StrideInBytes = static_cast<UINT>((subMesh.normalsBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT3) : subMesh.normalsBufferView.byteStride);
 			nbView.SizeInBytes = static_cast<UINT>(subMesh.normalsBufferView.byteLength);
 			commandList->IASetVertexBuffers(nextIdBuf++, 1, &nbView);
 		}
@@ -359,7 +359,7 @@ void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList)
 		if (subMesh.tangentsBufferView.bufferId != -1)
 		{
 			tbView.BufferLocation = m_buffersGPU[subMesh.tangentsBufferView.bufferId]->GetGPUVirtualAddress() + subMesh.tangentsBufferView.byteOffset;
-			tbView.StrideInBytes = (subMesh.tangentsBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT4) : subMesh.tangentsBufferView.byteStride;
+			tbView.StrideInBytes = static_cast<UINT>((subMesh.tangentsBufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT4) : subMesh.tangentsBufferView.byteStride);
 			tbView.SizeInBytes = static_cast<UINT>(subMesh.tangentsBufferView.byteLength);
 			commandList->IASetVertexBuffers(nextIdBuf++, 1, &tbView);
 		}
@@ -369,7 +369,7 @@ void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList)
 		if (subMesh.texCoord0BufferView.bufferId != -1)
 		{
 			tc0bView.BufferLocation = m_buffersGPU[subMesh.texCoord0BufferView.bufferId]->GetGPUVirtualAddress() + subMesh.texCoord0BufferView.byteOffset;
-			tc0bView.StrideInBytes = (subMesh.texCoord0BufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT2) : subMesh.texCoord0BufferView.byteStride;
+			tc0bView.StrideInBytes = static_cast<UINT>((subMesh.texCoord0BufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT2) : subMesh.texCoord0BufferView.byteStride);
 			tc0bView.SizeInBytes = static_cast<UINT>(subMesh.texCoord0BufferView.byteLength);
 			commandList->IASetVertexBuffers(nextIdBuf++, 1, &tc0bView);
 		}
@@ -379,7 +379,7 @@ void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList)
 		if (subMesh.texCoord1BufferView.bufferId != -1)
 		{
 			tc1bView.BufferLocation = m_buffersGPU[subMesh.texCoord1BufferView.bufferId]->GetGPUVirtualAddress() + subMesh.texCoord0BufferView.byteOffset;
-			tc1bView.StrideInBytes = (subMesh.texCoord1BufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT2) : subMesh.texCoord1BufferView.byteStride;
+			tc1bView.StrideInBytes = static_cast<UINT>((subMesh.texCoord1BufferView.byteStride == 0) ? sizeof(DirectX::XMFLOAT2) : subMesh.texCoord1BufferView.byteStride);
 			tc1bView.SizeInBytes = static_cast<UINT>(subMesh.texCoord0BufferView.byteLength);
 			commandList->IASetVertexBuffers(nextIdBuf++, 1, &tc1bView);
 		}
@@ -395,12 +395,12 @@ void Scene::DrawMesh(const Mesh& mesh, ID3D12GraphicsCommandList* commandList)
 			D3D12_INDEX_BUFFER_VIEW indexBuffers[1] = { ibView };
 
 			commandList->IASetIndexBuffer(indexBuffers);
-			commandList->DrawIndexedInstanced(subMesh.indicesBufferView.count, m_meshInstances[mesh.GetId()].size(), 0, 0, 0);
+			commandList->DrawIndexedInstanced(static_cast<UINT>(subMesh.indicesBufferView.count), static_cast<UINT>(m_meshInstances[mesh.GetId()].size()), 0, 0, 0);
 		}
 		else
 		{
 			// No indices, it's a vertices list
-			commandList->DrawInstanced(subMesh.verticesBufferView.count, m_meshInstances[mesh.GetId()].size(), 0, 0);
+			commandList->DrawInstanced(static_cast<UINT>(subMesh.verticesBufferView.count), static_cast<UINT>(m_meshInstances[mesh.GetId()].size()), 0, 0);
 		}
 	}
 }

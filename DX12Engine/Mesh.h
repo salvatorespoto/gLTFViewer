@@ -18,8 +18,8 @@ struct SubMesh
 	BufferView texCoord0BufferView;
 	BufferView texCoord1BufferView;
 	BufferView indicesBufferView;
-	unsigned int materialId;
-	D3D_PRIMITIVE_TOPOLOGY topology;
+	unsigned int materialId = 0;
+	D3D_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 };
 
 /** MeshConstants contains all mesh constants used from shaders */
