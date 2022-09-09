@@ -212,7 +212,7 @@ void Gui::DrawControls()
         if (ImGui::BeginCombo("##combo_display_modes", combo_label.c_str(), 0))
         {
             std::string previousModeDescription = ""; // Used to show modes with the same resolution only once
-            for (DXGI_MODE_DESC mode : displayModes)
+            for (const DXGI_MODE_DESC& mode : displayModes)
             {
                 std::string modeDescription = std::to_string(mode.Width) + "x" + std::to_string(mode.Height);
                 if (modeDescription.compare(previousModeDescription) == 0) continue;
@@ -269,7 +269,7 @@ void Gui::DrawControls()
     if (allItemOpen) ImGui::SetNextItemOpen(true);
     if (ImGui::CollapsingHeader("Ambient light"))
     {
-        DrawColorPicker(m_appState->lights[0].color, ImGui::GetWindowWidth(), "##ambientlight");
+        DrawColorPicker(m_appState->lights[0].color, static_cast<int>(ImGui::GetWindowWidth()), "##ambientlight");
         ImGui::Separator();
     }
 
@@ -460,7 +460,7 @@ void Gui::DrawColorPicker(DirectX::XMFLOAT4& color, int width, std::string id)
     ImVec4 backup_color;
 
     ImGuiColorEditFlags misc_flags = ImGuiColorEditFlags__OptionsDefault;
-    bool open_popup = ImGui::ColorButton(id.append("Color##3c").c_str(), *(ImVec4*)&color, misc_flags | (1 ? ImGuiColorEditFlags_NoBorder : 0), ImVec2(width, 80));
+    bool open_popup = ImGui::ColorButton(id.append("Color##3c").c_str(), *(ImVec4*)&color, misc_flags | (1 ? ImGuiColorEditFlags_NoBorder : 0), ImVec2(static_cast<float>(width), 80));
     
     ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
     

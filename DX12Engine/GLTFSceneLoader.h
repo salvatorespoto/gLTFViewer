@@ -3,7 +3,7 @@
 #include "DXUtil.h"
 
 class Scene;
-class SceneNode;
+struct SceneNode;
 
 /** Load a Scene from a glTF file */
 class GLTFSceneLoader

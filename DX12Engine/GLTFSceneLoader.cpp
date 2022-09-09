@@ -300,7 +300,7 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 			// Compute normals if they are not specified into the file
 			if (primitive.attributes.find("NORMAL") == primitive.attributes.end())
 			{
-				sm.normalsBufferView.bufferId = m_model.buffers.size(); // A new GPU buffer will be created for normals
+				sm.normalsBufferView.bufferId = static_cast<UINT>(m_model.buffers.size()); // A new GPU buffer will be created for normals
 				sm.normalsBufferView.byteOffset = 0;
 				sm.normalsBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;	// As many normals as vertices
 				sm.normalsBufferView.byteLength = sm.normalsBufferView.count * sizeof(DirectX::XMFLOAT3);
@@ -314,7 +314,7 @@ void GLTFSceneLoader::LoadMeshes(Scene* scene)
 				// Tangents computing is only supported for primitives that define texture coords, normals and indices
 				if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end() && primitive.attributes.find("NORMAL") != primitive.attributes.end() && primitive.indices != -1)
 				{
-					sm.tangentsBufferView.bufferId = m_model.buffers.size(); // A new GPU buffer will be created for tangents
+					sm.tangentsBufferView.bufferId = static_cast<UINT>(m_model.buffers.size()); // A new GPU buffer will be created for tangents
 					sm.tangentsBufferView.byteOffset = 0;
 					sm.tangentsBufferView.count = m_model.accessors[primitive.attributes["POSITION"]].count;	// As many tangents as vertices
 					sm.tangentsBufferView.byteLength = sm.tangentsBufferView.count * sizeof(DirectX::XMFLOAT4);
@@ -479,7 +479,8 @@ void GLTFSceneLoader::ComputeNormals(tinygltf::Primitive primitive, Scene* scene
 	std::unique_ptr<DirectX::XMFLOAT3[]> normals(new DirectX::XMFLOAT3[verticesCount]);
 	ZeroMemory(normals.get(), verticesCount * sizeof(DirectX::XMFLOAT3));
 
-	int* idxAvgSize = new int[verticesCount];
+	int* idxAvgSize = new int[verticesCount]();
+	std::fill_n(idxAvgSize, verticesCount, 0);
 	for (size_t i = 0; i < indexesCount; i += 3)
 	{
 		long i1 = indexes[i];

@@ -148,12 +148,12 @@ void SkyBox::Draw(ID3D12GraphicsCommandList* commandList)
     D3D12_VERTEX_BUFFER_VIEW vbView; // Vertices buffer view
     vbView.BufferLocation = m_buffersGPU[m_verticesBufferView.bufferId]->GetGPUVirtualAddress() + m_verticesBufferView.byteOffset;
     vbView.StrideInBytes = sizeof(DirectX::XMFLOAT3);
-    vbView.SizeInBytes = m_verticesBufferView.byteLength;
+    vbView.SizeInBytes = static_cast<UINT>(m_verticesBufferView.byteLength);
 
     D3D12_VERTEX_BUFFER_VIEW nbView; // Normals buffer view
     nbView.BufferLocation = m_buffersGPU[m_normalsBufferView.bufferId]->GetGPUVirtualAddress() + m_normalsBufferView.byteOffset;
     nbView.StrideInBytes = sizeof(DirectX::XMFLOAT3);
-    nbView.SizeInBytes = m_normalsBufferView.byteLength;
+    nbView.SizeInBytes = static_cast<UINT>(m_normalsBufferView.byteLength);
 
     D3D12_VERTEX_BUFFER_VIEW vertexBuffers[2] = { vbView, nbView };
     commandList->IASetVertexBuffers(0, 2, vertexBuffers);
@@ -162,12 +162,12 @@ void SkyBox::Draw(ID3D12GraphicsCommandList* commandList)
     D3D12_INDEX_BUFFER_VIEW ibView; // Index buffer view
     ibView.BufferLocation = m_buffersGPU[m_indicesBufferView.bufferId]->GetGPUVirtualAddress() + m_indicesBufferView.byteOffset;
     ibView.Format = DXGI_FORMAT_R16_UINT;
-    ibView.SizeInBytes = m_indicesBufferView.byteLength;
+    ibView.SizeInBytes = static_cast<UINT>(m_indicesBufferView.byteLength);
 
     D3D12_INDEX_BUFFER_VIEW indexBuffers[1] = { ibView };
     commandList->IASetIndexBuffer(indexBuffers);
 
-    commandList->DrawIndexedInstanced(m_indicesBufferView.count, 1, 0, 0, 0);
+    commandList->DrawIndexedInstanced(static_cast<UINT>(m_indicesBufferView.count), 1, 0, 0, 0);
 }
 
 void SkyBox::GenerateSphere()
