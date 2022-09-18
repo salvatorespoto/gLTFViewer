@@ -20,6 +20,7 @@ glTF Viewer is an ongoing project actually under development. Check out the [pro
 * Shading model
 
 ### Unsupported (yet) features
+* Ray Tracing
 * Sparse accessors 
 * Animations 
 * Skinning
