@@ -5,175 +5,181 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>{84d62a6a-9ac6-4422-a894-d707a81eae00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ImGUI\imgui.cpp">
+    <ClCompile Include="External\imgui\imgui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ImGUI\imgui_impl_dx12.cpp">
+    <ClCompile Include="External\imgui\imgui_impl_dx12.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ImGUI\imgui_impl_win32.cpp">
+    <ClCompile Include="External\imgui\imgui_impl_win32.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ImGUI\imgui_demo.cpp">
+    <ClCompile Include="External\imgui\imgui_demo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ImGUI\imgui_draw.cpp">
+    <ClCompile Include="External\imgui\imgui_draw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ImGUI\imgui_widgets.cpp">
+    <ClCompile Include="External\imgui\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DXUtil.cpp">
+    <ClCompile Include="Source\Utils\Cpp\DXUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Buffers.cpp">
+    <ClCompile Include="Source\Core\Cpp\Timer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Timer.cpp">
+    <ClCompile Include="Source\Core\Cpp\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Camera.cpp">
+    <ClCompile Include="Source\GUI\Cpp\Gui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Gui.cpp">
+    <ClCompile Include="Source\Core\Cpp\SwapChain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SwapChain.cpp">
+    <ClCompile Include="Source\Core\Cpp\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Texture.cpp">
+    <ClCompile Include="Source\Core\Cpp\Texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ViewerApp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Mesh.cpp">
+    <ClCompile Include="Source\Core\Cpp\Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Scene.cpp">
+    <ClCompile Include="Source\Core\Cpp\Scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GLTFSceneLoader.cpp">
+    <ClCompile Include="Source\Utils\Cpp\GLTFSceneLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DrawableAsset.cpp">
+    <ClCompile Include="Source\Core\Cpp\DrawableAsset.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SkyBox.cpp">
+    <ClCompile Include="Source\Core\Cpp\SkyBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="shaders.cpp">
+    <ClCompile Include="Source\Core\Cpp\Shaders.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Grid.cpp">
+    <ClCompile Include="Source\Core\Cpp\Grid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Core\Cpp\Buffers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ImGUI\imgui.h">
+    <ClInclude Include="External\imgui\imgui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ImGUI\imgui_impl_dx12.h">
+    <ClInclude Include="External\imgui\imgui_impl_dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ImGUI\imgui_impl_win32.h">
+    <ClInclude Include="External\imgui\imgui_impl_win32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ImGUI\imconfig.h">
+    <ClInclude Include="External\imgui\imconfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ImGUI\imgui_internal.h">
+    <ClInclude Include="External\imgui\imgui_internal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ImGUI\imstb_rectpack.h">
+    <ClInclude Include="External\imgui\imstb_rectpack.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ImGUI\imstb_textedit.h">
+    <ClInclude Include="External\imgui\imstb_textedit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ImGUI\imstb_truetype.h">
+    <ClInclude Include="External\imgui\imstb_truetype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DXUtil.h">
+    <ClInclude Include="Source\Utils\Headers\DXUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="d3dx12.h">
+    <ClInclude Include="External\D3D\d3dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Buffers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Timer.h">
+    <ClInclude Include="Source\Core\Headers\Timer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.h">
+    <ClInclude Include="Source\Core\Headers\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Gui.h">
+    <ClInclude Include="Source\GUI\Headers\Gui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SwapChain.h">
+    <ClInclude Include="Source\Core\Headers\SwapChain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer.h">
+    <ClInclude Include="Source\Core\Headers\Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Texture.h">
+    <ClInclude Include="Source\Core\Headers\Texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Material.h">
+    <ClInclude Include="Source\Core\Headers\Material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ViewerApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Mesh.h">
+    <ClInclude Include="Source\Core\Headers\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="imgui\imfilebrowser.h">
+    <ClInclude Include="External\imgui\imfilebrowser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene.h">
+    <ClInclude Include="Source\Core\Headers\Scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GLTFSceneLoader.h">
+    <ClInclude Include="Source\Utils\Headers\GLTFSceneLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Light.h">
+    <ClInclude Include="Source\Core\Headers\Light.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DrawableAsset.h">
+    <ClInclude Include="Source\Core\Headers\DrawableAsset.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SkyBox.h">
+    <ClInclude Include="Source\Core\Headers\SkyBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="shaders.h">
+    <ClInclude Include="Source\Core\Headers\Shaders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="using_directives.h">
+    <ClInclude Include="Source\Core\Headers\using_directives.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Grid.h">
+    <ClInclude Include="Source\Core\Headers\Grid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Headers\Buffers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GUI\Headers\AppState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -183,19 +189,14 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="shaders.hlsl" />
-    <FxCompile Include="shaders\skybox.hlsl" />
-    <FxCompile Include="vs_mesh.hlsl" />
-    <FxCompile Include="ps_mesh.hlsl" />
-    <FxCompile Include="gs_mesh.hlsl" />
-    <FxCompile Include="shaders\grid.hlsl" />
-    <FxCompile Include="shaders\gs_mesh.hlsl" />
-    <FxCompile Include="shaders\ps_mesh.hlsl" />
-    <FxCompile Include="shaders\vs_mesh.hlsl" />
+    <FxCompile Include="Source\Shaders\skybox.hlsl" />
+    <FxCompile Include="Source\Shaders\grid.hlsl" />
+    <FxCompile Include="Source\Shaders\gs_mesh.hlsl" />
+    <FxCompile Include="Source\Shaders\ps_mesh.hlsl" />
+    <FxCompile Include="Source\Shaders\vs_mesh.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="mesh_common.hlsli" />
-    <None Include="shaders\mesh_common.hlsli" />
+    <None Include="Source\Shaders\mesh_common.hlsli" />
   </ItemGroup>
 </Project>

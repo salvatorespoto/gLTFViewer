@@ -117,6 +117,9 @@ void ViewerApp::InitScene()
 
 void ViewerApp::InitGui()
 {
+	m_appState.screenWidth = DEFAULT_SCREEN_WIDTH;
+    m_appState.screenHeight = DEFAULT_SCREEN_HEIGHT;
+
     m_gui = std::make_unique<Gui>();
     m_gui->Init(m_renderer, &m_appState);
     DEBUG_LOG("Gui initalized");
@@ -223,7 +226,7 @@ void ViewerApp::InitWIC()
     DEBUG_LOG("WIC initialized");
 }
 
-void ViewerApp::SetFullScreen(bool fullScreen)
+void ViewerApp::SetFullScreen(const bool fullScreen)
 {
     m_renderer->SetFullScreen(fullScreen);
 }
@@ -251,7 +254,7 @@ void ViewerApp::OnAppMinimized()
     m_appState.isAppMinimized = true;
 }
 
-void ViewerApp::OnResize(UINT width, UINT height)
+void ViewerApp::OnResize(const UINT width, const UINT height)
 {
     float scaleGUI = static_cast<float>(m_appState.screenWidth) / static_cast<float>(m_clientWidth);
 
@@ -269,14 +272,14 @@ void ViewerApp::OnResize(UINT width, UINT height)
     //m_gui.RecreateDeviceObjects();
 };
 
-void ViewerApp::OnMouseMove(WPARAM btnState, int x, int y)
+void ViewerApp::OnMouseMove(const WPARAM btnState, const int x, const int y)
 {
     if (btnState == MK_LBUTTON) 
     {
         // Rotate camera
         float rotWorldUp= m_mouseSensitivity * XMConvertToRadians(static_cast<float>(x - m_lastMousePosX));
         float  pitch = m_mouseSensitivity* XMConvertToRadians(static_cast<float>(y - m_lastMousePosY));
-        m_camera->rotate(pitch, rotWorldUp);
+        m_camera->rotate(-pitch, -rotWorldUp);
     }
 
     if (btnState == MK_RBUTTON)
@@ -291,19 +294,21 @@ void ViewerApp::OnMouseMove(WPARAM btnState, int x, int y)
     m_lastMousePosY = y;
 }; 
 
-void ViewerApp::OnMouseDown(WPARAM btnState, int x, int y)
+void ViewerApp::OnMouseDown(const WPARAM btnState, const int x, const int y)
 {};
 
-void ViewerApp::OnMouseUp(WPARAM btnState, int x, int y)
+void ViewerApp::OnMouseUp(const WPARAM btnState, const int x, const int y)
 {};
 
-void ViewerApp::OnKeyDown(WPARAM wParam)
+void ViewerApp::OnKeyDown(const WPARAM wParam)
 {    
     // Handle camera movements
     if (wParam == VK_KEY_W) m_camera->moveForward(m_cameraStep);
     if (wParam == VK_KEY_S) m_camera->moveForward(-m_cameraStep);
     if (wParam == VK_KEY_A) m_camera->strafe(-m_cameraStep);
     if (wParam == VK_KEY_D) m_camera->strafe(m_cameraStep);
+    if (wParam == VK_KEY_Q) m_camera->lift(-m_cameraStep);
+    if (wParam == VK_KEY_E) m_camera->lift(m_cameraStep);
 }
 
 void ViewerApp::UpdateScene()
@@ -315,26 +320,14 @@ void ViewerApp::UpdateScene()
     // Update lights
     for (auto light : m_appState.lights) { m_scene->SetLight(light.first, light.second); }
 
-    // Update mesh constants
+    // Set the root (whole scene) transform
     float rotX = m_appState.modelConstants[0].rotXYZ.x;
     float rotY = m_appState.modelConstants[0].rotXYZ.y;
     float rotZ = m_appState.modelConstants[0].rotXYZ.z;
-    XMMATRIX meshRotation = XMMatrixMultiply(XMMatrixMultiply(XMMatrixRotationAxis({ 1.0f, 0.0f, 0.0f }, rotX), XMMatrixRotationAxis({ 0.0f, 1.0f, 0.0f }, rotY)), XMMatrixRotationAxis({ 0.0f, 0.0f, 1.0f }, rotZ));
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[0].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[1].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[2].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[3].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[4].modelMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[5].modelMtx, meshRotation);
-    
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[0].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[1].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[2].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[3].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[4].nodeTransformMtx, meshRotation);
-    DirectX::XMStoreFloat4x4(&m_appState.modelConstants[5].nodeTransformMtx, meshRotation);
-
-    for (auto meshConstants : m_appState.modelConstants) { m_scene->SetMeshConstants(meshConstants.first, meshConstants.second); }
+    XMFLOAT4X4 rootTransform;
+    const XMMATRIX meshRotation = XMMatrixMultiply(XMMatrixMultiply(XMMatrixRotationAxis({ 1.0f, 0.0f, 0.0f }, rotX), XMMatrixRotationAxis({ 0.0f, 1.0f, 0.0f }, rotY)), XMMatrixRotationAxis({ 0.0f, 0.0f, 1.0f }, rotZ));
+    DirectX::XMStoreFloat4x4(&rootTransform, meshRotation);
+    m_scene->SetRootTransform(rootTransform);
     m_scene->SetRenderMode(m_appState.currentRenderModeMask);
     
     // Update SkyBox
@@ -388,8 +381,7 @@ void ViewerApp::OnUpdate()
         m_gltfLoader->Load(m_appState.gltfFileLoaded);
         m_gltfLoader->GetScene(0, m_scene);
         m_scene->SetCubeMapTexture(m_cubeMapTexture);
-        m_camera->setPosition({ -m_scene->GetSceneRadius() * 1.5f , -m_scene->GetSceneRadius() * 1.5f , -m_scene->GetSceneRadius() * 1.5f });
-        m_camera->lookAt(XMFLOAT3( m_scene->GetSceneRadius() * 1.5f , m_scene->GetSceneRadius() * 1.5f , -m_scene->GetSceneRadius() * 1.5f ), { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
+        m_camera->lookAt(XMFLOAT3( m_scene->GetSceneRadius() * 1.5f , m_scene->GetSceneRadius() * 1.5f , m_scene->GetSceneRadius() * 1.5f ), { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f });
         m_cameraStep = m_scene->GetSceneRadius() / 10.0f;
         m_appState.isOpenGLTFPressed = false;
     }
