@@ -1,6 +1,5 @@
 #include "Gui.h"
 #include "shaders.h"
-#include "ViewerApp.h"
 #include "Mesh.h"
 #include <string>
 #include <iostream>
@@ -116,22 +115,22 @@ void Gui::LoadShaderSource()
 {
     std::ifstream inFile;
     
-    inFile.open("shaders/vs_mesh.hlsl");
+    inFile.open("Source/Shaders/vs_mesh.hlsl");
     std::string text((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
     memcpy(m_vertexShaderText, text.c_str(), text.length());
     inFile.close();
 
-    inFile.open("shaders/gs_mesh.hlsl");
+    inFile.open("Source/Shaders/gs_mesh.hlsl");
     text.assign((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
     memcpy(m_geometryShaderText, text.c_str(), text.length());
     inFile.close();
 
-    inFile.open("shaders/ps_mesh.hlsl");
+    inFile.open("Source/Shaders/ps_mesh.hlsl");
     text.assign((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
     memcpy(m_pixelShaderText, text.c_str(), text.length());
     inFile.close();
 
-    inFile.open("shaders/mesh_common.hlsli");
+    inFile.open("Source/Shaders/mesh_common.hlsli");
     text.assign((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
     memcpy(m_headerShaderText, text.c_str(), text.length());
     inFile.close();
@@ -141,7 +140,7 @@ void Gui::LoadShaderSource()
 
 void Gui::SaveShaderSource() 
 {
-    std::ofstream out("shaders/vs_mesh.hlsl.tmp");
+    std::ofstream out("Source/Shaders/vs_mesh.hlsl.tmp");
     if (!out)
     {
         return;
@@ -149,7 +148,7 @@ void Gui::SaveShaderSource()
     out.write((char*)m_vertexShaderText, strlen(m_vertexShaderText));
     out.close();
 
-    out.open("shaders/gs_mesh.hlsl.tmp");
+    out.open("Source/Shaders/gs_mesh.hlsl.tmp");
     if (!out)
     {
         return;
@@ -157,7 +156,7 @@ void Gui::SaveShaderSource()
     out.write((char*)m_geometryShaderText, strlen(m_geometryShaderText));
     out.close();
 
-    out.open("shaders/ps_mesh.hlsl.tmp");
+    out.open("Source/Shaders/ps_mesh.hlsl.tmp");
     if (!out)
     {
         return;
@@ -165,7 +164,7 @@ void Gui::SaveShaderSource()
     out.write((char*)m_pixelShaderText, strlen(m_pixelShaderText));
     out.close();
 
-    out.open("shaders/mesh_common.hlsli.tmp");
+    out.open("Source/Shaders/mesh_common.hlsli.tmp");
     if (!out)
     {
         return;
@@ -548,5 +547,5 @@ void Gui::SetStyle()
     style->TabRounding = 0.0f;
     style->WindowRounding = 4.0f;
    
-    ImGui::GetIO().Fonts->AddFontFromFileTTF("imgui/Fonts/Ruda-Bold.ttf", 14);
+    ImGui::GetIO().Fonts->AddFontFromFileTTF("External/imgui/Fonts/Ruda-Bold.ttf", 14);
 }

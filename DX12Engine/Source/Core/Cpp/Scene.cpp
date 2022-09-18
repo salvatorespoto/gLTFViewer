@@ -16,8 +16,8 @@ Scene::Scene(ComPtr<ID3D12Device> device)
 	m_samplersDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 
 	std::string errorMsg;
-	CompileVertexShader(L"shaders/vs_mesh.hlsl", errorMsg);
-	CompilePixelShader(L"shaders/ps_mesh.hlsl", errorMsg);
+	CompileVertexShader(L"Source/Shaders/vs_mesh.hlsl", errorMsg);
+	CompilePixelShader(L"Source/Shaders/ps_mesh.hlsl", errorMsg);
 
 	// Create CBV_SRV_UAV descriptor heap
 	D3D12_DESCRIPTOR_HEAP_DESC CBVSRVHeapDesc = {};

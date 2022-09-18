@@ -20,7 +20,7 @@ void Grid::Init(ComPtr<ID3D12Device> device, ComPtr<ID3D12CommandQueue> commandQ
     GenerateGrid(halfSize);
 
     std::string errorMsg;
-    CompileShaders(L"shaders/grid.hlsl", errorMsg, m_vertexShader, m_pixelShader);
+    CompileShaders(L"Source/Shaders/grid.hlsl", errorMsg, m_vertexShader, m_pixelShader);
 
     m_frameConstantsBuffer = std::make_unique<UploadBuffer<FrameConstants>>(m_device.Get(), 1, true);
     m_gridConstantsBuffer = std::make_unique<UploadBuffer<GridConstants>>(m_device.Get(), 1, true);

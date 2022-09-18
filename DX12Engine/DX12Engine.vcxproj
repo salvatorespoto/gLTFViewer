@@ -78,6 +78,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(ProjectDir)Source\Core\Headers;$(ProjectDir)Source\Utils\Headers;$(ProjectDir)Source\GUI\Headers;$(IncludePath)</IncludePath>
+    <ExternalIncludePath>$(ProjectDir)External\D3D;$(ProjectDir)External;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -143,107 +145,76 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DrawableAsset.cpp" />
-    <ClCompile Include="Grid.cpp" />
-    <ClCompile Include="Scene.cpp" />
-    <ClCompile Include="Mesh.cpp" />
-    <ClCompile Include="Buffers.cpp" />
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="DXUtil.cpp" />
-    <ClCompile Include="GLTFSceneLoader.cpp" />
-    <ClCompile Include="Gui.cpp" />
-    <ClCompile Include="ImGUI\imgui.cpp" />
-    <ClCompile Include="ImGUI\imgui_demo.cpp" />
-    <ClCompile Include="ImGUI\imgui_draw.cpp" />
-    <ClCompile Include="ImGUI\imgui_impl_dx12.cpp" />
-    <ClCompile Include="ImGUI\imgui_impl_win32.cpp" />
-    <ClCompile Include="ImGUI\imgui_widgets.cpp" />
+    <ClCompile Include="Source\Core\Cpp\Buffers.cpp" />
+    <ClCompile Include="Source\Core\Cpp\DrawableAsset.cpp" />
+    <ClCompile Include="Source\Core\Cpp\Grid.cpp" />
+    <ClCompile Include="Source\Core\Cpp\Scene.cpp" />
+    <ClCompile Include="Source\Core\Cpp\Mesh.cpp" />
+    <ClCompile Include="Source\Core\Cpp\Camera.cpp" />
+    <ClCompile Include="Source\Utils\Cpp\DXUtil.cpp" />
+    <ClCompile Include="Source\Utils\Cpp\GLTFSceneLoader.cpp" />
+    <ClCompile Include="Source\GUI\Cpp\Gui.cpp" />
+    <ClCompile Include="External\imgui\imgui.cpp" />
+    <ClCompile Include="External\imgui\imgui_demo.cpp" />
+    <ClCompile Include="External\imgui\imgui_draw.cpp" />
+    <ClCompile Include="External\imgui\imgui_impl_dx12.cpp" />
+    <ClCompile Include="External\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="External\imgui\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="shaders.cpp" />
-    <ClCompile Include="SkyBox.cpp" />
-    <ClCompile Include="SwapChain.cpp" />
-    <ClCompile Include="Texture.cpp" />
-    <ClCompile Include="Timer.cpp" />
+    <ClCompile Include="Source\Core\Cpp\Renderer.cpp" />
+    <ClCompile Include="Source\Core\Cpp\Shaders.cpp" />
+    <ClCompile Include="Source\Core\Cpp\SkyBox.cpp" />
+    <ClCompile Include="Source\Core\Cpp\SwapChain.cpp" />
+    <ClCompile Include="Source\Core\Cpp\Texture.cpp" />
+    <ClCompile Include="Source\Core\Cpp\Timer.cpp" />
     <ClCompile Include="ViewerApp.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Grid.h" />
-    <ClInclude Include="using_directives.h" />
-    <ClInclude Include="DrawableAsset.h" />
-    <ClInclude Include="Light.h" />
-    <ClInclude Include="Scene.h" />
-    <ClInclude Include="imgui\imfilebrowser.h" />
-    <ClInclude Include="Mesh.h" />
-    <ClInclude Include="Buffers.h" />
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="d3dx12.h" />
-    <ClInclude Include="DXUtil.h" />
-    <ClInclude Include="GLTFSceneLoader.h" />
-    <ClInclude Include="Gui.h" />
-    <ClInclude Include="ImGUI\imconfig.h" />
-    <ClInclude Include="ImGUI\imgui.h" />
-    <ClInclude Include="ImGUI\imgui_impl_dx12.h" />
-    <ClInclude Include="ImGUI\imgui_impl_win32.h" />
-    <ClInclude Include="ImGUI\imgui_internal.h" />
-    <ClInclude Include="ImGUI\imstb_rectpack.h" />
-    <ClInclude Include="ImGUI\imstb_textedit.h" />
-    <ClInclude Include="ImGUI\imstb_truetype.h" />
-    <ClInclude Include="Material.h" />
-    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="Source\Core\Headers\Buffers.h" />
+    <ClInclude Include="Source\Core\Headers\Grid.h" />
+    <ClInclude Include="Source\Core\Headers\using_directives.h" />
+    <ClInclude Include="Source\Core\Headers\DrawableAsset.h" />
+    <ClInclude Include="Source\Core\Headers\Light.h" />
+    <ClInclude Include="Source\Core\Headers\Scene.h" />
+    <ClInclude Include="External\imgui\imfilebrowser.h" />
+    <ClInclude Include="Source\Core\Headers\Mesh.h" />
+    <ClInclude Include="Source\Core\Headers\Camera.h" />
+    <ClInclude Include="External\D3D\d3dx12.h" />
+    <ClInclude Include="Source\GUI\Headers\AppState.h" />
+    <ClInclude Include="Source\Utils\Headers\DXUtil.h" />
+    <ClInclude Include="Source\Utils\Headers\GLTFSceneLoader.h" />
+    <ClInclude Include="Source\GUI\Headers\Gui.h" />
+    <ClInclude Include="External\imgui\imconfig.h" />
+    <ClInclude Include="External\imgui\imgui.h" />
+    <ClInclude Include="External\imgui\imgui_impl_dx12.h" />
+    <ClInclude Include="External\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="External\imgui\imgui_internal.h" />
+    <ClInclude Include="External\imgui\imstb_rectpack.h" />
+    <ClInclude Include="External\imgui\imstb_textedit.h" />
+    <ClInclude Include="External\imgui\imstb_truetype.h" />
+    <ClInclude Include="Source\Core\Headers\Material.h" />
+    <ClInclude Include="Source\Core\Headers\Renderer.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="shaders.h" />
-    <ClInclude Include="SkyBox.h" />
-    <ClInclude Include="SwapChain.h" />
-    <ClInclude Include="Texture.h" />
-    <ClInclude Include="Timer.h" />
+    <ClInclude Include="Source\Core\Headers\Shaders.h" />
+    <ClInclude Include="Source\Core\Headers\SkyBox.h" />
+    <ClInclude Include="Source\Core\Headers\SwapChain.h" />
+    <ClInclude Include="Source\Core\Headers\Texture.h" />
+    <ClInclude Include="Source\Core\Headers\Timer.h" />
     <ClInclude Include="ViewerApp.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DX12Engine.rc" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="gs_mesh.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Geometry</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Geometry</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Geometry</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Geometry</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    <FxCompile Include="Source\Shaders\gs_mesh.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="ps_mesh.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    <FxCompile Include="Source\Shaders\ps_mesh.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shaders.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </FxCompile>
-    <FxCompile Include="shaders\gs_mesh.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </FxCompile>
-    <FxCompile Include="shaders\ps_mesh.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </FxCompile>
-    <FxCompile Include="shaders\skybox.hlsl">
+    <FxCompile Include="Source\Shaders\skybox.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
@@ -251,7 +222,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shaders\grid.hlsl">
+    <FxCompile Include="Source\Shaders\grid.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
@@ -259,26 +230,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shaders\vs_mesh.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </FxCompile>
-    <FxCompile Include="vs_mesh.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    <FxCompile Include="Source\Shaders\vs_mesh.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="mesh_common.hlsli">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </None>
     <None Include="packages.config" />
-    <None Include="shaders\mesh_common.hlsli">
+    <None Include="Source\Shaders\mesh_common.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </None>

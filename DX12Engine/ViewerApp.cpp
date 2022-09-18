@@ -117,6 +117,9 @@ void ViewerApp::InitScene()
 
 void ViewerApp::InitGui()
 {
+	m_appState.screenWidth = DEFAULT_SCREEN_WIDTH;
+    m_appState.screenHeight = DEFAULT_SCREEN_HEIGHT;
+
     m_gui = std::make_unique<Gui>();
     m_gui->Init(m_renderer, &m_appState);
     DEBUG_LOG("Gui initalized");

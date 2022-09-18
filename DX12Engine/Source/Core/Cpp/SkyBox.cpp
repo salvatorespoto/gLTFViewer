@@ -27,7 +27,7 @@ void SkyBox::Init(ComPtr<ID3D12Device> device, ComPtr<ID3D12CommandQueue> comman
     GenerateSphere();
 
     std::string errorMsg;
-    CompileShaders(L"shaders/skybox.hlsl", errorMsg, m_vertexShader, m_pixelShader);
+    CompileShaders(L"Source/Shaders/skybox.hlsl", errorMsg, m_vertexShader, m_pixelShader);
 
     m_frameConstantsBuffer = std::make_unique<UploadBuffer<FrameConstants>>(m_device.Get(), 1, true);
     m_skyBoxConstantsBuffer = std::make_unique<UploadBuffer<SkyBoxConstants>>(m_device.Get(), 1, true);
