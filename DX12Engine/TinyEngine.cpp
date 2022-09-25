@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Salvatore Spoto <salvatore.spoto@gmail.com> 
 // SPDX-License-Identifier: MIT
 
-#include "ViewerApp.h"
+#include "TinyEngine.h"
 
 #include "Buffers.h"
 #include "Texture.h"
@@ -20,12 +20,12 @@
 LRESULT CALLBACK wndMsgCallback(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     if (ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam)) return true;
-    ViewerApp* wndApp = reinterpret_cast<ViewerApp*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
+    TinyEngine* wndApp = reinterpret_cast<TinyEngine*>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
     if (wndApp) wndApp->WndMsgProc(hWnd, uMsg, wParam, lParam);
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
 
-ViewerApp::ViewerApp(const HINSTANCE& hInstance) : m_hInstance(hInstance), m_hWnd(NULL), m_clientWidth(1280), m_clientHeight(1024)
+TinyEngine::TinyEngine(const HINSTANCE& hInstance) : m_hInstance(hInstance), m_hWnd(NULL), m_clientWidth(1280), m_clientHeight(1024)
 {
     DEBUG_LOG("Initializing Viewer application");
     InitWindow();
@@ -36,9 +36,9 @@ ViewerApp::ViewerApp(const HINSTANCE& hInstance) : m_hInstance(hInstance), m_hWn
     InitGui();
 }
 
-ViewerApp::~ViewerApp() {}
+TinyEngine::~TinyEngine() {}
 
-void ViewerApp::InitWindow()
+void TinyEngine::InitWindow()
 {
     WNDCLASSEX wndClass = {};
     wndClass.cbSize = sizeof(WNDCLASSEX);                   // Size of the struct
@@ -86,21 +86,21 @@ void ViewerApp::InitWindow()
     DEBUG_LOG("Main window initialized");
 }
 
-void ViewerApp::InitRenderer() 
+void TinyEngine::InitRenderer() 
 {
     m_renderer = std::make_shared<Renderer>();
     m_renderer->Init(m_hWnd, m_clientWidth, m_clientHeight);
     DEBUG_LOG("Renderer object initialized");
 }
 
-void ViewerApp::InitCamera()
+void TinyEngine::InitCamera()
 {
     m_camera = std::make_unique<Camera>(m_clientWidth, m_clientHeight, DirectX::XM_PIDIV4, 0.1f, 1000.0f);
     m_camera->setPosition({ 0.0f, 0.0f, -5.0f });
     DEBUG_LOG("Camera initialized");
 }
 
-void ViewerApp::InitScene()
+void TinyEngine::InitScene()
 {
     CreateTextureFromDDSFile(m_renderer->GetDevice().Get(), m_renderer->GetCommandQueue().Get(), "assets/wood-cubemap.dds", &m_cubeMapTexture);
 
@@ -118,7 +118,7 @@ void ViewerApp::InitScene()
     DEBUG_LOG("Scene initalized");
 }
 
-void ViewerApp::InitGui()
+void TinyEngine::InitGui()
 {
 	m_appState.screenWidth = DEFAULT_SCREEN_WIDTH;
     m_appState.screenHeight = DEFAULT_SCREEN_HEIGHT;
@@ -128,7 +128,7 @@ void ViewerApp::InitGui()
     DEBUG_LOG("Gui initalized");
 }
 
-int ViewerApp::Run()
+int TinyEngine::Run()
 {
     DEBUG_LOG("Starting application main loop");
     ShowWindow(m_hWnd, SW_MAXIMIZE);
@@ -155,7 +155,7 @@ int ViewerApp::Run()
     return (int)msg.wParam;
 }
 
-LRESULT ViewerApp::WndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT TinyEngine::WndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
     {
@@ -223,41 +223,41 @@ LRESULT ViewerApp::WndMsgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam
     return 0;
 }
 
-void ViewerApp::InitWIC() 
+void TinyEngine::InitWIC() 
 {
     DXUtil::ThrowIfFailed(CoInitializeEx(nullptr, COINIT_MULTITHREADED), "Cannot initialize WIC");
     DEBUG_LOG("WIC initialized");
 }
 
-void ViewerApp::SetFullScreen(const bool fullScreen)
+void TinyEngine::SetFullScreen(const bool fullScreen)
 {
     m_renderer->SetFullScreen(fullScreen);
 }
 
-float ViewerApp::GetScreenAspectRatio()
+float TinyEngine::GetScreenAspectRatio()
 {
     return static_cast<float>(m_clientWidth) / static_cast<float>(m_clientHeight);
 }
 
-void ViewerApp::OnEnterSizeMove() 
+void TinyEngine::OnEnterSizeMove() 
 {
     m_appState.isAppPaused = true;
     m_appState.isResizingWindow = true;
 }
 
-void ViewerApp::OnExitSizeMove()
+void TinyEngine::OnExitSizeMove()
 {
     m_appState.isAppPaused = false;
     m_appState.isResizingWindow = false;
     OnResize(m_clientWidth, m_clientHeight);
 }
 
-void ViewerApp::OnAppMinimized() 
+void TinyEngine::OnAppMinimized() 
 {
     m_appState.isAppMinimized = true;
 }
 
-void ViewerApp::OnResize(const UINT width, const UINT height)
+void TinyEngine::OnResize(const UINT width, const UINT height)
 {
     float scaleGUI = static_cast<float>(m_appState.screenWidth) / static_cast<float>(m_clientWidth);
 
@@ -275,7 +275,7 @@ void ViewerApp::OnResize(const UINT width, const UINT height)
     //m_gui.RecreateDeviceObjects();
 };
 
-void ViewerApp::OnMouseMove(const WPARAM btnState, const int x, const int y)
+void TinyEngine::OnMouseMove(const WPARAM btnState, const int x, const int y)
 {
     if (btnState == MK_LBUTTON) 
     {
@@ -297,13 +297,13 @@ void ViewerApp::OnMouseMove(const WPARAM btnState, const int x, const int y)
     m_lastMousePosY = y;
 }; 
 
-void ViewerApp::OnMouseDown(const WPARAM btnState, const int x, const int y)
+void TinyEngine::OnMouseDown(const WPARAM btnState, const int x, const int y)
 {};
 
-void ViewerApp::OnMouseUp(const WPARAM btnState, const int x, const int y)
+void TinyEngine::OnMouseUp(const WPARAM btnState, const int x, const int y)
 {};
 
-void ViewerApp::OnKeyDown(const WPARAM wParam)
+void TinyEngine::OnKeyDown(const WPARAM wParam)
 {    
     // Handle camera movements
     if (wParam == VK_KEY_W) m_camera->moveForward(m_cameraStep);
@@ -314,7 +314,7 @@ void ViewerApp::OnKeyDown(const WPARAM wParam)
     if (wParam == VK_KEY_E) m_camera->lift(m_cameraStep);
 }
 
-void ViewerApp::UpdateScene()
+void TinyEngine::UpdateScene()
 {    
     // Update camera 
     m_camera->update();
@@ -342,7 +342,7 @@ void ViewerApp::UpdateScene()
     m_grid->SetGridConstants({ DXUtil::IdentityMtx() });
 }
 
-void ViewerApp::OnUpdate()
+void TinyEngine::OnUpdate()
 {
     if (m_appState.isExitTriggered) { DestroyWindow(m_hWnd); }
     
@@ -391,7 +391,7 @@ void ViewerApp::OnUpdate()
     UpdateScene();
 }
 
-void ViewerApp::OnDraw()
+void TinyEngine::OnDraw()
 {
     m_renderer->BeginDraw();
     if(m_appState.showSkyBox) m_renderer->Draw(*m_skyBox);
@@ -401,7 +401,7 @@ void ViewerApp::OnDraw()
     m_renderer->EndDraw();
 }
 
-void ViewerApp::OnDestroy()
+void TinyEngine::OnDestroy()
 {
     DEBUG_LOG("Clearing application resources ...");
 

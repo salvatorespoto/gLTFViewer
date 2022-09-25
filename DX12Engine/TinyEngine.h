@@ -25,11 +25,11 @@ static constexpr unsigned int DEFAULT_SCREEN_HEIGHT = 1024;
 
 
 /** The 3D viewer application */
-class ViewerApp
+class TinyEngine
 {
 public:
-	ViewerApp(const HINSTANCE& m_hInstance);
-	~ViewerApp();
+	TinyEngine(const HINSTANCE& m_hInstance);
+	~TinyEngine();
 	int Run();
 	void SetFullScreen(const bool fullScreen);
 	

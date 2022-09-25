@@ -167,7 +167,7 @@
     <ClCompile Include="Source\Core\Cpp\SwapChain.cpp" />
     <ClCompile Include="Source\Core\Cpp\Texture.cpp" />
     <ClCompile Include="Source\Core\Cpp\Timer.cpp" />
-    <ClCompile Include="ViewerApp.cpp" />
+    <ClCompile Include="TinyEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Core\Headers\Buffers.h" />
@@ -200,7 +200,7 @@
     <ClInclude Include="Source\Core\Headers\SwapChain.h" />
     <ClInclude Include="Source\Core\Headers\Texture.h" />
     <ClInclude Include="Source\Core\Headers\Timer.h" />
-    <ClInclude Include="ViewerApp.h" />
+    <ClInclude Include="TinyEngine.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DX12Engine.rc" />
