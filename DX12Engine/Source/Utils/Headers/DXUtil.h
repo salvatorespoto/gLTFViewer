@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Salvatore Spoto <salvatore.spoto@gmail.com> 
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #define _CRT_SECURE_NO_WARNINGS

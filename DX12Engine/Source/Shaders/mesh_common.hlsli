@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Salvatore Spoto <salvatore.spoto@gmail.com> 
+// SPDX-License-Identifier: MIT
+
 static const float PI = 3.14159265f;
 
 static const uint MESH_CONSTANTS_N_DESCRIPTORS = 15;

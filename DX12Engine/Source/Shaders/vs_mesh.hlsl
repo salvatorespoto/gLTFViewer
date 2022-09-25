@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Salvatore Spoto <salvatore.spoto@gmail.com> 
+// SPDX-License-Identifier: MIT
+
 #include "mesh_common.hlsli"
 
 VertexOut VSMain(VertexIn vIn, uint instanceID : SV_InstanceID)

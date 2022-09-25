@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Salvatore Spoto <salvatore.spoto@gmail.com> 
+// SPDX-License-Identifier: MIT
+
 #include "Gui.h"
 #include "shaders.h"
 #include "Mesh.h"

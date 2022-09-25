@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Salvatore Spoto <salvatore.spoto@gmail.com> 
+// SPDX-License-Identifier: MIT
+
 #include "mesh_common.hlsli"
 
 float3 diffuse(float3 albedo, float3 lightColor, float NdotL); // Lambertian diffuse
