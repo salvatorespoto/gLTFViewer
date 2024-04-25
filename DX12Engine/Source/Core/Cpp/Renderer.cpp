@@ -79,9 +79,9 @@ void Renderer::CreateDefaultDevice()
 {
     // Create the device using the default Direct3D adapter
     ComPtr<IDXGIFactory4> dxgiFactory;
-    if (SUCCEEDED(D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_12_1, _uuidof(ID3D12Device), nullptr)))
+    if (SUCCEEDED(D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_12_2, _uuidof(ID3D12Device), nullptr)))
     {
-        ThrowIfFailed(D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&m_device)), "Cannot create Direct3D device on default adapter");
+        ThrowIfFailed(D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&m_device)), "Cannot create Direct3D device on default adapter");
     }
     else
     {
